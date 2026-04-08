@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-
+import second from "../../../public/second.svg";
 export interface BannerFeature {
   title: string;
   description: string;
@@ -278,8 +278,8 @@ export function getEmptyBannerContent(): BannerContent {
         icon: 'MessageCircle'
       }
     ],
-    backgroundImage: '/api/placeholder/600/400', // Default image for new banners
-    backgroundColor: '#ffffff',
+    backgroundImage: '/second.svg', // Default image for new banners
+    backgroundColor: '#FFB800',
     layout: 'right',
     animation: 'fade',
     titleColor: '#111827',
