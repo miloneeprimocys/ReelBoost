@@ -1,0 +1,976 @@
+# Website Builder System - Complete Flow Explanation
+
+## 🏗️ OVERVIEW
+This is a dynamic website builder that allows users to edit sections of a webpage in real-time. The system uses React, Redux Toolkit, and Next.js to provide an intuitive editing experience.
+
+---
+
+## 📋 CORE COMPONENTS
+
+### 1. **Redux Store (builderSlice.ts)**
+- **Purpose**: Central state management for all builder functionality
+- **Key State Properties**:
+  - `isBuilderMode`: Toggle builder mode on/off
+  - `sections`: Array of all website sections (hero, banner, features, etc.)
+  - `activeSection`: Currently selected section for editing
+  - `isPreviewMode`: Preview mode toggle
+
+### 2. **HomePage (index.tsx)**
+- **Purpose**: Main page that renders all sections
+- **Key Change**: Now renders ALL sections from Redux (including hero) in correct order
+- **Logic**: Sorts sections by `order` property and renders them sequentially
+- **Flow**: No more separate static Hero - everything comes from Redux state
+
+### 3. **Hero.tsx (Modified)**
+- **Purpose**: The hero section component that users see
+- **Hybrid Behavior**: Merges static content from homeSlice with dynamic content from builderSlice
+- **Content Logic**: 
+  ```typescript
+  const heroContent = {
+    ...staticHeroContent,           // Base content from homeSlice
+    ...(dynamicHeroSections[0]?.content || {})  // Override with edited content
+  };
+  ```
+- **Responsive Design**: Added width constraints and proper text wrapping
+- **Key Changes**: 
+  - Container: `max-w-xl lg:max-w-2xl xl:max-w-3xl`
+  - Title: Smaller responsive sizes with `break-words hyphens-auto`
+  - Subtitle: `max-w-full` with proper wrapping
+  - Spacing: Reduced from `pt-[80px]` to `pt-[50px]`
+
+### 4. **WebsiteBuilder.tsx**
+- **Purpose**: Builder UI with section list and editor panels
+- **Auto-opens**: Automatically opens hero editor when builder mode activates
+- **Mobile Support**: Different layouts for mobile vs desktop
+- **Key Actions**: Add, edit, delete, reorder sections
+
+### 5. **HeroEditor.tsx**
+- **Purpose**: Editor panel for hero section content
+- **Image Upload**: Uses FileReader to convert to base64 (immediate display)
+- **Field Updates**: Real-time updates to Redux store
+- **Content Management**: Only updates section-specific content, not global state
+- **Key Fix**: Removed dependency on homeSlice, uses only builder content
+
+---
+
+## 🔄 COMPLETE DATA FLOW
+
+### **Initial Page Load**
+1. Redux store initializes with default sections from `builderSlice.ts`
+2. HomePage renders all sections in order (including default hero)
+3. Hero.tsx receives static content (no dynamic content yet)
+4. WebsiteBuilder is hidden (builderMode = false)
+
+### **Activating Builder Mode**
+1. User clicks builder button → `toggleBuilderMode()` action dispatched
+2. Redux state: `isBuilderMode = true`
+3. WebsiteBuilder appears with section list
+4. `useEffect` auto-opens first hero section editor
+5. Section list and editor panel appear simultaneously
+
+### **Adding New Hero Section**
+1. User clicks "Hero" button in SectionList
+2. `addSectionAndSetActive` action creates new section:
+   ```typescript
+   {
+     id: 'hero-1712345678900',  // Unique ID
+     type: 'hero',
+     name: 'Hero Section',
+     visible: true,
+     order: 7,  // Next available order
+     content: getDefaultContent('hero')  // Default hero content
+   }
+   ```
+3. New section is set as active section
+4. HeroEditor opens with empty/default content
+5. User edits content → updates builderSlice
+6. HomePage re-renders with new section in correct position
+
+### **Editing Existing Hero Section**
+1. User clicks edit button on existing hero section
+2. `setActiveSection('hero-1')` dispatched
+3. WebsiteBuilder determines which hero section is being edited
+4. HeroEditor receives current section content and renders input fields
+5. User makes changes → `updateField()` called
+6. Creates new content object with updated field
+7. Calls `updateSectionContent()` action
+8. Redux store updated → HomePage re-renders with merged content
+
+### **Content Merging in Hero.tsx**
+```typescript
+// Always shows Hero component, but content is dynamic
+const staticHeroContent = useAppSelector(state => state.home.heroContent);
+const dynamicHeroSections = useAppSelector(state => state.builder.sections.filter(s => s.type === 'hero'));
+
+const heroContent = {
+    ...staticHeroContent,           // Base content from homeSlice
+    ...(dynamicHeroSections[0]?.content || {})  // Override with edited content
+};
+
+// Result: Only edited fields change, unedited fields keep original values
+```
+
+### **Image Upload System**
+**Before**: Created fake URL paths like `/images/filename.jpg`
+**After**: 
+```javascript
+const handleImageUpload = (sectionId, imageType) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target.result;  // base64 data URL
+        updateField(imageType, result);  // Immediate update
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+};
+```
+
+### **Drag and Drop Reordering**
+**Before**: Sections rendered separately, reordering didn't affect output
+**After**:
+1. User drags section in SectionList
+2. `reorderSections({ fromIndex: 2, toIndex: 0 })` action dispatched
+3. Redux store updates section `order` properties
+4. HomePage re-sorts sections by new order
+5. Visual output changes immediately
+
+---
+
+## 🎯 KEY IMPLEMENTATION DETAILS
+
+### **Section ID Generation**
+```typescript
+id: `${type}-${Date.now()}`  // e.g., "hero-1712345678900"
+```
+
+### **Redux Actions Used**
+- `addSectionAndSetActive`: Creates section and sets it as active
+- `updateSectionContent`: Updates specific section content
+- `reorderSections`: Changes section order
+- `setActiveSection`: Sets section for editing
+- `toggleSectionVisibility`: Shows/hides sections
+- `deleteSection`: Removes sections
+
+### **Content Structure (HeroContent)**
+```typescript
+interface HeroContent {
+    title: string;
+    subtitle: string;
+    description: string;
+    primaryButtonText: string;
+    secondaryButtonText: string;
+    backgroundImage: string;
+    layout: 'left' | 'right' | 'center';
+    titleColor: string;
+    subtitleColor: string;
+    descriptionColor: string;
+    primaryButtonColor: string;
+    secondaryButtonColor: string;
+    animation: 'fade' | 'slide' | 'bounce' | 'none';
+    tags: string[];
+    activeTag: string;
+    appStoreImage: string;
+    googlePlayImage: string;
+    dotText: string;
+}
+```
+
+---
+
+## 🔀 VISUAL FLOW DIAGRAM
+
+### **Normal Mode**
+```
+┌─────────────────────────────────────────┐
+│           Navbar                  │
+├─────────────────────────────────┤
+│                                  │
+│    Hero (default content)        │
+│                                  │
+│    Other Sections                │
+│                                  │
+│    Footer                        │
+└─────────────────────────────────┘
+```
+
+### **Builder Mode**
+```
+┌─────────────────┬─────────────────┐
+│  Section List  │   Editor Panel  │
+│  - Hero       │   - HeroEditor  │
+│  - Banner     │   - BannerEdit  │
+│  - Features   │   - FeaturesEdit│
+│  - ...        │   - ...         │
+└─────────────────┴─────────────────┘
+
+┌─────────────────────────────────────────┐
+│           Navbar                  │
+├─────────────────────────────────┤
+│                                  │
+│    Hero (edited content)          │
+│    Second Section                   │
+│    Third Section                    │
+│    ... (in correct order)        │
+│                                  │
+│    Footer                        │
+└─────────────────────────────────┘
+```
+
+---
+
+## 🎨 RESPONSIVE DESIGN FIXES
+
+### **Problem Solved**
+Long content was extending beyond container width and affecting responsiveness
+
+### **Solution Applied**
+1. **Container Width Limits**:
+   ```css
+   max-w-xl lg:max-w-2xl xl:max-w-3xl
+   ```
+
+2. **Title Improvements**:
+   ```css
+   /* Before */
+   text-[32px] sm:text-5xl md:text-6xl xl:text-[86px] 2xl:text-[92px]
+   
+   /* After */
+   text-[28px] sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl
+   leading-tighter break-words hyphens-auto
+   ```
+
+3. **Text Wrapping**:
+   - `break-words`: Breaks long words
+   - `hyphens-auto`: Adds hyphens when needed
+   - `max-w-full`: Prevents overflow
+
+---
+
+## � CURRENT WORKING FEATURES
+
+✅ **Dynamic Hero Sections**: Multiple hero sections with independent content
+✅ **Image Upload**: Base64 conversion and immediate display
+✅ **Content Editing**: Real-time updates with proper validation
+✅ **Drag & Drop**: Section reordering affects visual output
+✅ **Responsive Design**: Content stays within container bounds
+✅ **Hybrid Content**: Merges static and dynamic content intelligently
+✅ **Auto-open Editor**: New sections open editor immediately
+✅ **Section Management**: Add, edit, delete, visibility toggle
+✅ **Order Management**: Proper sorting and positioning
+✅ **Mobile Support**: Different layouts for mobile vs desktop
+✅ **Content Persistence**: Changes reflect immediately in Redux
+
+---
+
+## 🔧 TECHNICAL ARCHITECTURE
+
+### **File Structure**
+```
+src/app/
+├── components/HomePage/
+│   ├── index.tsx (Main renderer - MODIFIED)
+│   └── WebsiteBuilder/
+│       ├── HeroEditor.tsx (Editor component - MODIFIED)
+│       └── SectionList.tsx (Section management)
+├── Pages/Home/
+│   └── Hero.tsx (Modified for hybrid content)
+└── sections/Home/
+    └── DynamicHero.tsx (Fully dynamic component)
+```
+
+### **Data Flow Summary**
+```
+User Action → HeroEditor → Redux Store → HomePage → Visual Output
+     ↓              ↓                ↓              ↓
+Input Field → updateField() → updateSectionContent() → Re-render → User sees change
+Drag & Drop → reorderSections() → State Update → Re-sort → New order
+Image Upload → FileReader → base64 URL → Content Update → Image displays
+```
+
+---
+
+## � USAGE INSTRUCTIONS
+
+### **For Users**
+1. **To Add Hero Section**: Click "Hero" button in builder → Editor opens automatically
+2. **To Edit**: Click edit icon on any section → Make changes → Auto-saves
+3. **To Reorder**: Drag sections in builder list → Order updates in real-time
+4. **To Upload Images**: Click upload buttons → Select file → Converts to base64 → Displays immediately
+5. **To Hide/Show**: Click eye icon in builder list
+
+### **For Developers**
+1. **All sections come from Redux state** - no more separate static rendering
+2. **Hero.tsx is hybrid** - can handle both static and dynamic content
+3. **Editor updates are immediate** - no need for save buttons
+4. **Order is maintained** - drag and drop works correctly
+5. **Responsive design is fixed** - content stays within bounds
+
+---
+
+## 🎯 KEY INSIGHTS
+
+### **What Made This Work**
+1. **Unified Rendering**: All sections (including hero) come from single Redux state
+2. **Smart Content Merging**: Static defaults + dynamic overrides
+3. **Immediate Updates**: Redux ensures changes reflect instantly
+4. **Proper Constraints**: Width limits prevent layout breaking
+5. **Type Safety**: Proper TypeScript interfaces throughout
+
+### **The Magic Formula**
+```typescript
+// Static component becomes dynamic when it receives props
+<Hero heroContent={mergedContent} />
+
+// Content merging preserves defaults while allowing overrides
+const mergedContent = { ...defaults, ...userEdits };
+```
+
+---
+
+## 🚀 FUTURE ENHANCEMENTS
+
+- Server-side image upload for better performance
+- Section templates for quick creation
+- Undo/redo functionality
+- Section cloning
+- Bulk operations
+- Export/import configurations
+- LocalStorage persistence
+- Real-time collaboration
+
+---
+
+---
+
+##  Banner System - Complete Architecture & Flow
+
+###  Overview
+The Banner system is a sophisticated component architecture that handles multiple section types (SecondSection, ThirdSection, and DynamicBanner) with dynamic icon rendering, image tilt effects, and real-time editing capabilities.
+
+###  Core Components
+
+#### 1. **DynamicBanner.tsx** (Universal Banner Component)
+- **Purpose**: Universal banner component that can render any section type
+- **Dual Store Support**: Reads from both `builderSlice` and `bannerSlice`
+- **Smart Icon Rendering**: Uses SVG icons for second/third sections, Lucide icons for others
+- **Image Tilt Effects**: Implements hover-based image tilting with animations
+
+#### 2. **SecondSection.tsx** (Specialized Component)
+- **Purpose**: Dedicated component for "second" type sections
+- **Icon Mapping**: Uses `list`, `live`, `HeroImage` SVG icons
+- **Left Image Layout**: Image always positioned on right side
+- **Tilt Effect**: Always tilts left on hover (since image is on right)
+
+#### 3. **ThirdSection.tsx** (Specialized Component)
+- **Purpose**: Dedicated component for "third" type sections  
+- **Icon Mapping**: Uses `HeroImage`, `Audience`, `Gift`, `Sword` SVG icons
+- **Left Image Layout**: Image always positioned on right side
+- **Tilt Effect**: Always tilts left on hover
+
+#### 4. **BannerEditor.tsx** (Editor Component)
+- **Purpose**: Universal editor for all banner sections
+- **Icon Preview**: Shows correct SVG icon previews for second/third sections
+- **Real-time Updates**: Immediate content updates via Redux
+- **Feature Management**: Add/edit/delete features with icon support
+
+###  Data Flow Architecture
+
+#### **Section Routing Logic** (index.tsx)
+```typescript
+switch (section.type) {
+  case 'banner':
+  case 'live-streaming': 
+  case 'pk-battle':
+    return <DynamicBanner key={section.id} sectionId={section.id} />;
+  case 'second':
+    return <SecondSection key={section.id} sectionId={section.id} />;
+  case 'third':
+    return <ThirdSection key={section.id} sectionId={section.id} />;
+}
+```
+
+#### **Content Retrieval Pattern**
+```typescript
+// SecondSection.tsx & ThirdSection.tsx
+const section = useAppSelector(state => 
+  state.builder.sections.find(s => s.id === sectionId)
+);
+
+// DynamicBanner.tsx (Dual Store Support)
+const builderSection = useAppSelector(state => 
+  state.builder.sections.find(s => s.id === sectionId)
+);
+const bannerSection = useAppSelector(state => 
+  state.banner.sections.find(s => s.id === sectionId)
+);
+```
+
+###  Icon Rendering System
+
+#### **DynamicBanner Icon Logic**
+```typescript
+const renderIcon = (iconName, className, sectionType, featureIndex) => {
+  const isSecondSection = sectionType === 'second' || sectionId.includes('second');
+  const isThirdSection = sectionType === 'third' || sectionId.includes('third');
+  
+  if (isSecondSection) {
+    if (featureIndex === 0) return <Image src={list} alt="List icon" />;
+    if (featureIndex === 1) return <Image src={live} alt="Live icon" />;
+    if (featureIndex === 2) return <Image src={HeroImage} alt="Hero icon" />;
+    return <Image src={list} alt="List icon" />; // Fallback
+  }
+  
+  if (isThirdSection) {
+    if (featureIndex === 0) return <Image src={HeroImage} alt="Hero icon" />;
+    if (featureIndex === 1) return <Image src={Gift} alt="Audience icon" />;
+    if (featureIndex === 2) return <Image src={Audience} alt="Gift icon" />;
+    if (featureIndex === 3) return <Image src={Sword} alt="Sword icon" />;
+    return <Image src={HeroImage} alt="Hero icon" />; // Fallback
+  }
+  
+  // Fallback to Lucide icons for other sections
+  switch (iconName) {
+    case 'Video': return <Video {...iconProps} />;
+    case 'MessageCircle': return <MessageCircle {...iconProps} />;
+    // ... other Lucide icons
+  }
+};
+```
+
+#### **Icon Mapping Table**
+| Section Type | Feature 0 | Feature 1 | Feature 2 | Feature 3 | Feature 4+ |
+|--------------|-----------|-----------|-----------|-----------|------------|
+| Second       | `list`    | `live`    | `HeroImage` | `list` (fallback) | `list` (fallback) |
+| Third        | `HeroImage` | `Gift`    | `Audience` | `Sword` | `HeroImage` (fallback) |
+| DynamicBanner| Lucide icons based on `feature.icon` |
+
+###  Image Tilt Effects
+
+#### **SecondSection & ThirdSection**
+```css
+/* Always tilts left since image is always on right */
+transform transition-all duration-300 hover:rotate-[-12deg] hover:scale-105
+```
+
+#### **DynamicBanner**
+```css
+/* Preserves original animation but changes hover tilt to left */
+transform transition-transform duration-500 ease-out
+rotate-[12deg] group-hover:rotate-[-12deg]
+```
+
+###  Editor Integration
+
+#### **BannerEditor Icon Preview**
+```typescript
+const getFeatureIcon = (sectionType, featureIndex) => {
+  if (sectionType === 'second') {
+    if (featureIndex === 0) return list;
+    if (featureIndex === 1) return live;
+    if (featureIndex === 2) return HeroImage;
+  }
+  
+  if (sectionType === 'third') {
+    if (featureIndex === 0) return HeroImage;
+    if (featureIndex === 1) return Audience;
+    if (featureIndex === 2) return Gift;
+    if (featureIndex === 3) return Sword;
+  }
+  
+  return null;
+};
+```
+
+#### **Editor Preview Rendering**
+```jsx
+{/* Icon Preview */}
+{section && (section.type === 'second' || section.type === 'third') && (
+  <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-500">Preview:</span>
+      {getFeatureIcon(section.type, index) && (
+        <Image 
+          src={getFeatureIcon(section.type, index)} 
+          alt="Feature icon" 
+          width={20} 
+          height={20}
+          className="object-contain"
+        />
+      )}
+    </div>
+  </div>
+)}
+```
+
+###  Section Creation & Management
+
+#### **Section Creation Flow**
+1. **User clicks "Second Section" or "Third Section" button**
+2. **`addSectionAndSetActive` action dispatched**
+3. **New section created with unique ID**: `second-${Date.now()}`
+4. **Default content applied** via `getDefaultContent(type)`
+5. **Section set as active** and editor opens
+6. **User edits content** via BannerEditor
+7. **Changes saved to Redux** and reflected immediately
+
+#### **Default Content Structure**
+```typescript
+interface BannerContent {
+  dotText: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  features: Array<{
+    title: string;
+    description: string;
+    icon: string;
+  }>;
+  backgroundImage: string;
+  backgroundColor: string;
+  layout: 'left' | 'right' | 'center';
+  animation: 'fade' | 'slide' | 'bounce' | 'none';
+  // ... color properties
+}
+```
+
+###  Responsive Design & Layout
+
+#### **Layout Variants**
+- **Left Layout**: Content on left, image on right (default for Second/Third)
+- **Right Layout**: Image on left, content on right  
+- **Center Layout**: Content centered, image below
+
+#### **Responsive Breakpoints**
+```css
+/* Mobile to Desktop Transitions */
+grid-cols-1 lg:grid-cols-2
+text-[18px] xl:text-[20px]  /* Feature titles */
+w-6 h-6 xl:w-8 xl:h-8      /* Icon sizes */
+py-3 xl:py-4               /* Feature spacing */
+```
+
+###  Animation System
+
+#### **Feature Animations**
+```typescript
+const getAnimationClass = () => {
+  switch (bannerContent.animation) {
+    case 'fade': return 'opacity-0 animate-fade-in';
+    case 'slide': return 'transform translate-x-4 animate-slide-in';
+    case 'bounce': return 'transform scale-95 animate-bounce-in';
+    default: return '';
+  }
+};
+```
+
+#### **Staggered Animation Delays**
+```css
+style={{ transitionDelay: `${(index + 1) * 200}ms` }}
+```
+
+###  Debugging & Troubleshooting
+
+#### **Console Logging**
+```typescript
+console.log('DynamicBanner - sectionId:', sectionId);
+console.log('DynamicBanner - builderSection:', builderSection);
+console.log('renderIcon - sectionType:', sectionType, 'featureIndex:', featureIndex);
+```
+
+#### **Common Issues & Solutions**
+1. **Icons not showing**: Check section type detection and icon imports
+2. **Wrong tilt direction**: Verify layout and CSS classes
+3. **Content not updating**: Check Redux store connections
+4. **Editor preview broken**: Verify `getFeatureIcon` function
+
+###  Performance Optimizations
+
+#### **Image Optimization**
+- Next.js `Image` component with `width`/`height` props
+- Proper `alt` attributes for accessibility
+- `object-contain` for consistent sizing
+
+#### **Component Memoization**
+- `useAppSelector` for efficient Redux subscriptions
+- Conditional rendering based on section type
+- Lazy loading of icon components
+
+###  File Structure
+```
+src/app/
+components/HomePage/
+  index.tsx (Section routing - MODIFIED)
+  WebsiteBuilder/
+    BannerEditor.tsx (Universal editor - MODIFIED)
+Pages/Home/
+  SecondSection.tsx (Specialized component - MODIFIED)
+  ThirdSection.tsx (Specialized component - MODIFIED)
+sections/Home/
+  DynamicBanner.tsx (Universal banner - MODIFIED)
+public/
+  list.svg, live.svg, third.svg, audience.svg, gift.svg, sword.svg
+```
+
+###  Current Status
+- **SecondSection**: Fully functional with SVG icons and left tilt
+- **ThirdSection**: Fully functional with SVG icons and left tilt  
+- **DynamicBanner**: Universal component with smart icon detection
+- **BannerEditor**: Complete editor with icon previews
+- **Image Tilt**: Implemented for all section types
+- **Responsive Design**: Mobile and desktop optimized
+
+---
+
+## Admin Panel System - Complete Architecture & Flow
+
+### Overview
+The Admin Panel system is a sophisticated tabbed interface system that allows users to create, edit, and manage admin panel sections with multiple tabs. It supports drag-and-drop reordering, layout customization, and real-time content updates.
+
+### Core Components
+
+#### 1. **AdminEditor.tsx** (Main Editor Component)
+- **Purpose**: Universal editor for admin panel sections
+- **Tab Management**: Create, edit, delete, and reorder tabs (max 6 tabs)
+- **Layout Control**: Toggle between "Image Left" and "Image Right" layouts
+- **Color Styling**: Section-level color customization for all text elements
+- **Drag & Drop**: Visual tab reordering with feedback
+
+#### 2. **FifthSection.tsx** (Display Component)
+- **Purpose**: Renders individual admin panel sections with tabs
+- **Dynamic Layout**: Supports left/right image positioning
+- **Color Support**: Applies section-level colors to all elements
+- **Tab Sorting**: Displays tabs in correct order based on `order` property
+
+#### 3. **DynamicAdmin.tsx** (Aggregator Component)
+- **Purpose**: Aggregates tabs from all fifth sections
+- **Unified Display**: Shows all admin tabs in a single interface
+- **Layout Inheritance**: Uses layout from first fifth section
+- **Tab Filtering**: Only shows visible tabs from all sections
+
+### Data Flow Architecture
+
+#### **Section Creation Flow**
+1. **User clicks "Admin Panel" button** in SectionList
+2. **`addSectionAndSetActive` action dispatched** with type `'fifth'`
+3. **New section created** with unique ID: `fifth-${Date.now()}`
+4. **Default content applied** with 2 demo tabs and section colors
+5. **AdminEditor opens** automatically for the new section
+6. **User edits tabs/content** via AdminEditor
+7. **Changes saved to builderSlice** and reflected immediately
+
+#### **Tab Management System**
+```typescript
+// Tab Structure
+interface AdminTabContent {
+  id: string;
+  label: string;
+  subtitle: string;
+  title: string;
+  description: string;
+  points: string[];
+  image: string;
+  visible: boolean;
+  order: number;
+}
+
+// Section Structure with Tabs
+interface FifthSectionContent {
+  tabs: AdminTabContent[];
+  // Section-level colors
+  labelColor: string;
+  subtitleColor: string;
+  titleColor: string;
+  descriptionColor: string;
+  pointsColor: string;
+  // Layout preference
+  layout: 'left' | 'right';
+}
+```
+
+#### **Drag & Drop Reordering**
+```typescript
+const handleTabDragEnd = () => {
+  // Create reordered array
+  const reorderedTabs = [...tabs];
+  const [removed] = reorderedTabs.splice(fromIndex, 1);
+  reorderedTabs.splice(toIndex, 0, removed);
+  
+  // Update order property
+  const updatedTabs = reorderedTabs.map((tab, index) => ({
+    ...tab,
+    order: index + 1
+  }));
+  
+  setTabs(updatedTabs);
+};
+```
+
+### Layout System
+
+#### **Layout Toggle Implementation**
+```typescript
+// AdminEditor.tsx - Layout Controls
+<button onClick={() => setLayout('left')}>
+  <AlignLeft size={18} />
+  <span>Image Left</span>
+</button>
+<button onClick={() => setLayout('right')}>
+  <AlignRight size={18} />
+  <span>Image Right</span>
+</button>
+
+// FifthSection.tsx - Dynamic Rendering
+{layout === 'left' ? (
+  <>
+    <div>Image on left</div>
+    <div>Content on right</div>
+  </>
+) : (
+  <>
+    <div>Content on left</div>
+    <div>Image on right</div>
+  </>
+)}
+```
+
+#### **Responsive Grid System**
+```css
+/* Base grid layout */
+.grid-cols-1.lg:grid-cols-2.gap-14.items-center
+
+/* Layout-specific ordering */
+.lg:order-1  /* Content first when layout='right' */
+.lg:order-2  /* Image first when layout='right' */
+```
+
+### Color Styling System
+
+#### **Section-Level Colors**
+```typescript
+// Applied to all tabs in a section
+interface SectionColors {
+  labelColor: '#2b49c5';      // Tab labels
+  subtitleColor: '#2b49c5';   // Subtitle text
+  titleColor: '#111827';       // Main titles
+  descriptionColor: '#6b7280';  // Description text
+  pointsColor: '#374151';      // Bullet points
+}
+
+// Application in FifthSection
+<span style={{ color: sectionColors.labelColor }}>
+  {tab.label}
+</span>
+```
+
+### Tab Limit & Validation
+
+#### **Maximum 6 Tabs Rule**
+```typescript
+const addNewTab = () => {
+  if (tabs.length >= 6) {
+    console.warn('Maximum 6 tabs allowed');
+    return;
+  }
+  // ... add tab logic
+};
+
+// UI Feedback
+<button disabled={tabs.length >= 6}>
+  Admin Tabs ({tabs.length}/6)
+</button>
+```
+
+#### **Minimum 2 Tabs Rule**
+```typescript
+const removeTab = (tabId: string) => {
+  if (tabs.length <= 2) {
+    alert("Minimum 2 tabs required");
+    return;
+  }
+  // ... remove tab logic
+};
+```
+
+### Content Persistence
+
+#### **Save Mechanism**
+```typescript
+const handleDone = () => {
+  // Reorder tabs before saving
+  const reorderedTabs = tabs.map((t, i) => ({ ...t, order: i + 1 }));
+  
+  // Save to builderSlice
+  dispatch(updateSectionContent({
+    id: section.id,
+    content: {
+      tabs: reorderedTabs,
+      // Section-level colors
+      labelColor: sectionColors.labelColor,
+      subtitleColor: sectionColors.subtitleColor,
+      titleColor: sectionColors.titleColor,
+      descriptionColor: sectionColors.descriptionColor,
+      pointsColor: sectionColors.pointsColor,
+      // Layout preference
+      layout: layout,
+    }
+  }));
+};
+```
+
+### Mobile Support
+
+#### **Mobile Editor Logic**
+```typescript
+// WebsiteBuilder.tsx
+useEffect(() => {
+  if (activeSection) {
+    const section = sections.find(s => s.id === activeSection);
+    if (section?.type === 'fifth' && isMobile) {
+      setShowEditorOnMobile(true);
+    }
+  }
+}, [activeSection, sections, isMobile]);
+```
+
+### Section Routing
+
+#### **HomePage Routing Logic**
+```typescript
+// index.tsx
+case 'fifth':
+  return <FifthSection key={section.id} sectionId={section.id} />;
+```
+
+#### **DynamicAdmin Aggregation**
+```typescript
+// DynamicAdmin.tsx
+const getAllTabs = (): AdminTabContent[] => {
+  const tabs: AdminTabContent[] = [];
+  
+  const fifthSections = builderSections.filter(s => s.type === 'fifth');
+  fifthSections.forEach(fifthSection => {
+    if (fifthSection?.content?.tabs && Array.isArray(fifthSection.content.tabs)) {
+      const visibleTabs = fifthSection.content.tabs.filter(t => t.visible !== false);
+      tabs.push(...visibleTabs);
+    }
+  });
+  
+  return tabs;
+};
+```
+
+### Visual Feedback & Animations
+
+#### **Drag & Drop Visuals**
+```css
+/* Dragging state */
+.opacity-50.scale-105.shadow-lg
+
+/* Hover target state */
+.border-blue-400.bg-blue-50.scale-102
+
+/* Grip cursor */
+.cursor-move
+```
+
+#### **Tab Switching Animations**
+```typescript
+const handleTabChange = (tab) => {
+  setAnimate(false);
+  setTimeout(() => {
+    setActiveTab(tab);
+    setAnimate(true);
+  }, 300);
+};
+```
+
+### Demo Content Templates
+
+#### **Default Tab Templates**
+```typescript
+const demoTabTemplates = [
+  {
+    label: 'FEATURE 1',
+    subtitle: 'Core Functionality',
+    title: 'Essential Features',
+    description: 'Core features that power the platform...',
+    points: ['Easy to use', 'Reliable performance'],
+    image: '/Admin1.svg'
+  },
+  {
+    label: 'FEATURE 2', 
+    subtitle: 'Advanced Options',
+    title: 'Professional Tools',
+    description: 'Advanced features for power users...',
+    points: ['Professional grade', 'Customizable'],
+    image: '/Admin2.svg'
+  }
+];
+```
+
+### Debugging & Troubleshooting
+
+#### **Console Logging**
+```typescript
+console.log('AdminEditor useEffect - newTabs:', newTabs);
+console.log('Tabs reordered:', updatedTabs.map(t => ({ label: t.label, order: t.order })));
+console.log('Trying to scroll to section ID:', sectionId, 'Found:', !!sectionElement);
+```
+
+#### **Common Issues & Solutions**
+1. **Tabs not reordering**: Check drag event handlers and state updates
+2. **Layout not changing**: Verify layout state is saved to Redux
+3. **Colors not applying**: Ensure section-level colors are passed down
+4. **Mobile editor not opening**: Check activeSection and isMobile detection
+
+### Performance Optimizations
+
+#### **Tab Management**
+- Efficient array operations for reordering
+- Debounced tab switching animations
+- Lazy loading of tab content
+
+#### **Image Handling**
+- Next.js Image component with proper sizing
+- Fallback to default SVG if image not found
+- Optimized image dimensions for different screen sizes
+
+### File Structure
+```
+src/app/
+components/HomePage/
+  WebsiteBuilder/
+    AdminEditor.tsx (Main editor - MODIFIED)
+  index.tsx (Section routing - MODIFIED)
+Pages/Home/
+  FifthSection.tsx (Display component - MODIFIED)
+sections/Home/
+  DynamicAdmin.tsx (Aggregator component - MODIFIED)
+store/
+  builderSlice.ts (State management - MODIFIED)
+public/
+  Admin1.svg, Admin2.svg, Admin3.svg (Default icons)
+```
+
+### Current Status
+- **Tab Management**: Fully functional with drag & drop
+- **Layout Toggle**: Complete left/right layout support
+- **Color Styling**: Section-level color customization
+- **Mobile Support**: Editor opens on mobile devices
+- **Tab Limits**: Max 6 tabs, min 2 tabs enforced
+- **Content Persistence**: All changes saved to Redux
+- **Visual Feedback**: Smooth animations and transitions
+
+---
+
+*Last Updated: April 8, 2026*
+*Admin Panel System: Complete and Fully Functional*
+*Status: All Tab, Layout, and Mobile Issues Resolved*
