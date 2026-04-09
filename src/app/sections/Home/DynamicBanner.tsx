@@ -10,6 +10,7 @@ import Gift from "../../../../public/gift.svg";
 import Sword from "../../../../public/sword.svg";
 import list from "../../../../public/list.svg";
 import live from "../../../../public/livestream.svg";
+import second from "../../../../public/second.svg";
 
 interface BannerFeature {
   title: string;
@@ -19,17 +20,16 @@ interface BannerFeature {
 
 interface BannerContent {
   dotText?: string;
+  dotColor?: string;
+  dotTextColor?: string;
   title: string;
-  subtitle?: string;
   description: string;
   features: BannerFeature[];
   backgroundImage?: string;
   backgroundColor?: string;
   layout?: 'left' | 'right' | 'center';
   animation?: string;
-  dotTextColor?: string;
   titleColor?: string;
-  subtitleColor?: string;
   descriptionColor?: string;
   featureTitleColor?: string;
   featureDescriptionColor?: string;
@@ -120,7 +120,7 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   const baseContent = builderSection?.content || bannerSection?.content || sectionContent || {
     dotText: 'Demo Live Streaming',
     title: 'Demo Title',
-    subtitle: 'Demo Subtitle',
+  
     description: 'Demo Description: This is a demonstration banner section with sample content that showcases the layout and styling capabilities of the banner editor.',
     features: [
       {
@@ -138,7 +138,6 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
     backgroundColor: '#ffffff',
     animation: 'fade',
     titleColor: '#111827',
-    subtitleColor: '#4B5563',
     descriptionColor: '#4B5563',
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
@@ -232,8 +231,8 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
           <div className={`${getAnimationClass()} ${getVisibilityClass()} w-full ${isCenterLayout ? 'flex flex-col items-center' : ''}`}>
             {bannerContent.dotText && (
               <span className="inline-flex items-center gap-2 mb-3 xl:mb-5 text-[14px] font-normal tracking-normal uppercase break-words" 
-                    style={{ color: bannerContent.subtitleColor }}>
-                <span className="w-2 h-2 rounded-full bg-[#4A6CF7] flex-shrink-0" />
+                    style={{ color: bannerContent.dotTextColor || bannerContent.descriptionColor }}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: bannerContent.dotColor || '#4A6CF7' }} />
                 <span className="break-words">{bannerContent.dotText}</span>
               </span>
             )}
@@ -245,14 +244,6 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
               {bannerContent.title}
             </h2>
             
-            {bannerContent.subtitle && (
-              <h3 
-                className="text-xl md:text-2xl xl:text-3xl mt-2 break-words w-full"
-                style={{ color: bannerContent.subtitleColor }}
-              >
-                {bannerContent.subtitle}
-              </h3>
-            )}
             
             <p 
               className="mt-4 xl:mt-6 text-[15px] xl:text-[17px] leading-relaxed break-words w-full"

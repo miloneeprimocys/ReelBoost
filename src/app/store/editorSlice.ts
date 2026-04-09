@@ -2,14 +2,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface HeroContent {
   title: string;
-  subtitle: string;
   description: string;
   primaryButtonText: string;
   secondaryButtonText: string;
   backgroundImage: string;
   layout: 'left' | 'right' | 'center';
   titleColor: string;
-  subtitleColor: string;
   descriptionColor: string;
   primaryButtonColor: string;
   secondaryButtonColor: string;
@@ -19,6 +17,8 @@ export interface HeroContent {
   appStoreImage: string;
   googlePlayImage: string;
   dotText: string;
+  topAccentColor: string;
+  bottomAccentColor: string;
 }
 
 interface EditorState {

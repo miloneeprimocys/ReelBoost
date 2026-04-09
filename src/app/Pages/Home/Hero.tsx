@@ -28,7 +28,7 @@ export default function Hero({ sectionId }: HeroProps) {
         // Override with this specific section's content from Redux
         ...(section?.content || {})
     };
-
+    
     const tags = heroContent?.tags || ["Live Streaming", "PK Battle", "Multiple Payment Gateway", "Video Trimming", "Add Music", "Wallet", "Gits", "Earn Coins"];
     const [activeTag, setActiveTag] = useState(heroContent?.activeTag || "Live Streaming");
 
@@ -54,7 +54,7 @@ export default function Hero({ sectionId }: HeroProps) {
                     {/* Dot text above title - Only renders if dotText exists and isn't empty */}
                     {heroContent?.dotText && heroContent.dotText.trim() !== "" && (
                         <div className="mb-4">
-                            <span className="text-[#2b49c5] text-sm font-semibold underline underline-offset-8 decoration-2 uppercase tracking-wide">
+                            <span className="text-sm font-semibold underline underline-offset-8 decoration-2 uppercase tracking-wide" style={{ color: heroContent?.dotTextColor || '#2b49c5' }}>
                                 {heroContent.dotText}
                             </span>
                         </div>
@@ -65,19 +65,6 @@ export default function Hero({ sectionId }: HeroProps) {
                         style={{ color: heroContent?.titleColor || '#2D3134' }}
                     >
                         {heroContent?.title || 'Reelboost - Tiktok Clone App'}
-
-                        {/* Subtitle Logic: Only renders the break and the span if subtitle exists */}
-                        {heroContent?.subtitle && heroContent.subtitle.trim() !== "" && (
-                            <>
-                                <br className="hidden lg:block" />
-                                <span
-                                    className="relative inline-block max-w-full text-lg md:text-xl lg:text-2xl break-words hyphens-auto"
-                                    style={{ color: heroContent?.subtitleColor || '#2D3134' }}
-                                >
-                                    {heroContent.subtitle}
-                                </span>
-                            </>
-                        )}
                     </h1>
 
                     <p
@@ -142,9 +129,12 @@ export default function Hero({ sectionId }: HeroProps) {
 
                         {/* BLUE ACCENT */}
                         <div
-                            className={`absolute -left-5 -top-5 lg:-left-7 lg:-top-7 xl:-left-7 xl:-top-10 h-32 w-32 lg:h-36 lg:w-36 xl:h-56 xl:w-56 rounded-tl-[50px] lg:rounded-tl-[50px] xl:rounded-tl-[85px] border-l-[8px] lg:border-l-[15px] xl:border-l-[20px] border-t-[8px] lg:border-t-[15px] xl:border-t-[20px] border-[#2B59FF] transition-all duration-700 ease-out z-0 ${isAnimate ? "translate-y-0 opacity-100" : "-translate-y-20 opacity-0"
+                            className={`absolute -left-5 -top-5 lg:-left-7 lg:-top-7 xl:-left-7 xl:-top-10 h-32 w-32 lg:h-36 lg:w-36 xl:h-56 xl:w-56 rounded-tl-[50px] lg:rounded-tl-[50px] xl:rounded-tl-[85px] border-l-[8px] lg:border-l-[15px] xl:border-l-[20px] border-t-[8px] lg:border-t-[15px] xl:border-t-[20px] transition-all duration-700 ease-out z-0 ${isAnimate ? "translate-y-0 opacity-100" : "-translate-y-20 opacity-0"
                                 }`}
-                            style={{ transitionDelay: "600ms" }}
+                            style={{ 
+                                borderColor: heroContent?.topAccentColor || '#2B59FF',
+                                transitionDelay: "600ms"
+                            }}
                         />
                         {/* MAIN PHONE IMAGE */}
                         <div
@@ -161,9 +151,12 @@ export default function Hero({ sectionId }: HeroProps) {
                         </div>
                         {/* YELLOW ACCENT */}
                         <div
-                            className={`absolute -right-5 -bottom-5 lg:-right-7 lg:-bottom-7 xl:-right-7 xl:-bottom-10 h-32 w-32 lg:h-36 lg:w-36 xl:h-56 xl:w-56 rounded-br-[50px] lg:rounded-br-[50px] xl:rounded-br-[85px] border-r-[8px] lg:border-r-[15px] xl:border-r-[20px] border-b-[8px] lg:border-b-[15px] xl:border-b-[20px] border-[#FFB800] transition-all duration-700 ease-out z-0 ${isAnimate ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
+                            className={`absolute -right-5 -bottom-5 lg:-right-7 lg:-bottom-7 xl:-right-7 xl:-bottom-10 h-32 w-32 lg:h-36 lg:w-36 xl:h-56 xl:w-56 rounded-br-[50px] lg:rounded-br-[50px] xl:rounded-br-[85px] border-r-[8px] lg:border-r-[15px] xl:border-r-[20px] border-b-[8px] lg:border-b-[15px] xl:border-b-[20px] transition-all duration-700 ease-out z-0 ${isAnimate ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0"
                                 }`}
-                            style={{ transitionDelay: "900ms" }}
+                            style={{ 
+                                borderColor: heroContent?.bottomAccentColor || '#FFB800',
+                                transitionDelay: "900ms"
+                            }}
                         />
                     </div>
                 </div>

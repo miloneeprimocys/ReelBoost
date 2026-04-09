@@ -8,14 +8,12 @@ import { Trash2, Upload, X } from "lucide-react";
 
 interface HeroContent {
   title: string;
-  subtitle: string;
   description: string;
   primaryButtonText: string;
   secondaryButtonText: string;
   backgroundImage: string;
   layout: 'left' | 'right' | 'center';
   titleColor: string;
-  subtitleColor: string;
   descriptionColor: string;
   primaryButtonColor: string;
   secondaryButtonColor: string;
@@ -25,6 +23,8 @@ interface HeroContent {
   appStoreImage: string;
   googlePlayImage: string;
   dotText: string;
+  topAccentColor: string;
+  bottomAccentColor: string;
 }
 
 const HeroEditor: React.FC = () => {
@@ -39,14 +39,14 @@ const HeroEditor: React.FC = () => {
   // Ensure content is properly initialized with default values
   const defaultContent: HeroContent = {
     title: '',
-    subtitle: '',
+    
     description: '',
     primaryButtonText: '',
     secondaryButtonText: '',
     backgroundImage: '',
     layout: 'left',
     titleColor: '#000000',
-    subtitleColor: '#000000',
+ 
     descriptionColor: '#000000',
     primaryButtonColor: '#000000',
     secondaryButtonColor: '#000000',
@@ -55,20 +55,17 @@ const HeroEditor: React.FC = () => {
     activeTag: '',
     appStoreImage: '',
     googlePlayImage: '',
-    dotText: ''
+    dotText: '',
+    topAccentColor: '#2B59FF',
+    bottomAccentColor: '#FFB800'
   };
   
   // Use section content if available, otherwise use defaults
   const content = section?.content ? { ...defaultContent, ...section.content } : defaultContent;
 
-  // Debug: log the content to see what we're working with
-  console.log('HeroEditor content:', content);
-  console.log('Section object:', section);
-
+  
   const updateField = (field: keyof HeroContent, value: string) => {
-    console.log('Updating field:', field, 'with value:', value);
     const updatedContent = { ...content, [field]: value };
-    console.log('Updated content:', updatedContent);
     
     // Only update the builderSlice section content, not the global heroContent
     if (section) {
@@ -84,11 +81,8 @@ const HeroEditor: React.FC = () => {
     dispatch(closeEditor());
     dispatch(toggleBuilderMode());
     
-    // Redirect to show the updated section - scroll to top and then to section
+    // Redirect to show the updated section - scroll directly to section
     setTimeout(() => {
-      // Scroll to top of page
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
       // Find and scroll to the updated section using the section ID directly
       const sectionElement = document.getElementById(section.id);
       if (sectionElement) {
@@ -141,7 +135,7 @@ const HeroEditor: React.FC = () => {
   };
   const hasContent =
   content.title ||
-  content.subtitle ||
+ 
   content.description ||
   content.backgroundImage;
   
@@ -285,22 +279,76 @@ const HeroEditor: React.FC = () => {
           <label className="block text-sm font-semibold text-gray-800 mb-3">Colors</label>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Title Color</label>
-              <input
-                type="color"
-                value={content.titleColor}
-                onChange={(e) => updateField('titleColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={content.titleColor}
+                  onChange={(e) => updateField('titleColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={content.titleColor}
+                  onChange={(e) => updateField('titleColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#000000"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description Color</label>
-              <input
-                type="color"
-                value={content.descriptionColor}
-                onChange={(e) => updateField('descriptionColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={content.descriptionColor}
+                  onChange={(e) => updateField('descriptionColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={content.descriptionColor}
+                  onChange={(e) => updateField('descriptionColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#000000"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Top Accent Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={content.topAccentColor}
+                  onChange={(e) => updateField('topAccentColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={content.topAccentColor}
+                  onChange={(e) => updateField('topAccentColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#2B59FF"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bottom Accent Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={content.bottomAccentColor}
+                  onChange={(e) => updateField('bottomAccentColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={content.bottomAccentColor}
+                  onChange={(e) => updateField('bottomAccentColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#FFB800"
+                />
+              </div>
             </div>
           </div>
         </div>

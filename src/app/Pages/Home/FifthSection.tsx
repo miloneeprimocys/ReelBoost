@@ -137,7 +137,7 @@ const FifthSection = ({ sectionId }: FifthSectionProps) => {
                     <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mt-3 sm:mt-4 md:mt-6 leading-tight break-words max-w-full" style={{ color: section?.content?.mainTitleColor || '#111827' }}>
                         {section?.content?.mainTitle || 'Describing'}
                         <span 
-                            className="px-1 py-0.5 sm:py-1 ml-1 sm:ml-2 inline-block break-words"
+                            className="px-1 py-0.5 sm:py-1 ml-1 sm:ml-2 inline-block wrap-break-word hyphens-auto max-w-full"
                             style={{ 
                                 backgroundColor: section?.content?.highlightedTitleBgColor || '#EEF2FF',
                                 color: section?.content?.highlightedTitleColor || '#2b49c5'

@@ -3,14 +3,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 // Types
 interface HeroContent {
   title: string;
-  subtitle: string;
   description: string;
   primaryButtonText: string;
   secondaryButtonText: string;
   backgroundImage: string;
   layout: 'left' | 'right' | 'center';
   titleColor: string;
-  subtitleColor: string;
   descriptionColor: string;
   primaryButtonColor: string;
   secondaryButtonColor: string;
@@ -20,6 +18,8 @@ interface HeroContent {
   appStoreImage: string;
   googlePlayImage: string;
   dotText: string;
+  topAccentColor: string;
+  bottomAccentColor: string;
 }
 
 interface SectionConfig {
@@ -49,15 +49,13 @@ const initialState: BuilderState = {
       order: 1,
       content: {
         title: 'Reelboost - Tiktok Clone App',
-        subtitle: '',
         description: 'ReelBoost is a modern short-video and live-streaming app inspired by TikTok. It lets users create, edit, and share engaging short videos with a smooth discovery feed. Creators can go live, interact with audiences in real time, and build loyal communities. Designed for performance and scale, ReelBoost supports engagement, growth, and monetization.',
         primaryButtonText: 'Get Started',
         secondaryButtonText: 'Learn More',
         backgroundImage: '/hero.png',
         layout: 'left' as const,
         titleColor: '#2D3134',
-        subtitleColor: '#4A72FF',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         primaryButtonColor: '#4A72FF',
         secondaryButtonColor: '#6B7280',
         animation: 'fade' as const,
@@ -77,8 +75,7 @@ const initialState: BuilderState = {
       content: {
         dotText: 'Live Streaming',
         title: 'Start video, interact with the user.',
-        subtitle: '',
-        description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
+                description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
         features: [
           {
             title: 'List of Live Streamers',
@@ -96,8 +93,7 @@ const initialState: BuilderState = {
         layout: 'right',
         animation: 'fade',
         titleColor: '#111827',
-        subtitleColor: '#4B5563',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       }
@@ -111,8 +107,7 @@ const initialState: BuilderState = {
       content: {
         dotText: 'PK Battle',
         title: 'Live battles to win audience support',
-        subtitle: '',
-        description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
+                description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
         features: [
           {
             title: 'Loss and Win Battle',
@@ -135,8 +130,7 @@ const initialState: BuilderState = {
         layout: 'left',
         animation: 'fade',
         titleColor: '#111827',
-        subtitleColor: '#4B5563',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       }
@@ -232,8 +226,7 @@ const initialState: BuilderState = {
           {
             id: 'recharge-plan',
             label: 'RECHARGE PLAN',
-            subtitle: 'Monetization & Economy',
-            title: 'Wallet Recharge Plans',
+                        title: 'Wallet Recharge Plans',
             description: 'Admins can view how many users have purchased each recharge plan and on which date and time. They can easily manage all plans in one place.',
             points: [
               'Track user purchases with date & time',
@@ -246,8 +239,7 @@ const initialState: BuilderState = {
           {
             id: 'notification',
             label: 'NOTIFICATION',
-            subtitle: 'Communication',
-            title: 'Push Notification System',
+                        title: 'Push Notification System',
             description: 'Send targeted push notifications to users. Schedule messages, manage templates, and track delivery status all from one dashboard.',
             points: [
               'Schedule notifications for optimal timing',
@@ -261,8 +253,7 @@ const initialState: BuilderState = {
           {
             id: 'language',
             label: 'LANGUAGE',
-            subtitle: 'Localization',
-            title: 'Multi-Language Support',
+                        title: 'Multi-Language Support',
             description: 'Manage platform translations and language settings. Add new languages, edit translations, and control regional content.',
             points: [
               'Support for 10+ languages',
@@ -276,8 +267,7 @@ const initialState: BuilderState = {
           {
             id: 'admin-settings',
             label: 'ADMIN SETTINGS',
-            subtitle: 'Configuration',
-            title: 'Platform Configuration',
+                        title: 'Platform Configuration',
             description: 'Control platform-wide settings, user permissions, feature toggles, and system configurations from the admin dashboard.',
             points: [
               'Manage admin roles and permissions',
@@ -297,7 +287,46 @@ const initialState: BuilderState = {
       name: 'Benefits Section',
       visible: true,
       order: 6,
-      content: {}
+      content: {
+        dotText: 'Main Benefits',
+        title: 'Many Benefits You Get',
+        highlightedTitle: 'Using Product',
+        benefits: [
+          { id: 'benefit-1', iconName: 'Phone', title: 'Phone Authentication', description: 'Allows multiple users to chat at the same time. It also supports assigning multiple admins to manage conversations efficiently.', order: 1 },
+          { id: 'benefit-2', iconName: 'UserCircle', title: 'Avatar', description: 'Avatar selection lets you choose from predefined avatars instead of uploading an image. Pick an avatar that best represents you instantly.', order: 2 },
+          { id: 'benefit-3', iconName: 'MessageSquare', title: 'Single Chat', description: 'Single Chat allows a user to chat with only one person at a time. It ensures focused, one-to-one conversations without interruptions.', order: 3 },
+          { id: 'benefit-4', iconName: 'Reply', title: 'Reply', description: 'Reply lets you respond to a specific message by tapping on reply icon. It keeps conversations clear and well-contextualized.', order: 4 },
+          { id: 'benefit-5', iconName: 'Users', title: 'Group Chat', description: 'Group Chat allows multiple users to chat together in real time. It also supports assigning multiple admins to manage the group efficiently.', order: 5 },
+          { id: 'benefit-6', iconName: 'Star', title: 'Starred Messages', description: 'Tap on star icon to mark important messages. Starred messages are saved for quick and easy access later.', order: 6 },
+          { id: 'benefit-7', iconName: 'Forward', title: 'Forward', description: 'Tap on forward icon to share a message. You can forward it to an individual user or a group instantly.', order: 7 },
+          { id: 'benefit-8', iconName: 'Copy', title: 'Copy', description: 'Copy any text with a single tap. Paste it easily into any chat or group conversation.', order: 8 },
+          { id: 'benefit-9', iconName: 'Trash2', title: 'Delete', description: 'You can delete one or multiple messages at once. Messages can be deleted either just for you or for everyone in the chat.', order: 9 },
+          { id: 'benefit-10', iconName: 'UserPlus', title: 'Add Participants', description: 'Add multiple participants while creating a new group chat. Select the users you want to include and start the conversation instantly.', order: 10 },
+          { id: 'benefit-11', iconName: 'Eraser', title: 'Clear Chat', description: 'Clear all messages from an individual or group chat. This removes the chat history while keeping the conversation intact.', order: 11 },
+          { id: 'benefit-12', iconName: 'Search', title: 'Search Chat', description: 'Use the search feature to quickly find specific messages in a chat. It makes accessing conversations easier, even with a large number of messages.', order: 12 },
+          { id: 'benefit-13', iconName: 'Contact2', title: 'Contact List', description: 'The contact list includes all WhoXa chat users or synced phone contacts. These options can be configured and managed through the admin panel.', order: 13 },
+          { id: 'benefit-14', iconName: 'UserCog', title: 'Edit Profile', description: 'The Edit Profile section displays all user information. Users can update and modify their details anytime.', order: 14 },
+          { id: 'benefit-15', iconName: 'Ban', title: 'Block Contacts', description: 'Blocked Contacts shows all users you have blocked. You can view and manage the blocked contacts list easily.', order: 15 },
+          { id: 'benefit-16', iconName: 'AlertTriangle', title: 'Report user', description: 'Reported users are listed with the specified reason. These reports are visible and managed through the admin panel.', order: 16 },
+          { id: 'benefit-17', iconName: 'Archive', title: 'Archived Chat', description: 'Archived chats let users hide conversations from the main chat list. These chats are stored safely and can be accessed anytime later.', order: 17 },
+          { id: 'benefit-18', iconName: 'Moon', title: 'Dark/Light Mode', description: 'Users can switch between light and dark modes anytime. This allows a comfortable viewing experience based on their preference.', order: 18 },
+          { id: 'benefit-19', iconName: 'Search', title: 'Search User', description: 'Search User allows admins to quickly find reported users. All reported users and their reasons are visible in the admin panel.', order: 19 },
+          { id: 'benefit-20', iconName: 'Volume2', title: 'Ringtone Notification', description: 'Ringtone Notifications let users customize alert sounds for chats. This helps them easily identify and respond to incoming messages.', order: 20 },
+          { id: 'benefit-21', iconName: 'Image', title: 'Status', description: 'Status can be shared as text, images, or videos. It automatically disappears after 24 hours.', order: 21 },
+          { id: 'benefit-22', iconName: 'Phone', title: 'Audio Call', description: 'Audio calling supports both one-on-one and group conversations. It enables clear voice communication with multiple participants in real time.', order: 22 },
+          { id: 'benefit-23', iconName: 'Video', title: 'Video Call', description: 'Video calls support real-time face-to-face conversations. They can be one-on-one or group calls with three or more participants.', order: 23 }
+        ],
+        dotColor: '#4A6CF7',
+        dotTextColor: '#000000',
+        titleColor: '#111827',
+        highlightedTitleBgColor: 'transparent',
+        highlightedTitleColor: '#111827',
+        benefitIconColor: '#2563EB',
+        benefitTitleColor: '#111827',
+        benefitDescriptionColor: '#6B7280',
+        borderColor: '#D1D5DB',
+        backgroundColor: '#FFFFFF'
+      }
     }
   ],
   activeSection: null,
@@ -322,14 +351,9 @@ const builderSlice = createSlice({
     },
     updateSectionContent: (state, action: PayloadAction<{ id: string; content: any }>) => {
       const { id, content } = action.payload;
-      console.log('Redux updateSectionContent called:', { id, content });
       const section = state.sections.find(s => s.id === id);
       if (section) {
-        console.log('Redux - found section:', section.id, 'current content:', section.content);
         section.content = { ...section.content, ...content };
-        console.log('Redux - updated content:', section.content);
-      } else {
-        console.log('Redux - section not found with id:', id);
       }
     },
     toggleSectionVisibility: (state, action: PayloadAction<string>) => {
@@ -422,28 +446,27 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
     case 'hero':
       return {
         title: 'New Section',
-        subtitle: 'Subtitle',
         description: 'Description text goes here.',
         primaryButtonText: 'Get Started',
         secondaryButtonText: 'Learn More',
         backgroundImage: '/hero.png',
         layout: 'left',
         titleColor: '#2D3134',
-        subtitleColor: '#4A72FF',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         primaryButtonColor: '#4A72FF',
         secondaryButtonColor: '#6B7280',
         animation: 'fade',
         tags: ["Feature 1", "Feature 2", "Feature 3"],
         activeTag: "Feature 1",
         appStoreImage: '/Button1.png',
-        googlePlayImage: '/Button2.png'
+        googlePlayImage: '/Button2.png',
+        topAccentColor: '#2B59FF',
+        bottomAccentColor: '#FFB800'
       };
     case 'banner':
       return {
         dotText: 'Live Streaming Platform',
         title: 'Connect with Your Audience',
-        subtitle: 'Professional Broadcasting Tools',
         description: 'Transform your content creation with our comprehensive live streaming platform. Engage your audience in real-time with crystal-clear video quality, interactive features, and powerful analytics.',
         features: [
           {
@@ -463,8 +486,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         animation: 'fade',
         dotTextColor: '#3B82F6',
         titleColor: '#111827',
-        subtitleColor: '#4B5563',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       };
@@ -472,8 +494,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
       return {
         dotText: 'Main Features',
         title: 'Achieving More Through Digital Excellence',
-        subtitle: '',
-        description: '',
+                description: '',
         features: [
           { id: 'feature-1', title: 'New Demo Feature 1', icon: '/video.svg', backgroundImage: '/laptop.svg' },
           { id: 'feature-2', title: 'New Demo Feature 2', icon: '/notification.svg', backgroundImage: '/laptop.svg' }
@@ -614,8 +635,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         {
           id: 'recharge-plan',
           label: 'RECHARGE PLAN',
-          subtitle: 'Monetization & Economy',
-          title: 'Wallet Recharge Plans',
+                    title: 'Wallet Recharge Plans',
           description: 'Admins can view how many users have purchased each recharge plan and on which date and time. They can easily manage all plans in one place.',
           points: [
             'Track user purchases with date & time',
@@ -628,8 +648,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         {
           id: 'notification',
           label: 'NOTIFICATION',
-          subtitle: 'Communication',
-          title: 'Push Notification System',
+                    title: 'Push Notification System',
           description: 'Send targeted push notifications to users. Schedule messages, manage templates, and track delivery status all from one dashboard.',
           points: [
             'Schedule notifications for optimal timing',
@@ -642,8 +661,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         {
           id: 'language',
           label: 'LANGUAGE',
-          subtitle: 'Localization',
-          title: 'Multi-Language Support',
+                    title: 'Multi-Language Support',
           description: 'Manage platform translations and language settings. Add new languages, edit translations, and control regional content.',
           points: [
             'Support for 10+ languages',
@@ -656,8 +674,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         {
           id: 'admin-settings',
           label: 'ADMIN SETTINGS',
-          subtitle: 'Configuration',
-          title: 'Platform Configuration',
+                    title: 'Platform Configuration',
           description: 'Control platform-wide settings, user permissions, feature toggles, and system configurations from the admin dashboard.',
           points: [
             'Manage admin roles and permissions',
@@ -674,8 +691,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         {
           id: `feature-1`,
           label: 'FEATURE 1',
-          subtitle: 'New Feature Category',
-          title: 'Feature Management Tool',
+                    title: 'Feature Management Tool',
           description: 'Manage and configure this feature from the admin dashboard. Customize settings and monitor performance.',
           points: [
             'Configure feature settings',
@@ -688,8 +704,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         {
           id: `feature-2`,
           label: 'FEATURE 2',
-          subtitle: 'Management Tools',
-          title: 'Advanced Management System',
+                    title: 'Advanced Management System',
           description: 'Control and manage advanced settings for this feature. Track usage and optimize performance.',
           points: [
             'Track usage statistics',
@@ -705,15 +720,26 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         tabs: isNew ? demoTabs : allTabs
       };
     case 'sixth':
+    case 'benefits':
       return {
-        title: 'Benefits',
-        subtitle: 'Why Choose Us',
+        dotText: 'Main Benefits',
+        title: 'Many Benefits You Get',
+        highlightedTitle: 'Using Product',
         benefits: [
-          { title: 'Benefit 1', description: 'Description for benefit 1' },
-          { title: 'Benefit 2', description: 'Description for benefit 2' }
+          { id: 'benefit-1', iconName: 'Star', iconImage: undefined, title: 'Benefit 1', description: 'Description for benefit 1', order: 1 },
+          { id: 'benefit-2', iconName: 'Star', iconImage: undefined, title: 'Benefit 2', description: 'Description for benefit 2', order: 2 },
+          { id: 'benefit-3', iconName: 'Star', iconImage: undefined, title: 'Benefit 3', description: 'Description for benefit 3', order: 3 }
         ],
-        backgroundColor: '#ffffff',
-        textColor: '#111827'
+        dotColor: '#4A6CF7',
+        dotTextColor: '#000000',
+        titleColor: '#111827',
+        highlightedTitleBgColor: 'transparent',
+        highlightedTitleColor: '#111827',
+        benefitIconColor: '#2563EB',
+        benefitTitleColor: '#111827',
+        benefitDescriptionColor: '#6B7280',
+        borderColor: '#D1D5DB',
+        backgroundColor: '#FFFFFF'
       };
     case 'second':
       return {
@@ -738,8 +764,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         layout: 'left',
         animation: 'fade',
         titleColor: '#111827',
-        subtitleColor: '#4B5563',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       };
@@ -747,8 +772,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
       return {
         dotText: 'PK Battle',
         title: 'Compete with Creators',
-        subtitle: 'Live Battles',
-        description: 'Challenge other creators in real-time battles.',
+                description: 'Challenge other creators in real-time battles.',
         features: [
           {
             title: 'Live Competition',
@@ -766,8 +790,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         layout: 'right',
         animation: 'fade',
         titleColor: '#111827',
-        subtitleColor: '#4B5563',
-        descriptionColor: '#4B5563',
+                descriptionColor: '#4B5563',
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       };

@@ -9,7 +9,6 @@ export interface BannerFeature {
 export interface BannerContent {
   dotText?: string;
   title: string;
-  subtitle?: string;
   description: string;
   features: BannerFeature[];
   backgroundImage?: string;
@@ -17,10 +16,11 @@ export interface BannerContent {
   layout: 'left' | 'right' | 'center';
   animation: 'none' | 'fade' | 'slide' | 'bounce';
   titleColor?: string;
-  subtitleColor?: string;
   descriptionColor?: string;
   featureTitleColor?: string;
   featureDescriptionColor?: string;
+  dotTextColor?: string;
+  dotColor?: string;
 }
 
 export interface BannerSection {
@@ -233,8 +233,9 @@ export function getDefaultBannerContent(): BannerContent {
   return {
     dotText: 'Live Streaming',
     title: 'Start video, interact with the user.',
-    subtitle: '',
     description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
+    dotTextColor: '#2b49c5',
+    dotColor: '#3b82f6',
     features: [
       {
         title: 'List of Live Streamers',
@@ -252,8 +253,7 @@ export function getDefaultBannerContent(): BannerContent {
     layout: 'left',
     animation: 'fade',
     titleColor: '#111827',
-    subtitleColor: '#4B5563',
-    descriptionColor: '#4B5563',
+        descriptionColor: '#4B5563',
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
   };
@@ -264,8 +264,9 @@ export function getEmptyBannerContent(): BannerContent {
   return {
     dotText: 'Demo Live Streaming',
     title: 'Demo Title',
-    subtitle: 'Demo Subtitle',
-    description: 'Demo Description: This is a demonstration banner section with sample content that showcases the layout and styling capabilities of the banner editor. You can customize all elements including text, colors, and features.',
+    description: 'Demo Description: This is a demonstration banner section with sample content that showcases layout and styling capabilities of banner editor. You can customize all elements including text, colors, and features.',
+    dotTextColor: '#2b49c5',
+    dotColor: '#3b82f6',
     features: [
       {
         title: 'Demo Feature One',
@@ -283,8 +284,7 @@ export function getEmptyBannerContent(): BannerContent {
     layout: 'right',
     animation: 'fade',
     titleColor: '#111827',
-    subtitleColor: '#4B5563',
-    descriptionColor: '#4B5563',
+        descriptionColor: '#4B5563',
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
   };
@@ -295,8 +295,9 @@ export function getPKBattleBannerContent(): BannerContent {
   return {
     dotText: 'PK Battle',
     title: 'Live battles to win audience support',
-    subtitle: '',
     description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
+    dotTextColor: '#2b49c5',
+    dotColor: '#3b82f6',
     features: [
       {
         title: 'Loss and Win Battle',
@@ -319,8 +320,7 @@ export function getPKBattleBannerContent(): BannerContent {
     layout: 'left',
     animation: 'fade',
     titleColor: '#111827',
-    subtitleColor: '#4B5563',
-    descriptionColor: '#4B5563',
+        descriptionColor: '#4B5563',
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
   };

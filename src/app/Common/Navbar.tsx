@@ -41,7 +41,7 @@ const Navbar = () => {
         { name: "Pk Battle", id: "third-1", hasDropdown: false, options: [] as string[] },
         { name: "Features", id: "fourth-1", hasDropdown: false, options: [] as string[] },
         { name: "Admin Panel", id: "fifth-1", hasDropdown: false, options: [] as string[] },
-        { name: "Benefits", id: "benefits", hasDropdown: false, options: [] as string[] },
+        { name: "Benefits", id: "sixth-1", hasDropdown: false, options: [] as string[] },
     ];
 
     const toggleMobileDropdown = (name: string) => {

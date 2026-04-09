@@ -43,6 +43,8 @@ const getFeatureIcon = (sectionType: string, featureIndex: number) => {
 
 interface BannerContent {
   dotText?: string;
+  dotColor?: string;
+  dotTextColor?: string;
   title: string;
   subtitle?: string;
   description: string;
@@ -86,6 +88,8 @@ const BannerEditor: React.FC = () => {
 
   const defaultContent: BannerContent = {
     dotText: '',
+    dotColor: '#a8aff5',
+    dotTextColor: '#2b49c5',
     title: '',
     subtitle: '',
     description: '',
@@ -241,15 +245,7 @@ const BannerEditor: React.FC = () => {
 
   // ❌ REMOVE THIS COMPLETELY
   // setTimeout(() => {
-  //   if (activeBannerSection) {
-  //     dispatch(setActiveBannerSection(activeBannerSection));
-  //   }
-  // }, 50);
-
-  // ✅ Scroll to updated section
   setTimeout(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
     const sectionElement = document.getElementById(section?.id || '');
     if (sectionElement) {
       sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -463,49 +459,130 @@ const BannerEditor: React.FC = () => {
             <label className="block text-sm font-semibold text-gray-800 mb-3">Colors</label>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Image Background Color</label>
-                <input
-                  type="color"
-                  value={content.backgroundColor || '#4A72FF'}
-                  onChange={(e) => updateField('backgroundColor', e.target.value)}
-                  className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dot Text Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.dotTextColor || '#2b49c5'}
+                    onChange={(e) => updateField('dotTextColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.dotTextColor || '#2b49c5'}
+                    onChange={(e) => updateField('dotTextColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#2b49c5"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Title Color</label>
-                <input
-                  type="color"
-                  value={content.titleColor || '#111827'}
-                  onChange={(e) => updateField('titleColor', e.target.value)}
-                  className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dot Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.dotColor || '#a8aff5'}
+                    onChange={(e) => updateField('dotColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.dotColor || '#a8aff5'}
+                    onChange={(e) => updateField('dotColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#a8aff5"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image Background Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.backgroundColor || '#4A72FF'}
+                    onChange={(e) => updateField('backgroundColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.backgroundColor || '#4A72FF'}
+                    onChange={(e) => updateField('backgroundColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#4A72FF"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.titleColor || '#111827'}
+                    onChange={(e) => updateField('titleColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.titleColor || '#111827'}
+                    onChange={(e) => updateField('titleColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#111827"
+                  />
+                </div>
               </div>
                             <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description Color</label>
-                <input
-                  type="color"
-                  value={content.descriptionColor || '#4B5563'}
-                  onChange={(e) => updateField('descriptionColor', e.target.value)}
-                  className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.descriptionColor || '#4B5563'}
+                    onChange={(e) => updateField('descriptionColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.descriptionColor || '#4B5563'}
+                    onChange={(e) => updateField('descriptionColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#4B5563"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Feature Title Color</label>
-                <input
-                  type="color"
-                  value={content.featureTitleColor || '#111827'}
-                  onChange={(e) => updateField('featureTitleColor', e.target.value)}
-                  className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Feature Title Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.featureTitleColor || '#111827'}
+                    onChange={(e) => updateField('featureTitleColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.featureTitleColor || '#111827'}
+                    onChange={(e) => updateField('featureTitleColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#111827"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Feature Description Color</label>
-                <input
-                  type="color"
-                  value={content.featureDescriptionColor || '#4B5563'}
-                  onChange={(e) => updateField('featureDescriptionColor', e.target.value)}
-                  className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Feature Description Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={content.featureDescriptionColor || '#4B5563'}
+                    onChange={(e) => updateField('featureDescriptionColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border-0"
+                  />
+                  <input
+                    type="text"
+                    value={content.featureDescriptionColor || '#4B5563'}
+                    onChange={(e) => updateField('featureDescriptionColor', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                    placeholder="#4B5563"
+                  />
+                </div>
               </div>
             </div>
           </div>

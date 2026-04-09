@@ -34,6 +34,7 @@ import HeroEditor from "./WebsiteBuilder/HeroEditor";
 import BannerEditor from "./WebsiteBuilder/BannerEditor";
 import FeaturesEditor from "./WebsiteBuilder/FeaturesEditor";
 import AdminEditor from "./WebsiteBuilder/AdminEditor";
+import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 
 const WebsiteBuilder: React.FC = () => {
@@ -51,7 +52,7 @@ const WebsiteBuilder: React.FC = () => {
       const section = sections.find(s => s.id === activeSection);
       console.log('Found section:', section);
       
-      if (section && (section.type === 'hero' || section.type === 'fourth' || section.type === 'features')) {
+      if (section && (section.type === 'hero' || section.type === 'fourth' || section.type === 'features' || section.type === 'sixth' || section.type === 'benefits')) {
         console.log('Opening editor for section type:', section.type);
         dispatch(openEditor({ section }));
       }
@@ -384,18 +385,18 @@ useEffect(() => {
   }
 
   const renderContent = () => {
-    console.log('=== renderContent ===', { activeSection, activeBannerSection, isMobile, showEditorOnMobile });
+    console.log('=== renderContent START ===', { editorSection, activeSection, activeBannerSection, isMobile });
     
     // Mobile View (max-width: 768px)
     if (isMobile) {
       // Show editor only for hero or banner sections
-     const hasEditableSection = activeBannerSection || activeSection;
+     const hasEditableSection = activeBannerSection || activeSection || activeAdminSection;
        console.log('Mobile hasEditableSection:', hasEditableSection);
       
      if (showEditorOnMobile && hasEditableSection) {
-
-  // 🔥 ALWAYS PRIORITIZE BANNER FIRST
-  console.log('Mobile checking banner section, activeBannerSection:', activeBannerSection);
+      // 🔥 ALWAYS PRIORITIZE BANNER FIRST
+      console.log('Mobile: showEditorOnMobile && hasEditableSection', { showEditorOnMobile, hasEditableSection });
+      console.log('Mobile checking banner section, activeBannerSection:', activeBannerSection);
 
   if (activeBannerSection) {
     const builderBannerSection = builderBannerSections.find(
@@ -439,6 +440,40 @@ useEffect(() => {
           </div>
         </div>
       );
+    }
+
+    // Handle regular sections (hero, fourth, features, fifth, sixth, benefits)
+    if (activeSection) {
+      console.log('Mobile: activeSection ===', activeSection);
+      console.log('Mobile: sections array ===', sections.map(s => ({ id: s.id, type: s.type, name: s.name })));
+      const section = sections.find(s => s.id === activeSection);
+      console.log('Mobile checking regular section:', section);
+      console.log('Mobile: section.type ===', section?.type);
+      console.log('Mobile: checking benefits condition:', section?.type === 'sixth' || section?.type === 'benefits');
+      
+      if (section && (section.type === 'hero' || section.type === 'fourth' || section.type === 'features' || section.type === 'fifth' || section.type === 'sixth' || section.type === 'benefits')) {
+        console.log('Mobile: returning section editor for type:', section?.type);
+        return (
+          <div className="w-full bg-gray-50 flex flex-col">
+            {/* header */}
+            <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
+              <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
+                <ChevronLeft size={20} />
+              </button>
+              <h3 className="font-semibold text-black">Edit {section?.name || 'Section'}</h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {section.type === 'hero' && <HeroEditor />}
+              {(section.type === 'fourth' || section.type === 'features') && <FeaturesEditor />}
+              {section.type === 'fifth' && <AdminEditor />}
+              {(section.type === 'sixth' || section.type === 'benefits') && <BenefitsEditor />}
+            </div>
+          </div>
+        );
+      } else {
+        console.log('Mobile: section condition failed, section.type:', section?.type);
+      }
     }
   }
 
@@ -501,6 +536,25 @@ useEffect(() => {
       );
     }
 
+    // ✅ THEN SIXTH/BENEFITS SECTION
+    if (section && (section.type === 'sixth' || section.type === 'benefits')) {
+      return (
+        <div className="w-full bg-gray-50 flex flex-col">
+          {/* header */}
+          <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
+            <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
+              <ChevronLeft size={20} />
+            </button>
+            <h3 className="font-semibold text-black">Edit {section?.name || 'Benefits Section'}</h3>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <BenefitsEditor />
+          </div>
+        </div>
+      );
+    }
+
     // ✅ THEN ADMIN PANEL
     if (activeAdminSection) {
       const section = adminSections.find(s => s.id === activeAdminSection);
@@ -546,6 +600,24 @@ useEffect(() => {
           </div>
         );
       }
+      if (section && (section.type === 'sixth' || section.type === 'benefits')) {
+        console.log('Mobile opening BenefitsEditor for', section.type, 'section via activeSection');
+        return (
+          <div className="w-full bg-gray-50 flex flex-col">
+            {/* header */}
+            <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
+              <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
+                <ChevronLeft size={20} />
+              </button>
+              <h3 className="font-semibold text-black">Edit {section?.name || 'Benefits Section'}</h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <BenefitsEditor />
+            </div>
+          </div>
+        );
+      }
     }
   }
 }
@@ -585,7 +657,7 @@ useEffect(() => {
     const section = sections.find(s => s.id === id);
     console.log('Found section:', section);
     console.log('Section type:', section?.type);
-    if (section?.type === 'hero' || section?.type === 'fourth' || section?.type === 'features' || section?.type === 'fifth' || section?.type === 'admin-panel') {
+    if (section?.type === 'hero' || section?.type === 'fourth' || section?.type === 'features' || section?.type === 'fifth' || section?.type === 'admin-panel' || section?.type === 'sixth' || section?.type === 'benefits') {
       console.log('Opening mobile editor for section type:', section?.type);
       setShowEditorOnMobile(true);
     } else {
@@ -722,7 +794,7 @@ useEffect(() => {
         </div>
 
         {/* Section Editor Panel - Only show for hero, fourth, features, admin, or banner sections */}
-        {((activeSection && (sections.find(s => s.id === activeSection)?.type === 'hero' || sections.find(s => s.id === activeSection)?.type === 'fourth' || sections.find(s => s.id === activeSection)?.type === 'features' || sections.find(s => s.id === activeSection)?.type === 'fifth')) || activeBannerSection || activeAdminSection) && (
+        {((activeSection && (sections.find(s => s.id === activeSection)?.type === 'hero' || sections.find(s => s.id === activeSection)?.type === 'fourth' || sections.find(s => s.id === activeSection)?.type === 'features' || sections.find(s => s.id === activeSection)?.type === 'fifth' || sections.find(s => s.id === activeSection)?.type === 'sixth' || sections.find(s => s.id === activeSection)?.type === 'benefits')) || activeBannerSection || activeAdminSection) && (
           <div className="flex-1 bg-gray-50 border-l overflow-y-auto">
             {(() => {
               console.log('=== Desktop render ===', { activeSection, activeBannerSection });
@@ -751,6 +823,10 @@ useEffect(() => {
                   console.log('Desktop opening AdminEditor for fifth section');
                   return <AdminEditor />;
                 }
+                if (section && (section.type === 'sixth' || section.type === 'benefits')) {
+                  console.log('Desktop opening BenefitsEditor for', section.type, 'section');
+                  return <BenefitsEditor />;
+                }
               }
               
               // Handle admin section (including fifth sections that were set via activeAdminSection)
@@ -777,11 +853,12 @@ if (activeBannerSection) {
 }
 
 // SECOND: Hero
-if (activeSection) {
-  const section = sections.find(s => s.id === activeSection);
-  console.log('Checking section:', { activeSection, section, sectionType: section?.type });
+if (editorSection) {
+  const section = editorSection;
+  console.log('Checking section:', { editorSection, section, sectionType: section?.type });
   
   if (section?.type === 'hero') {
+    console.log('Returning HeroEditor');
     return <HeroEditor />;
   }
   if (section?.type === 'fourth' || section?.type === 'features') {
@@ -792,6 +869,13 @@ if (activeSection) {
     console.log('Opening AdminEditor for fifth section');
     return <AdminEditor />;
   }
+  if (section?.type === 'sixth' || section?.type === 'benefits') {
+    console.log('Opening BenefitsEditor for', section?.type, 'section');
+    console.log('Section details:', { id: section?.id, name: section?.name, content: section?.content });
+    console.log('About to return BenefitsEditor');
+    return <BenefitsEditor />;
+  }
+  console.log('No matching section type, returning null');
 }
               
               return null;

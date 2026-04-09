@@ -143,8 +143,8 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId }) => {
                         }`}
                 >
                     {content?.dotText && (
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 text-white text-[14px] font-medium tracking-widest uppercase mb-2 sm:mb-4">
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#a8aff5]" />
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 text-[14px] font-medium tracking-widest uppercase mb-2 sm:mb-4" style={{ color: content?.dotTextColor || '#FFFFFF' }}>
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: content?.dotColor || '#a8aff5' }} />
                             {content.dotText}
                         </div>
                     )}

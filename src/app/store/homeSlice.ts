@@ -2,14 +2,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface HeroContent {
   title: string;
-  subtitle: string;
   description: string;
   primaryButtonText: string;
   secondaryButtonText: string;
   backgroundImage: string;
   layout: 'left' | 'right' | 'center';
   titleColor: string;
-  subtitleColor: string;
   descriptionColor: string;
   primaryButtonColor: string;
   secondaryButtonColor: string;
@@ -19,6 +17,8 @@ export interface HeroContent {
   appStoreImage: string;
   googlePlayImage: string;
   dotText: string;
+  topAccentColor: string;
+  bottomAccentColor: string;
 }
 
 interface HomeState {
@@ -29,14 +29,12 @@ interface HomeState {
 const initialState: HomeState = {
   heroContent: {
     title: 'Reelboost - Tiktok Clone App',
-    subtitle: '',
     description: 'ReelBoost is a modern short-video and live-streaming app inspired by TikTok. It lets users create, edit, and share engaging short videos with a smooth discovery feed. Creators can go live, interact with audiences in real time, and build loyal communities. Designed for performance and scale, ReelBoost supports engagement, growth, and monetization.',
     primaryButtonText: 'Get Started',
     secondaryButtonText: 'Learn More',
     backgroundImage: '/hero.png',
     layout: 'left',
     titleColor: '#2D3134',
-    subtitleColor: '#2D3134',
     descriptionColor: '#6B7280',
     primaryButtonColor: '#4A72FF',
     secondaryButtonColor: '#6B7280',
@@ -45,7 +43,9 @@ const initialState: HomeState = {
     activeTag: "Live Streaming",
     appStoreImage: '/Button1.png',
     googlePlayImage: '/Button2.png',
-    dotText: ''
+    dotText: '',
+    topAccentColor: '#2B59FF',
+    bottomAccentColor: '#FFB800',
   },
   isHeroEdited: false
 };

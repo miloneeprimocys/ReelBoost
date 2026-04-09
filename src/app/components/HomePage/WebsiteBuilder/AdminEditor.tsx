@@ -92,8 +92,14 @@ const AdminEditor = () => {
     return demoTabTemplates.map((t, i) => ({ ...t, id: `tab-${Date.now()}-${i}`, order: i + 1 }));
   };
 
-  const [tabs, setTabs] = useState<AdminTabContent[]>(getInitialTabs);
-  const [activeTabId, setActiveTabId] = useState<string>(tabs[0]?.id || '');
+  const [tabs, setTabs] = useState<AdminTabContent[]>(() => {
+    const initialTabs = getInitialTabs();
+    return initialTabs;
+  });
+  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
+    const initialTabs = getInitialTabs();
+    return initialTabs[0]?.id || null;
+  });
   const [newPoint, setNewPoint] = useState("");
   
   // Drag and drop state for tabs
@@ -120,13 +126,34 @@ const AdminEditor = () => {
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
 
-  // Update tabs when section changes or content changes
+  // Track the current section ID to detect when we're loading a new section
+  const currentSectionIdRef = React.useRef<string | null>(null);
+  
+  // Update tabs when section changes (but preserve user edits during the same session)
   React.useEffect(() => {
-    const newTabs = getInitialTabs();
-    console.log('AdminEditor useEffect - newTabs:', newTabs);
-    setTabs(newTabs);
-    if (newTabs.length > 0 && !newTabs.find(t => t.id === activeTabId)) {
-      setActiveTabId(newTabs[0].id);
+    const sectionId = section?.id || null;
+    
+    console.log('AdminEditor useEffect triggered:', {
+      currentSectionId: currentSectionIdRef.current,
+      newSectionId: sectionId,
+      isSectionChange: currentSectionIdRef.current !== sectionId
+    });
+    
+    // Only reset tabs if we're loading a completely different section
+    if (currentSectionIdRef.current !== sectionId) {
+      console.log('AdminEditor useEffect - new section loaded:', sectionId);
+      currentSectionIdRef.current = sectionId;
+      
+      if (sectionId) {
+        const newTabs = getInitialTabs();
+        console.log('AdminEditor useEffect - initializing tabs:', newTabs);
+        setTabs(newTabs);
+        if (newTabs.length > 0) {
+          setActiveTabId(newTabs[0].id);
+        }
+      }
+    } else {
+      console.log('AdminEditor useEffect - same section, preserving current tabs');
     }
     
     // Update section colors from section content
@@ -140,7 +167,7 @@ const AdminEditor = () => {
         pointsColor: content?.pointsColor || '#374151',
       });
     }
-  }, [section?.id, JSON.stringify(section?.content)]);
+  }, [section?.id]); // Only depend on section ID, not content changes
 
   const updateActiveTab = (updates: Partial<AdminTabContent>) => {
     setTabs(prev => prev.map(tab => 
@@ -197,7 +224,7 @@ const AdminEditor = () => {
     const reorderedTabs = newTabs.map((t, i) => ({ ...t, order: i + 1 }));
     setTabs(reorderedTabs);
     if (activeTabId === tabId) {
-      setActiveTabId(reorderedTabs[0]?.id || '');
+      setActiveTabId(reorderedTabs[0]?.id || null);
     }
   };
 
@@ -210,6 +237,10 @@ const AdminEditor = () => {
   };
 
   const handleTabDragEnd = () => {
+    console.log('=== handleTabDragEnd called ===');
+    console.log('draggedTabIndex:', draggedTabIndex, 'dragOverTabIndex:', dragOverTabIndex);
+    console.log('Current tabs before reorder:', tabs.map(t => ({ id: t.id, label: t.label, order: t.order })));
+    
     if (draggedTabIndex === -1 || dragOverTabIndex === -1) {
       setDraggedTabIndex(-1);
       setDragOverTabIndex(-1);
@@ -230,8 +261,9 @@ const AdminEditor = () => {
         order: index + 1
       }));
       
+      console.log('Tabs after reorder:', updatedTabs.map(t => ({ id: t.id, label: t.label, order: t.order })));
       setTabs(updatedTabs);
-      console.log('Tabs reordered:', updatedTabs.map(t => ({ label: t.label, order: t.order })));
+      console.log('Tabs reordered and state updated:', updatedTabs.map(t => ({ label: t.label, order: t.order })));
     }
 
     setDraggedTabIndex(-1);
@@ -356,69 +388,7 @@ const AdminEditor = () => {
         </button>
       </div>
 
-      {/* Tabs List */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-gray-800">Admin Tabs ({tabs.length}/6)</h4>
-          <button
-            onClick={addNewTab}
-            disabled={tabs.length >= 6}
-            className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-1 cursor-pointer ${
-              tabs.length >= 6 
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-            title={tabs.length >= 6 ? 'Maximum 6 tabs allowed' : 'Add new tab'}
-          >
-            <Plus size={16} />
-            Add Tab
-          </button>
-        </div>
-        
-        <div className="space-y-2">
-          {tabs.map((tab, index) => (
-            <div
-              key={tab.id}
-              draggable
-              onDragStart={() => handleTabDragStart(index)}
-              onDragEnter={() => handleTabDragEnter(index)}
-              onDragEnd={handleTabDragEnd}
-              onClick={() => setActiveTabId(tab.id)}
-              className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all touch-none ${
-                tab.id === activeTabId 
-                  ? 'bg-blue-50 border-2 border-blue-500' 
-                  : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-              } ${
-                dragOverTabIndex === index ? 'border-blue-400 bg-blue-50' : ''
-              }`}
-            >
-              <GripVertical size={18} className="text-gray-400 cursor-move" />
-              <span className="text-sm font-medium text-gray-500 w-6">{index + 1}</span>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 truncate">{tab.label}</div>
-                <div className="text-xs text-gray-500 truncate">{tab.title}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                {!tab.visible && <span className="text-xs text-gray-400">(hidden)</span>}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeTab(tab.id);
-                  }}
-                  disabled={tabs.length <= 2}
-                  className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={tabs.length <= 2 ? "Minimum 2 tabs required" : "Delete tab"}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-gray-500 mt-3">Minimum 2 tabs required. Click a tab to edit it.</p>
-      </div>
-
-      {/* Header Section Editor */}
+      {/* Header Section Editor - Always visible */}
       <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
         <h4 className="text-lg font-semibold text-gray-800 mb-4">Header Section</h4>
         
@@ -612,254 +582,335 @@ const AdminEditor = () => {
         </div>
       </div>
 
-      {/* Active Tab Editor */}
-      <div className="space-y-6">
-        {/* Basic Information */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Edit: {activeTab.label}</h4>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Label (Tab Title)</label>
-              <input
-                type="text"
-                value={activeTab.label}
-                onChange={(e) => updateActiveTab({ label: e.target.value })}
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
-                placeholder="e.g., RECHARGE PLAN"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
-              <input
-                type="text"
-                value={activeTab.subtitle}
-                onChange={(e) => updateActiveTab({ subtitle: e.target.value })}
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
-                placeholder="e.g., Monetization & Economy"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input
-                type="text"
-                value={activeTab.title}
-                onChange={(e) => updateActiveTab({ title: e.target.value })}
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
-                placeholder="e.g., Wallet Recharge Plans"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={activeTab.description}
-                onChange={(e) => updateActiveTab({ description: e.target.value })}
-                rows={4}
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                placeholder="Describe this admin feature..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={activeTab.image}
-                  onChange={(e) => updateActiveTab({ image: e.target.value })}
-                  className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                  placeholder="/Admin1.svg"
-                />
-                <button
-                  onClick={handleImageUpload}
-                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shrink-0 cursor-pointer"
+      {/* Accordion-style Admin Tabs */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-lg font-semibold text-gray-800">Admin Tabs ({tabs.length}/6)</h4>
+          <button
+            onClick={addNewTab}
+            disabled={tabs.length >= 6}
+            className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-1 cursor-pointer ${
+              tabs.length >= 6 
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+            title={tabs.length >= 6 ? 'Maximum 6 tabs allowed' : 'Add new tab'}
+          >
+            <Plus size={16} />
+            Add Tab
+          </button>
+        </div>
+        
+        <div className="space-y-2">
+          {tabs.map((tab, index) => (
+            <div key={tab.id} className="border border-gray-200 rounded-lg overflow-hidden">
+              {/* Tab Header - Always visible */}
+              <div
+                draggable
+                onDragStart={() => handleTabDragStart(index)}
+                onDragEnter={() => handleTabDragEnter(index)}
+                onDragEnd={handleTabDragEnd}
+                onClick={() => setActiveTabId(tab.id === activeTabId ? null : tab.id)}
+                className={`flex items-center gap-3 p-3 cursor-pointer transition-all touch-none ${
+                  tab.id === activeTabId 
+                    ? 'bg-blue-50 border-b-2 border-blue-500' 
+                    : 'bg-gray-50 border-b-2 border-transparent hover:bg-gray-100'
+                } ${
+                  dragOverTabIndex === index ? 'border-blue-400 bg-blue-50' : ''
+                }`}
+              >
+                <GripVertical size={18} className="text-gray-400 cursor-move" />
+                <span className="text-sm font-medium text-gray-500 w-6">{index + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 truncate">{tab.label}</div>
+                  <div className="text-xs text-gray-500 truncate">{tab.title}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!tab.visible && <span className="text-xs text-gray-400">(hidden)</span>}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeTab(tab.id);
+                    }}
+                    disabled={tabs.length <= 2}
+                    className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={tabs.length <= 2 ? "Minimum 2 tabs required" : "Delete tab"}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                {/* Chevron icon */}
+                <svg 
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    tab.id === activeTabId ? 'rotate-180' : ''
+                  }`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
                 >
-                  <Upload size={16} />
-                </button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7 7" />
+                </svg>
               </div>
-            </div>
-          </div>
+              
+              {/* Tab Content - Accordion style */}
+            <div className={`transition-all duration-300 ease-in-out ${
+  tab.id === activeTabId 
+    ? 'max-h-[600px] opacity-100 overflow-y-auto' 
+    : 'max-h-0 opacity-0 overflow-hidden'
+}`}>
+  <div className="p-4 space-y-4 border-t border-gray-100">
+    {/* Basic Information */}
+    <div>
+      <h5 className="text-sm font-semibold text-gray-800 mb-3">Edit: {tab.label}</h5>
+      
+      <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Label (Tab Title)</label>
+          <input
+            type="text"
+            value={tab?.label || ''}
+            onChange={(e) => updateActiveTab({ label: e.target.value })}
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+            placeholder="e.g., RECHARGE PLAN"
+          />
         </div>
 
-        {/* Feature Points */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Feature Points</h4>
-          
-          <div className="space-y-3">
-            {activeTab.points.map((point, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={point}
-                  onChange={(e) => handlePointChange(index, e.target.value)}
-                  className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                  placeholder={`Feature point ${index + 1}`}
-                />
-                <button
-                  onClick={() => removePoint(index)}
-                  className="p-2 text-red-500 hover:text-red-700 transition-colors cursor-pointer"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+          <input
+            type="text"
+            value={tab?.subtitle || ''}
+            onChange={(e) => updateActiveTab({ subtitle: e.target.value })}
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+            placeholder="e.g., Monetization & Economy"
+          />
+        </div>
 
-          <div className="flex gap-2 mt-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input
+            type="text"
+            value={tab?.title || ''}
+            onChange={(e) => updateActiveTab({ title: e.target.value })}
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+            placeholder="e.g., Wallet Recharge Plans"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            value={tab?.description || ''}
+            onChange={(e) => updateActiveTab({ description: e.target.value })}
+            rows={4}
+            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-y min-h-[100px]"
+            placeholder="Describe this admin feature..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          <div className="flex gap-2">
             <input
               type="text"
-              value={newPoint}
-              onChange={(e) => setNewPoint(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addPoint()}
-              className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-              placeholder="Add new feature point..."
+              value={tab?.image || ''}
+              onChange={(e) => updateActiveTab({ image: e.target.value })}
+              className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              placeholder="/Admin1.svg"
             />
             <button
-              onClick={addPoint}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center gap-1 cursor-pointer"
+              onClick={handleImageUpload}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shrink-0 cursor-pointer"
             >
-              <Plus size={16} />
-              Add
+              <Upload size={16} />
             </button>
           </div>
         </div>
+      </div>
+    </div>
 
-        {/* Layout Settings */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Layout Settings</h4>
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Content Layout</label>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setLayout('left')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                  layout === 'left' 
-                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                }`}
-              >
-                <AlignLeft size={18} />
-                <span className="text-sm font-medium">Image Left</span>
-              </button>
-              <button
-                onClick={() => setLayout('right')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                  layout === 'right' 
-                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                }`}
-              >
-                <AlignRight size={18} />
-                <span className="text-sm font-medium">Image Right</span>
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Choose how the image and content are arranged in the section
-            </p>
+    {/* Feature Points */}
+    <div>
+      <h5 className="text-sm font-semibold text-gray-800 mb-3">Feature Points</h5>
+      
+      <div className="space-y-3">
+        {tab?.points?.map((point, pointIndex) => (
+          <div key={pointIndex} className="flex gap-2">
+            <input
+              type="text"
+              value={point}
+              onChange={(e) => handlePointChange(pointIndex, e.target.value)}
+              className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              placeholder={`Feature point ${pointIndex + 1}`}
+            />
+            <button
+              onClick={() => removePoint(pointIndex)}
+              className="p-2 text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
+        ))}
+        
+        <div className="flex gap-2 mt-3">
+          <input
+            type="text"
+            value={newPoint}
+            onChange={(e) => setNewPoint(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addPoint()}
+            className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+            placeholder="Add new feature point..."
+          />
+          <button
+            onClick={addPoint}
+            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center gap-1 cursor-pointer"
+          >
+            <Plus size={16} />
+            Add
+          </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-3">Minimum 2 tabs required. Click a tab to expand/collapse.</p>
+      </div>
 
-        {/* Color Styling */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Color Styling</h4>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tab Label Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={sectionColors.labelColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, labelColor: e.target.value }))}
-                    className="w-10 h-10 rounded cursor-pointer border-0"
-                  />
-                  <input
-                    type="text"
-                    value={sectionColors.labelColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, labelColor: e.target.value }))}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
-                    placeholder="#2b49c5"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={sectionColors.subtitleColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, subtitleColor: e.target.value }))}
-                    className="w-10 h-10 rounded cursor-pointer border-0"
-                  />
-                  <input
-                    type="text"
-                    value={sectionColors.subtitleColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, subtitleColor: e.target.value }))}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
-                    placeholder="#2b49c5"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={sectionColors.titleColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, titleColor: e.target.value }))}
-                    className="w-10 h-10 rounded cursor-pointer border-0"
-                  />
-                  <input
-                    type="text"
-                    value={sectionColors.titleColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, titleColor: e.target.value }))}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
-                    placeholder="#111827"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={sectionColors.descriptionColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, descriptionColor: e.target.value }))}
-                    className="w-10 h-10 rounded cursor-pointer border-0"
-                  />
-                  <input
-                    type="text"
-                    value={sectionColors.descriptionColor}
-                    onChange={(e) => setSectionColors(prev => ({ ...prev, descriptionColor: e.target.value }))}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
-                    placeholder="#6b7280"
-                  />
-                </div>
-              </div>
-            </div>
+      {/* Section-level Layout Settings */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
+        <h4 className="text-lg font-semibold text-gray-800 mb-4">Layout Settings</h4>
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Content Layout</label>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLayout('left')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                layout === 'left' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              }`}
+            >
+              <AlignLeft size={18} />
+              <span className="text-sm font-medium">Image Left</span>
+            </button>
+            <button
+              onClick={() => setLayout('right')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                layout === 'right' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              }`}
+            >
+              <AlignRight size={18} />
+              <span className="text-sm font-medium">Image Right</span>
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Choose how the image and content are arranged in the section
+          </p>
+        </div>
+      </div>
+
+      {/* Section-level Color Styling */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+        <h4 className="text-lg font-semibold text-gray-800 mb-4">Tab Content Color Styling</h4>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Points Color</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tab Label Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
-                  value={sectionColors.pointsColor}
-                  onChange={(e) => setSectionColors(prev => ({ ...prev, pointsColor: e.target.value }))}
+                  value={sectionColors.labelColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, labelColor: e.target.value }))}
                   className="w-10 h-10 rounded cursor-pointer border-0"
                 />
                 <input
                   type="text"
-                  value={sectionColors.pointsColor}
-                  onChange={(e) => setSectionColors(prev => ({ ...prev, pointsColor: e.target.value }))}
+                  value={sectionColors.labelColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, labelColor: e.target.value }))}
                   className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
-                  placeholder="#374151"
+                  placeholder="#2b49c5"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={sectionColors.subtitleColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, subtitleColor: e.target.value }))}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={sectionColors.subtitleColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, subtitleColor: e.target.value }))}
+                  className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                  placeholder="#2b49c5"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={sectionColors.titleColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, titleColor: e.target.value }))}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={sectionColors.titleColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, titleColor: e.target.value }))}
+                  className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                  placeholder="#111827"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={sectionColors.descriptionColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, descriptionColor: e.target.value }))}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={sectionColors.descriptionColor}
+                  onChange={(e) => setSectionColors(prev => ({ ...prev, descriptionColor: e.target.value }))}
+                  className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                  placeholder="#6b7280"
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Points Color</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={sectionColors.pointsColor}
+                onChange={(e) => setSectionColors(prev => ({ ...prev, pointsColor: e.target.value }))}
+                className="w-10 h-10 rounded cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={sectionColors.pointsColor}
+                onChange={(e) => setSectionColors(prev => ({ ...prev, pointsColor: e.target.value }))}
+                className="flex-1 p-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                placeholder="#374151"
+              />
             </div>
           </div>
         </div>

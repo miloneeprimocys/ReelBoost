@@ -99,9 +99,9 @@ const Footer = () => {
                         <ul className="space-y-4 -mt-2">
                             <li><button onClick={() => scrollToSection('second-1')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Live Streaming</button></li>
                             <li><button onClick={() => scrollToSection('third-1')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Pk Battle</button></li>
-                            <li><button onClick={() => scrollToSection('features')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Features</button></li>
+                            <li><button onClick={() => scrollToSection('fourth-1')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Features</button></li>
                             <li><button onClick={() => scrollToSection('fifth-1')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Admin Panel</button></li>
-                            <li><button onClick={() => scrollToSection('benefits')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Benefits</button></li>
+                            <li><button onClick={() => scrollToSection('sixth-1')} className="inline-block cursor-pointer text-gray-400 hover:text-blue-500 hover:translate-x-2 text-[16px] font-medium transition-all duration-300">Benefits</button></li>
                         </ul>
                     </div>
 

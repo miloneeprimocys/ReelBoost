@@ -89,9 +89,11 @@ const SectionList: React.FC<SectionListProps> = ({
     sectionsMap.set(section.id, { ...section, source: 'builder' });
   });
   
-  // Add banner sections (these will overwrite any with same id, but they shouldn't overlap)
+  // Add banner sections, but don't overwrite existing builder sections with the same ID
   bannerSections.forEach(section => {
-    sectionsMap.set(section.id, { ...section, source: 'banner' });
+    if (!sectionsMap.has(section.id)) {
+      sectionsMap.set(section.id, { ...section, source: 'banner' });
+    }
   });
   
   // Note: adminSections are not displayed here anymore
@@ -107,6 +109,7 @@ const SectionList: React.FC<SectionListProps> = ({
       {/* Existing Sections */}
       <div className="space-y-3 mb-6">
         {allSections.map((section, index) => {
+                              
           // Check section types
           const isBannerSection = section.source === 'banner' || section.type === 'banner';
           const isAdminSection = section.source === 'admin';
@@ -142,7 +145,16 @@ const SectionList: React.FC<SectionListProps> = ({
               onTouchEnd={handleTouchEnd}
               data-draggable
               data-index={index}
-              className={`flex items-center gap-3 p-3 border rounded-lg cursor-move transition-all touch-none ${
+              onClick={() => {
+                if (isBannerSection) {
+                  onSetActiveBanner(section.id);
+                } else if (section.type === 'fifth') {
+                  onSetActive(section.id);
+                } else {
+                  onSetActive(section.id);
+                }
+              }}
+              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none ${
                 isActive ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white'
               } ${touchItem === index ? 'opacity-50 scale-105 shadow-lg' : ''} ${
                 dragOverItem === index ? 'border-blue-400 bg-blue-50 scale-102' : ''
@@ -157,22 +169,13 @@ const SectionList: React.FC<SectionListProps> = ({
               
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => {
-                    console.log('SectionList edit clicked:', { 
-                      sectionId: section.id, 
-                      sectionType: section.type, 
-                      sectionSource: section.source,
-                      isBannerSection, 
-                      isAdminSection 
-                    });
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (isBannerSection) {
-                      console.log('Calling onSetActiveBanner for banner section');
                       onSetActiveBanner(section.id);
                     } else if (section.type === 'fifth') {
-                      console.log('Calling onSetActive for fifth section');
                       onSetActive(section.id);
                     } else {
-                      console.log('Calling onSetActive for regular section');
                       onSetActive(section.id);
                     }
                   }}
@@ -183,9 +186,10 @@ const SectionList: React.FC<SectionListProps> = ({
                 </button>
                 
                 <button
-                  onClick={() => {
-                    // Handle visibility toggle for different section types
-                    if (section.type === 'banner' && section.source === 'builder') {
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Simplified logic: Always use onToggleVisibility for builder sections
+                    if (section.source === 'builder' || (!section.source && section.type !== 'banner')) {
                       onToggleVisibility(section.id);
                     } else if (section.source === 'banner') {
                       onToggleBannerVisibility(section.id);
@@ -202,7 +206,8 @@ const SectionList: React.FC<SectionListProps> = ({
                 </button>
                 
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     // Handle delete for different section types
                     if (section.type === 'banner' && section.source === 'builder') {
                       onDelete(section.id);

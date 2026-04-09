@@ -130,10 +130,10 @@ const DynamicAdmin = () => {
           >
             {getFirstFifthSection()?.content?.headerSubtitle || 'Admin Panel Features'}
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mt-3 sm:mt-4 md:mt-6 leading-tight break-words max-w-full" style={{ color: getFirstFifthSection()?.content?.mainTitleColor || '#111827' }}>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mt-3 sm:mt-4 md:mt-6 leading-tight break-words hyphens-auto" style={{ color: getFirstFifthSection()?.content?.mainTitleColor || '#111827' }}>
             {getFirstFifthSection()?.content?.mainTitle || 'Describing'}
             <span 
-              className="px-1 py-0.5 sm:py-1 ml-1 sm:ml-2 inline-block break-words"
+              className="px-1 py-0.5 sm:py-1 ml-1 sm:ml-2 inline-block wrap-break-word hyphens-auto max-w-full"
               style={{ 
                 backgroundColor: getFirstFifthSection()?.content?.highlightedTitleBgColor || '#EEF2FF',
                 color: getFirstFifthSection()?.content?.highlightedTitleColor || '#2b49c5'
@@ -145,18 +145,18 @@ const DynamicAdmin = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-t border-gray-200 mb-6 md:mb-10 lg:mb-16 gap-3 sm:gap-4 md:gap-6 lg:gap-10 overflow-x-auto no-scrollbar">
+        <div className="flex border-b border-t border-gray-200 mb-6 md:mb-10 lg:mb-16 gap-2 sm:gap-3 md:gap-4 lg:gap-6 overflow-x-auto no-scrollbar">
           {visibleSections.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab)}
-              className={`pb-3 sm:pb-4 md:pb-5 lg:pb-6 pt-3 sm:pt-4 md:pt-5 lg:pt-6 text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] font-bold tracking-[0.1em] sm:tracking-[0.15em] md:tracking-[0.18em] lg:tracking-[0.2em] transition-all duration-300 border-b-2 whitespace-nowrap cursor-pointer uppercase ${
+              className={`pb-3 sm:pb-4 md:pb-5 lg:pb-6 pt-3 sm:pt-4 md:pt-5 lg:pt-6 text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] font-bold tracking-[0.05em] sm:tracking-[0.1em] md:tracking-[0.15em] lg:tracking-[0.18em] transition-all duration-300 border-b-2 whitespace-nowrap cursor-pointer uppercase flex-shrink-0 min-w-0 ${
                 activeTab?.id === tab.id 
                   ? "border-[#2b49c5] text-[#2b49c5]" 
                   : "border-transparent text-gray-700 hover:text-black"
               }`}
             >
-              <span className="break-words max-w-[150px] sm:max-w-none inline-block">{tab.label}</span>
+              <span className="break-words max-w-[80px] sm:max-w-[100px] md:max-w-[120px] lg:max-w-[150px] truncate inline-block">{tab.label}</span>
             </button>
           ))}
         </div>

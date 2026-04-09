@@ -29,6 +29,8 @@ interface FeaturesContent {
   titleColor?: string;
   subtitleColor?: string;
   descriptionColor?: string;
+  dotTextColor?: string;
+  dotColor?: string;
 }
 
 interface FeaturesState {
@@ -112,7 +114,9 @@ const initialState: FeaturesState = {
     textColor: '#ffffff',
     titleColor: '#ffffff',
     subtitleColor: '#ffffff',
-    descriptionColor: '#ffffff'
+    descriptionColor: '#ffffff',
+    dotTextColor: '#ffffff',
+    dotColor: '#a8aff5'
   },
   activeSection: null
 };
@@ -133,6 +137,16 @@ const featuresSlice = createSlice({
       }
     },
     updateFeature: (state, action: PayloadAction<{ id: string; updates: Partial<Feature> }>) => {
+      const { id, updates } = action.payload;
+      const featureIndex = state.featuresContent.features.findIndex(f => f.id === id);
+      if (featureIndex !== -1) {
+        state.featuresContent.features[featureIndex] = { 
+          ...state.featuresContent.features[featureIndex], 
+          ...updates 
+        };
+      }
+    },
+    updateFeatureField: (state, action: PayloadAction<{ id: string; updates: Partial<Feature> }>) => {
       const { id, updates } = action.payload;
       const featureIndex = state.featuresContent.features.findIndex(f => f.id === id);
       if (featureIndex !== -1) {
@@ -186,6 +200,7 @@ export const {
   updateFeaturesContent,
   addFeature,
   updateFeature,
+  updateFeatureField,
   deleteFeature,
   reorderFeatures,
   updateCard,

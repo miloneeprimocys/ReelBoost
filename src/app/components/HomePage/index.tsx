@@ -17,6 +17,7 @@ import ThirdSection from "../../Pages/Home/ThirdSection";
 import FourthSection from "../../Pages/Home/FourthSection";
 import FifthSection from "../../Pages/Home/FifthSection";
 import SixthSection from "../../Pages/Home/SixthSection";
+import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 
 function HomePageContent() {
   const { sections } = useAppSelector(state => state.builder);
@@ -58,6 +59,8 @@ function HomePageContent() {
             return <FifthSection key={section.id} sectionId={section.id} />;
           case 'sixth':
             return <SixthSection key={section.id} />;
+          case 'benefits':
+            return <DynamicBenefits key={section.id} sectionId={section.id} />;
           default:
             return (
               <div key={section.id} className="py-16 px-4 bg-gray-50">

@@ -13,18 +13,18 @@ interface SectionConfig {
 
 interface HeroContent {
   title: string;
-  subtitle: string;
   description: string;
   primaryButtonText: string;
   secondaryButtonText: string;
   backgroundImage: string;
   layout: 'left' | 'right' | 'center';
   titleColor: string;
-  subtitleColor: string;
   descriptionColor: string;
   primaryButtonColor: string;
   secondaryButtonColor: string;
   animation: 'fade' | 'slide' | 'bounce' | 'none';
+  topAccentColor: string;
+  bottomAccentColor: string;
 }
 
 interface BuilderContextType {
@@ -63,14 +63,14 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
       visible: true,
       content: {
         title: 'Reelboost - Tiktok Clone App',
-        subtitle: '',
+    
         description: 'ReelBoost is a modern short-video and live-streaming app inspired by TikTok. It lets users create, edit, and share engaging short videos with a smooth discovery feed.',
         primaryButtonText: 'Get Started',
         secondaryButtonText: 'Learn More',
         backgroundImage: '/hero.png',
         layout: 'left',
         titleColor: '#111827',
-        subtitleColor: '#2b49c5',
+ 
         descriptionColor: '#6b7280',
         primaryButtonColor: '#2b49c5',
         secondaryButtonColor: '#6b7280',
@@ -144,14 +144,14 @@ const getDefaultContent = (type: SectionConfig['type']) => {
     case 'hero':
       return {
         title: 'New Section',
-        subtitle: 'Subtitle',
+
         description: 'Description text goes here.',
         primaryButtonText: 'Get Started',
         secondaryButtonText: 'Learn More',
         backgroundImage: '/hero.png',
         layout: 'left' as const,
         titleColor: '#111827',
-        subtitleColor: '#2b49c5',
+
         descriptionColor: '#6b7280',
         primaryButtonColor: '#2b49c5',
         secondaryButtonColor: '#6b7280',
@@ -160,7 +160,6 @@ const getDefaultContent = (type: SectionConfig['type']) => {
     case 'banner':
       return {
         title: 'Banner Title',
-        subtitle: 'Banner Subtitle',
         description: 'Banner description.',
         buttonText: 'Click Here',
         backgroundColor: '#f3f4f6',
@@ -170,7 +169,6 @@ const getDefaultContent = (type: SectionConfig['type']) => {
     case 'features':
       return {
         title: 'Our Features',
-        subtitle: 'What we offer',
         features: [
           { title: 'Feature 1', description: 'Description for feature 1' },
           { title: 'Feature 2', description: 'Description for feature 2' },
@@ -182,7 +180,6 @@ const getDefaultContent = (type: SectionConfig['type']) => {
     case 'admin-panel':
       return {
         title: 'Admin Panel',
-        subtitle: 'Management Features',
         description: 'Comprehensive admin tools.',
         features: [
           'User Management',

@@ -15,6 +15,8 @@ interface BannerFeature {
 
 interface BannerContent {
   dotText?: string;
+  dotColor?: string;
+  dotTextColor?: string;
   title: string;
   subtitle?: string;
   description: string;
@@ -147,7 +149,7 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
                     >
                         {/* Dot Text */}
                         {content.dotText && (
-                            <div className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium break-words max-w-full">
+                            <div className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 text-xs sm:text-sm font-medium break-words max-w-full" style={{ color: content?.dotTextColor || '#2b49c5', backgroundColor: content?.dotColor || '#3b82f6' }}>
                                 {content.dotText}
                             </div>
                         )}

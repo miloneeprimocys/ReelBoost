@@ -5,6 +5,7 @@ import editorReducer from './editorSlice';
 import bannerReducer from './bannerSlice';
 import featuresReducer from './featuresSlice';
 import adminReducer from './adminSlice';
+import benefitsReducer from './benefitsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     banner: bannerReducer,
     features: featuresReducer,
     admin: adminReducer,
+    benefits: benefitsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

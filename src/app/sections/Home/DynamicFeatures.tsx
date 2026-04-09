@@ -110,8 +110,8 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
             }`}
         >
           {content.dotText && (
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 text-white text-[14px] font-medium tracking-widest uppercase mb-2 sm:mb-4">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#a8aff5]" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 text-[14px] font-medium tracking-widest uppercase mb-2 sm:mb-4" style={{ color: content?.dotTextColor || '#FFFFFF' }}>
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: content?.dotColor || '#a8aff5' }} />
               <span className="break-words max-w-full">{content.dotText}</span>
             </div>
           )}
@@ -266,7 +266,7 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
   >
     <div className="relative z-10 max-w-full md:max-w-[70%]">
       <h3 
-        className="text-[24px] md:text-[32px] font-medium tracking-tight break-words max-w-full"
+        className="text-[24px] md:text-[32px] mb-3 font-medium tracking-tight break-words max-w-full"
         style={{ color: content.cardTitleColor || '#111827' }}
       >
         {content.cards[2]?.title || 'Payment History'}
@@ -278,9 +278,9 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
         {content.cards[2]?.description || 'View your complete payment history.'}
       </p>
     </div>
-    <div className="absolute right-0 top-0 h-full w-1/3 opacity-10 pointer-events-none hidden md:block">
+    {/* <div className="absolute right-0 top-0 h-full w-1/3 opacity-10 pointer-events-none hidden md:block">
       <div className="w-full h-full border-l-[20px] border-indigo-500 rotate-12 transform translate-x-10" />
-    </div>
+    </div> */}
   </div>
 
   {/* Reelboost - Full Image */}
@@ -299,7 +299,7 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
     )}
     <div className="absolute inset-0 bg-indigo-600/40 flex items-center justify-center">
       <div className="relative px-4">
-        <h1 className="text-white text-4xl md:text-6xl lg:text-7xl xl:text-[135px] font-medium tracking-tighter flex items-center break-words text-center max-w-full">
+        <h1 className="text-white text-4xl md:text-6xl lg:text-7xl xl:text-[115px] font-medium tracking-tighter flex items-center break-words text-center max-w-full">
           {content.cards[3]?.title || 'Reelboost'}
         </h1>
       </div>
@@ -328,7 +328,7 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
             </div>
             <div className="text-center px-2 pb-4 w-full">
               <h3 
-                className="text-[32px] font-bold tracking-tight break-words max-w-full"
+                className="text-[32px] font-medium tracking-tight break-words max-w-full"
                 style={{ color: content.cardTitleColor || '#111827' }}
               >
                 {content.cards[4]?.title || 'Video Trimming'}
@@ -360,7 +360,7 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
             </div>
             <div className="text-center px-2 pb-4 w-full">
               <h3 
-                className="text-[32px] font-bold tracking-tight break-words max-w-full"
+                className="text-[32px] font-medium tracking-tight break-words max-w-full"
                 style={{ color: content.cardTitleColor || '#111827' }}
               >
                 {content.cards[5]?.title || 'Add Music for Reels'}
@@ -392,7 +392,7 @@ const DynamicFeatures = ({ section }: DynamicFeaturesProps) => {
             </div>
             <div className="text-center px-2 pb-4 w-full">
               <h3 
-                className="text-[32px] font-bold tracking-tight break-words max-w-full"
+                className="text-[32px] font-medium tracking-tight break-words max-w-full"
                 style={{ color: content.cardTitleColor || '#111827' }}
               >
                 {content.cards[6]?.title || 'Gift Lists'}

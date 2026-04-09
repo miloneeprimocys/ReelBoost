@@ -5,7 +5,8 @@ import { useAppSelector, useAppDispatch } from "../../../hooks/reduxHooks";
 import { 
   updateFeaturesContent, 
   addFeature, 
-  updateFeature, 
+  updateFeature,
+  updateFeatureField,
   deleteFeature,
   reorderFeatures,
   updateCard,
@@ -191,7 +192,7 @@ const FeaturesEditor: React.FC = () => {
     }
   };
 
-  const updateFeatureField = (featureId: string, field: string, value: string) => {
+  const handleUpdateFeatureField = (featureId: string, field: string, value: string) => {
     const featureIndex = localContent.features.findIndex((f: any) => f.id === featureId);
     if (featureIndex !== -1) {
       const updatedFeatures = [...localContent.features];
@@ -200,7 +201,7 @@ const FeaturesEditor: React.FC = () => {
         [field]: value 
       };
       updateField('features', updatedFeatures);
-      dispatch(updateFeature({ id: featureId, updates: { [field]: value } }));
+      dispatch(updateFeatureField({ id: featureId, updates: { [field]: value } }));
     }
   };
 
@@ -280,11 +281,8 @@ const FeaturesEditor: React.FC = () => {
     dispatch(setActiveFeaturesSection(null));
     dispatch(toggleBuilderMode());
     
-    // Redirect to show the updated section - scroll to top and then to section
+    // Redirect to show the updated section - scroll directly to section
     setTimeout(() => {
-      // Scroll to top of page
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
       // Find and scroll to the updated section using the section ID directly
       const sectionElement = document.getElementById(section?.id || '');
       if (sectionElement) {
@@ -347,7 +345,7 @@ const FeaturesEditor: React.FC = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {localContent.features.map((feature: Feature, index: number) => (
+            {localContent.features.map((feature: any, index: number) => (
               <div 
                 key={feature.id || `feature-${index}`} 
                 className={`border border-gray-200 rounded-lg p-4 transition-all ${
@@ -384,7 +382,7 @@ const FeaturesEditor: React.FC = () => {
                     <input
                       type="text"
                       value={feature.title}
-                      onChange={(e) => updateFeatureField(feature.id, 'title', e.target.value)}
+                      onChange={(e) => handleUpdateFeatureField(feature.id, 'title', e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     />
                   </div>
@@ -394,7 +392,7 @@ const FeaturesEditor: React.FC = () => {
                       <input
                         type="text"
                         value={feature.icon}
-                        onChange={(e) => updateFeatureField(feature.id, 'icon', e.target.value)}
+                        onChange={(e) => handleUpdateFeatureField(feature.id, 'icon', e.target.value)}
                         placeholder="/icon.svg"
                         className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
@@ -412,7 +410,7 @@ const FeaturesEditor: React.FC = () => {
                       <input
                         type="text"
                         value={feature.backgroundImage || ''}
-                        onChange={(e) => updateFeatureField(feature.id, 'backgroundImage', e.target.value)}
+                        onChange={(e) => handleUpdateFeatureField(feature.id, 'backgroundImage', e.target.value)}
                         placeholder="/background.svg"
                         className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
@@ -483,76 +481,159 @@ const FeaturesEditor: React.FC = () => {
             ))}
           </div>
         </div>
+      </div>
 
         {/* Colors */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-800 mb-4">Colors</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Background Color</label>
-              <input
-                type="color"
-                value={localContent.backgroundColor || '#000000'}
-                onChange={(e) => updateField('backgroundColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
-            </div>
-             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Main Title Color</label>
-              <input
-                type="color"
-                value={localContent.titleColor || '#ffffff'}
-                onChange={(e) => updateField('titleColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Feature Label Color</label>
-              <input
-                type="color"
-                value={localContent.textColor || '#ffffff'}
-                onChange={(e) => updateField('textColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
-            </div>
-           
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Card Background</label>
-              <input
-                type="color"
-                value={localContent.cards[0]?.backgroundColor || '#F1F3EE'}
-                onChange={(e) => {
-                  const updatedCards = localContent.cards.map((card: Card) => ({
-                    ...card,
-                    backgroundColor: e.target.value
-                  }));
-                  updateField('cards', updatedCards);
-                }}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.backgroundColor || '#000000'}
+                  onChange={(e) => updateField('backgroundColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.backgroundColor || '#000000'}
+                  onChange={(e) => updateField('backgroundColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#000000"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Card Title Color</label>
-              <input
-                type="color"
-                value={localContent.cardTitleColor || '#111827'}
-                onChange={(e) => updateField('cardTitleColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Main Title Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.titleColor || '#ffffff'}
+                  onChange={(e) => updateField('titleColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.titleColor || '#ffffff'}
+                  onChange={(e) => updateField('titleColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#ffffff"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Card Description Color</label>
-              <input
-                type="color"
-                value={localContent.cardDescriptionColor || '#4B5563'}
-                onChange={(e) => updateField('cardDescriptionColor', e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Feature Label Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.textColor || '#ffffff'}
+                  onChange={(e) => updateField('textColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.textColor || '#ffffff'}
+                  onChange={(e) => updateField('textColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#ffffff"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.descriptionColor || '#ffffff'}
+                  onChange={(e) => updateField('descriptionColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.descriptionColor || '#ffffff'}
+                  onChange={(e) => updateField('descriptionColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#ffffff"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dot Text Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.dotTextColor || '#FFFFFF'}
+                  onChange={(e) => updateField('dotTextColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.dotTextColor || '#FFFFFF'}
+                  onChange={(e) => updateField('dotTextColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#FFFFFF"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dot Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.dotColor || '#a8aff5'}
+                  onChange={(e) => updateField('dotColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.dotColor || '#a8aff5'}
+                  onChange={(e) => updateField('dotColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#a8aff5"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Card Title Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.cardTitleColor || '#000000'}
+                  onChange={(e) => updateField('cardTitleColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.cardTitleColor || '#000000'}
+                  onChange={(e) => updateField('cardTitleColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#000000"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Card Description Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={localContent.cardDescriptionColor || '#6B7280'}
+                  onChange={(e) => updateField('cardDescriptionColor', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={localContent.cardDescriptionColor || '#6B7280'}
+                  onChange={(e) => updateField('cardDescriptionColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                  placeholder="#6B7280"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
