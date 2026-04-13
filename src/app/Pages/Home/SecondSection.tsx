@@ -46,13 +46,10 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
 
     // Get this specific section's content from Redux store using the passed sectionId
     const section = useAppSelector(state => 
-      state.builder.sections.find(s => s.id === sectionId)
+      state.banner.sections.find(s => s.id === sectionId) || state.builder.sections.find(s => s.id === sectionId)
     );
     
-    // Debug: Log what we're getting from Redux
-    console.log('SecondSection - section from Redux:', section);
-    console.log('SecondSection - section.content:', section?.content);
-    
+        
     // Use content from Redux or fallback to static content
     const content: BannerContent = section?.content || {
       dotText: 'Live Streaming',
@@ -109,15 +106,17 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
 
     return (
         <section 
-            id={section?.id || 'second-1'} 
-            className="relative w-full pt-10 xl:pt-20 pb-10 mb-20 px-4 md:px-12 lg:px-24 bg-white overflow-hidden"
+            id={sectionId || 'second-1'} 
+            className="relative w-full pt-10 lg:pt-20 xl:pt-20 pb-10 mb-20 px-4 md:px-12 lg:px-16 xl:px-16 bg-white overflow-hidden"
             style={{ backgroundColor: content.backgroundColor }}
         >
             <div className="w-full max-w-3xl mx-auto overflow-hidden">
-                <div className={`mx-auto flex max-w-3xl flex-col items-center justify-center gap-8 lg:gap-14 lg:flex-row w-full py-4`}>
+                <div className={`mx-auto flex max-w-3xl flex-col items-center justify-center gap-8 lg:gap-14 
+    ${content.layout === 'right' ? 'lg:flex-row-reverse' : 'lg:flex-row'} 
+    w-full py-4`}>
                     {/* Left Image */}
                     <div
-                        className={`flex-1 order-1 lg:order-none transition-all duration-1000 ease-out z-10 ${getAnimationClass()} w-full max-w-md lg:max-w-lg overflow-hidden`}
+                        className={`flex-1   transition-all duration-1000 ease-out z-10 ${getAnimationClass()} w-full max-w-md lg:max-w-lg overflow-hidden`}
                         style={{
                             opacity: isVisible ? 1 : 0
                         }}
@@ -140,7 +139,7 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
                     {/* Right Content */}
                     <div
                         ref={contentRef}
-                        className={`flex-1 order-2 lg:order-none transition-all duration-1000 ease-out text-center lg:text-left z-20 ${getAnimationClass()} w-full max-w-sm lg:max-w-md overflow-hidden`}
+                        className={`flex-1   transition-all duration-1000 ease-out text-center lg:text-left z-20 ${getAnimationClass()} w-full max-w-sm lg:max-w-md overflow-hidden`}
                         style={{
                             opacity: isVisible ? 1 : 0,
                             wordWrap: 'break-word',
@@ -189,9 +188,9 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
                                     className="flex items-start gap-3 md:gap-4 w-full overflow-x-hidden"
                                 >
                                     <div className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mt-0.5 md:mt-1">
-                                        {index === 0 && <Image src={list} alt="List icon" className="w-full h-full object-contain" />}
-                                        {index === 1 && <Image src={live} alt="Live icon" className="w-full h-full object-contain" />}
-                                        {index === 2 && <Image src={HeroImage} alt="Hero icon" className="w-full h-full object-contain" />}
+                                        {index === 0 && <Image src={list} alt="List icon" width={24} height={24} className="w-full h-full object-contain" />}
+                                        {index === 1 && <Image src={live} alt="Live icon" width={24} height={24} className="w-full h-full object-contain" />}
+                                        {index === 2 && <Image src={HeroImage} alt="Hero icon" width={24} height={24} className="w-full h-full object-contain" />}
                                         {index > 2 && <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-blue-500"></div>}
                                     </div>
                                     <div className="flex-1 min-w-0 overflow-x-hidden">

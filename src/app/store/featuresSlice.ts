@@ -31,6 +31,8 @@ interface FeaturesContent {
   descriptionColor?: string;
   dotTextColor?: string;
   dotColor?: string;
+  cardTitleColor?: string;
+  cardDescriptionColor?: string;
 }
 
 interface FeaturesState {
@@ -73,7 +75,7 @@ const initialState: FeaturesState = {
         id: 'card-3',
         title: 'Payment History',
         description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
-        image: '',
+        image: '/third.svg', // Image shown on right side of payment history card
         backgroundColor: '#F1F3EE',
         layout: 'default'
       },
@@ -116,7 +118,9 @@ const initialState: FeaturesState = {
     subtitleColor: '#ffffff',
     descriptionColor: '#ffffff',
     dotTextColor: '#ffffff',
-    dotColor: '#a8aff5'
+    dotColor: '#a8aff5',
+    cardTitleColor: '#000000',
+    cardDescriptionColor: '#6B7280'
   },
   activeSection: null
 };

@@ -47,7 +47,7 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
 
     // Get this specific section's content from Redux store using the passed sectionId
     const section = useAppSelector(state => 
-      state.builder.sections.find(s => s.id === sectionId)
+      state.banner.sections.find(s => s.id === sectionId) || state.builder.sections.find(s => s.id === sectionId)
     );
     
     // Use content from Redux or fallback to static content
@@ -111,7 +111,7 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
 
     return (
         <section 
-            id={section?.id || 'third-1'} 
+            id={sectionId || 'third-1'} 
             className="relative w-full pt-10 xl:pt-20 pb-10 mb-20 px-4 md:px-12 lg:px-24 bg-white overflow-hidden hide-scrollbar"
             style={{ backgroundColor: content.backgroundColor }}
         >
@@ -120,14 +120,12 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
                     {/* Left Content */}
                     <div
                         ref={contentRef}
-                        className={`flex-1 order-2 lg:order-none transition-all duration-1000 ease-out text-center lg:text-left z-20 ${getAnimationClass()} ${
-                            content.layout === 'right' ? 'lg:order-2' : 'lg:order-1'
-                        }`}
+                        className={`flex-1 order-2 transition-all duration-1000 ease-out text-center lg:text-left z-20 ${getAnimationClass()} lg:order-1`}
                         style={{
                             opacity: isVisible ? 1 : 0
                         }}
                     >
-                    {/* Dot Text */}
+                        {/* Dot Text */}
                         {content.dotText && (
                             <div className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 text-xs sm:text-sm font-medium break-words max-w-full" style={{ color: content?.dotTextColor || '#2b49c5', backgroundColor: content?.dotColor || '#3b82f6' }}>
                                 {content.dotText}
@@ -160,10 +158,9 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
                         <p className="mt-4 mx-auto lg:mx-0 max-w-sm text-sm md:text-base leading-relaxed text-gray-600 break-words">
                             {content.description}
                         </p>
-                    </div>
-                    
-                    {/* Features */}
-                    <div className="space-y-4 pt-4">
+                        
+                        {/* Features */}
+                        <div className="space-y-4 pt-4">
                         {content.features.map((feature, index) => (
                             <div 
                                 key={index}
@@ -199,9 +196,7 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
                 
                 {/* Right Image */}
                 <div
-                    className={`flex-1 order-1 lg:order-none transition-all duration-1000 ease-out z-10 ${getAnimationClass()} ${
-                        content.layout === 'right' ? 'lg:order-1' : 'lg:order-2'
-                    }`}
+                    className={`flex-1 order-1 transition-all duration-1000 ease-out z-10 ${getAnimationClass()} lg:order-2`}
                     style={{
                         opacity: isVisible ? 1 : 0
                     }}
@@ -221,6 +216,7 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
                     )}
                 </div>
             </div>
+        </div>
         </section>
     );
 };

@@ -162,7 +162,7 @@ const DynamicAdmin = () => {
         </div>
 
         {/* Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-14 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 xl:gap-14 items-center">
           {layout === 'left' ? (
             <>
               {/* Left Side: Image */}
@@ -175,7 +175,7 @@ const DynamicAdmin = () => {
                     alt={activeTab.title}
                     width={800}
                     height={600}
-                    className="w-full h-[300px] md:h-[380px] lg:h-[450px] xl:h-[550px] object-cover"
+                    className="w-full h-[300px] md:h-[380px] lg:h-[450px] 2xl:h-[550px] object-cover"
                     priority
                   />
                 </div>
@@ -224,7 +224,7 @@ const DynamicAdmin = () => {
                     alt={activeTab.title}
                     width={800}
                     height={600}
-                    className="w-full h-[300px] md:h-[380px] lg:h-[450px] xl:h-[550px] object-cover"
+                    className="w-full h-[300px] md:h-[380px] lg:h-[450px] 2xl:h-[550px] object-cover"
                     priority
                   />
                 </div>

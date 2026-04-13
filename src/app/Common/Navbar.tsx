@@ -52,7 +52,7 @@ const Navbar = () => {
         <>
             {/* --- NAVBAR --- */}
             <nav className={`fixed top-0 w-full z-[100] transition-all duration-300 py-4 ${scrolled ? "bg-white shadow-md" : "bg-white shadow-md"}`}>
-                <div className="max-w-7xl mx-auto px-2 xl:px-0 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-2 flex items-center justify-between">
 
                     {/* 1. Logo (Left) */}
                    <Image src={logo} alt="ReelBoost" width={40} height={40} />

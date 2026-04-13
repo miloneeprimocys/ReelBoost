@@ -36,11 +36,26 @@ interface BuilderState {
   sections: SectionConfig[];
   activeSection: string | null;
   isPreviewMode: boolean;
+  isInlineEditMode: boolean;
+  editingSectionId: string | null;
+  editingField: string | null;
+  // Section-specific undo/redo functionality
+  sectionHistory: {
+    [sectionId: string]: {
+      past: any[];
+      present: any;
+      future: any[];
+    };
+  };
+  // Section-level operations history (add/delete/reorder) - tracks both builder and banner sections
+  sectionsHistory: {
+    past: { builderSections: SectionConfig[]; bannerSections: any[] }[];
+    present: { builderSections: SectionConfig[]; bannerSections: any[] };
+    future: { builderSections: SectionConfig[]; bannerSections: any[] }[];
+  };
 }
 
-const initialState: BuilderState = {
-  isBuilderMode: false,
-  sections: [
+const initialSections: SectionConfig[] = [
     {
       id: 'hero-1',
       type: 'hero',
@@ -171,7 +186,7 @@ const initialState: BuilderState = {
             id: 'card-3',
             title: 'Payment History',
             description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
-            image: '',
+            image: '/third.svg',
             backgroundColor: '#F1F3EE'
           },
           {
@@ -328,9 +343,22 @@ const initialState: BuilderState = {
         backgroundColor: '#FFFFFF'
       }
     }
-  ],
+  ];
+
+const initialState: BuilderState = {
+  isBuilderMode: false,
+  isInlineEditMode: false,
+  editingSectionId: null,
+  editingField: null,
+  sectionHistory: {},
+  isPreviewMode: false,
   activeSection: null,
-  isPreviewMode: false
+  sectionsHistory: {
+    past: [],
+    present: { builderSections: initialSections, bannerSections: [] },
+    future: []
+  },
+  sections: initialSections
 };
 
 const builderSlice = createSlice({
@@ -349,11 +377,35 @@ const builderSlice = createSlice({
     togglePreviewMode: (state) => {
       state.isPreviewMode = !state.isPreviewMode;
     },
+    setInlineEditMode: (state, action: PayloadAction<boolean>) => {
+      state.isInlineEditMode = action.payload;
+    },
+    setEditingSection: (state, action: PayloadAction<{ sectionId: string | null; field: string | null }>) => {
+      state.editingSectionId = action.payload.sectionId;
+      state.editingField = action.payload.field;
+    },
     updateSectionContent: (state, action: PayloadAction<{ id: string; content: any }>) => {
       const { id, content } = action.payload;
       const section = state.sections.find(s => s.id === id);
       if (section) {
+        // Initialize section history if it doesn't exist
+        if (!state.sectionHistory[id]) {
+          state.sectionHistory[id] = {
+            past: [],
+            present: { ...section.content },
+            future: []
+          };
+        }
+        
+        // Save current content to history before updating
+        state.sectionHistory[id].past = [...state.sectionHistory[id].past, state.sectionHistory[id].present];
+        state.sectionHistory[id].future = [];
+        
+        // Update the section content
         section.content = { ...section.content, ...content };
+        
+        // Update present state
+        state.sectionHistory[id].present = { ...section.content };
       }
     },
     toggleSectionVisibility: (state, action: PayloadAction<string>) => {
@@ -363,10 +415,27 @@ const builderSlice = createSlice({
       }
     },
     deleteSection: (state, action: PayloadAction<string>) => {
+      console.log('Delete section called with id:', action.payload);
+      console.log('Before delete - sections count:', state.sections.length, 'history past length:', state.sectionsHistory.past.length);
+      
+      // Save current state to history before deleting
+      state.sectionsHistory.past = [...state.sectionsHistory.past, { ...state.sectionsHistory.present }];
+      state.sectionsHistory.future = [];
+      
       state.sections = state.sections.filter(s => s.id !== action.payload);
       if (state.activeSection === action.payload) {
         state.activeSection = null;
       }
+      
+      // Clean up section history for deleted section
+      delete state.sectionHistory[action.payload];
+      
+      // Update present state with both builder and banner sections
+      state.sectionsHistory.present = {
+        builderSections: [...state.sections],
+        bannerSections: state.sectionsHistory.present.bannerSections
+      };
+      console.log('After delete - sections count:', state.sections.length, 'history past length:', state.sectionsHistory.past.length);
     },
     addSection: (state, action: PayloadAction<{ type: SectionConfig['type']; name?: string }>) => {
       const { type, name } = action.payload;
@@ -379,7 +448,16 @@ const builderSlice = createSlice({
         order: state.sections.length + 1,
         content: getDefaultContent(type, isNewFifth)
       };
+      
+      // Save current state to history before adding
+      state.sectionsHistory.past = [...state.sectionsHistory.past, { ...state.sectionsHistory.present }];
+      state.sectionsHistory.future = [];
+      
       state.sections.push(newSection);
+      state.sectionsHistory.present = {
+        builderSections: [...state.sections],
+        bannerSections: state.sectionsHistory.present.bannerSections
+      };
     },
     addSectionAndSetActive: (state, action: PayloadAction<{ type: SectionConfig['type']; name?: string }>) => {
       const { type, name } = action.payload;
@@ -396,14 +474,31 @@ const builderSlice = createSlice({
       };
       
       console.log('Creating new section:', newSection);
+      console.log('Before add - sections count:', state.sections.length, 'history past length:', state.sectionsHistory.past.length);
+      
+      // Save current state to history before adding
+      state.sectionsHistory.past = [...state.sectionsHistory.past, { ...state.sectionsHistory.present }];
+      state.sectionsHistory.future = [];
+      
       state.sections.push(newSection);
       // Set the new section as active
       state.activeSection = newSection.id;
       console.log('Set activeSection to:', newSection.id);
+      
+      // Update present state with both builder and banner sections
+      state.sectionsHistory.present = {
+        builderSections: [...state.sections],
+        bannerSections: state.sectionsHistory.present.bannerSections
+      };
+      console.log('After add - sections count:', state.sections.length, 'history past length:', state.sectionsHistory.past.length);
     },
     reorderSections: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {
       const { fromIndex, toIndex } = action.payload;
       if (fromIndex === toIndex) return;
+      
+      // Save current state to history before reordering
+      state.sectionsHistory.past = [...state.sectionsHistory.past, { ...state.sectionsHistory.present }];
+      state.sectionsHistory.future = [];
       
       const draggedSection = state.sections[fromIndex];
       state.sections.splice(fromIndex, 1);
@@ -413,6 +508,12 @@ const builderSlice = createSlice({
       state.sections.forEach((section, index) => {
         section.order = index + 1;
       });
+      
+      // Update present state with both builder and banner sections
+      state.sectionsHistory.present = {
+        builderSections: [...state.sections],
+        bannerSections: state.sectionsHistory.present.bannerSections
+      };
     },
     updateHeroContent: (state, action: PayloadAction<Partial<HeroContent>>) => {
       const heroSection = state.sections.find(s => s.type === 'hero');
@@ -435,7 +536,122 @@ const builderSlice = createSlice({
           section.content = { ...section.content, ...action.payload.content };
         }
       }
-    }
+    },
+    // Section-specific undo/redo actions
+    undoSection: (state, action: PayloadAction<string>) => {
+      const sectionId = action.payload;
+      const sectionHistory = state.sectionHistory[sectionId];
+      
+      if (sectionHistory && sectionHistory.past.length > 0) {
+        const previous = sectionHistory.past[sectionHistory.past.length - 1];
+        sectionHistory.past = sectionHistory.past.slice(0, sectionHistory.past.length - 1);
+        sectionHistory.future = [sectionHistory.present, ...sectionHistory.future];
+        sectionHistory.present = previous;
+        
+        // Update the actual section content
+        const section = state.sections.find(s => s.id === sectionId);
+        if (section) {
+          section.content = { ...previous };
+        }
+      }
+    },
+    redoSection: (state, action: PayloadAction<string>) => {
+      const sectionId = action.payload;
+      const sectionHistory = state.sectionHistory[sectionId];
+      
+      if (sectionHistory && sectionHistory.future.length > 0) {
+        const next = sectionHistory.future[0];
+        sectionHistory.future = sectionHistory.future.slice(1);
+        sectionHistory.past = [...sectionHistory.past, sectionHistory.present];
+        sectionHistory.present = next;
+        
+        // Update the actual section content
+        const section = state.sections.find(s => s.id === sectionId);
+        if (section) {
+          section.content = { ...next };
+        }
+      }
+    },
+    // Legacy undo/redo for backward compatibility (now uses active section)
+    undo: (state) => {
+      if (state.editingSectionId && state.sectionHistory[state.editingSectionId]) {
+        const sectionHistory = state.sectionHistory[state.editingSectionId];
+        if (sectionHistory.past.length > 0) {
+          const previous = sectionHistory.past[sectionHistory.past.length - 1];
+          sectionHistory.past = sectionHistory.past.slice(0, sectionHistory.past.length - 1);
+          sectionHistory.future = [sectionHistory.present, ...sectionHistory.future];
+          sectionHistory.present = previous;
+          
+          const section = state.sections.find(s => s.id === state.editingSectionId);
+          if (section) {
+            section.content = { ...previous };
+          }
+        }
+      }
+    },
+    redo: (state) => {
+      if (state.editingSectionId && state.sectionHistory[state.editingSectionId]) {
+        const sectionHistory = state.sectionHistory[state.editingSectionId];
+        if (sectionHistory.future.length > 0) {
+          const next = sectionHistory.future[0];
+          sectionHistory.future = sectionHistory.future.slice(1);
+          sectionHistory.past = [...sectionHistory.past, sectionHistory.present];
+          sectionHistory.present = next;
+          
+          const section = state.sections.find(s => s.id === state.editingSectionId);
+          if (section) {
+            section.content = { ...next };
+          }
+        }
+      }
+    },
+    // Section-level undo/redo for add/delete/reorder operations
+    undoSections: (state) => {
+      console.log('undoSections called - past length:', state.sectionsHistory.past.length, 'current sections:', state.sections.length);
+      if (state.sectionsHistory.past.length > 0) {
+        const previous = state.sectionsHistory.past[state.sectionsHistory.past.length - 1];
+        console.log('Undo - restoring from previous state with', previous.builderSections.length, 'builder sections and', previous.bannerSections?.length || 0, 'banner sections');
+        state.sectionsHistory.past = state.sectionsHistory.past.slice(0, state.sectionsHistory.past.length - 1);
+        state.sectionsHistory.future = [state.sectionsHistory.present, ...state.sectionsHistory.future];
+        state.sectionsHistory.present = previous;
+        state.sections = [...previous.builderSections];
+        // Store banner sections for external restoration
+        (state as any)._pendingBannerSections = previous.bannerSections || [];
+        console.log('Undo completed - new sections count:', state.sections.length, 'future length:', state.sectionsHistory.future.length, 'pending banner sections:', (state as any)._pendingBannerSections.length);
+      } else {
+        console.log('Undo called but no past states available');
+      }
+    },
+    redoSections: (state) => {
+      console.log('redoSections called - future length:', state.sectionsHistory.future.length, 'current sections:', state.sections.length);
+      if (state.sectionsHistory.future.length > 0) {
+        const next = state.sectionsHistory.future[0];
+        console.log('Redo - restoring from next state with', next.builderSections.length, 'builder sections and', next.bannerSections?.length || 0, 'banner sections');
+        state.sectionsHistory.future = state.sectionsHistory.future.slice(1);
+        state.sectionsHistory.past = [...state.sectionsHistory.past, state.sectionsHistory.present];
+        state.sectionsHistory.present = next;
+        state.sections = [...next.builderSections];
+        // Store banner sections for external restoration
+        (state as any)._pendingBannerSections = next.bannerSections || [];
+        console.log('Redo completed - new sections count:', state.sections.length, 'past length:', state.sectionsHistory.past.length, 'pending banner sections:', (state as any)._pendingBannerSections.length);
+      } else {
+        console.log('Redo called but no future states available');
+      }
+    },
+    // Action to update sections history when banner/admin sections are added/removed (since they're in separate slices)
+    updateSectionsHistory: (state, action: PayloadAction<{ bannerSections?: any[] }>) => {
+      // This action is called when banner/admin sections change to sync the history
+      // Save current state to history - this captures both builder and banner sections state
+      state.sectionsHistory.past = [...state.sectionsHistory.past, { ...state.sectionsHistory.present }];
+      state.sectionsHistory.future = [];
+      
+      // Update present state with current builder sections and provided banner sections
+      state.sectionsHistory.present = {
+        builderSections: [...state.sections],
+        bannerSections: action.payload?.bannerSections || state.sectionsHistory.present.bannerSections || []
+      };
+      console.log('Sections history updated - builder sections:', state.sectionsHistory.present.builderSections.length, 'banner sections:', state.sectionsHistory.present.bannerSections.length);
+    },
   }
 });
 
@@ -518,9 +734,9 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
           },
           {
             id: 'card-3',
-            title: 'New Demo Card 3',
-            description: 'Demo description for card 3 with sample content text.',
-            image: '',
+            title: 'Payment History',
+            description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
+            image: '/third.svg',
             backgroundColor: '#F1F3EE',
             layout: 'default'
           },
@@ -594,7 +810,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
             id: 'card-3',
             title: 'Payment History',
             description: 'View your complete payment history.',
-            image: '',
+            image: '/third.svg',
             backgroundColor: '#F1F3EE'
           },
           {
@@ -726,14 +942,13 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         title: 'Many Benefits You Get',
         highlightedTitle: 'Using Product',
         benefits: [
-          { id: 'benefit-1', iconName: 'Star', iconImage: undefined, title: 'Benefit 1', description: 'Description for benefit 1', order: 1 },
-          { id: 'benefit-2', iconName: 'Star', iconImage: undefined, title: 'Benefit 2', description: 'Description for benefit 2', order: 2 },
-          { id: 'benefit-3', iconName: 'Star', iconImage: undefined, title: 'Benefit 3', description: 'Description for benefit 3', order: 3 }
+          { id: 'benefit-1', iconName: 'Star', title: 'Demo Data 1', description: 'This is demo data for the first benefit. You can customize this text to match your specific product or service features.', order: 1 },
+          { id: 'benefit-2', iconName: 'CheckCircle', title: 'Demo Data 2', description: 'This is demo data for the second benefit. Replace this with actual benefits that your customers will receive.', order: 2 },
+          { id: 'benefit-3', iconName: 'Zap', title: 'Demo Data 3', description: 'This is demo data for the third benefit. Make sure to highlight the unique value propositions of your offering.', order: 3 }
         ],
         dotColor: '#4A6CF7',
         dotTextColor: '#000000',
         titleColor: '#111827',
-        highlightedTitleBgColor: 'transparent',
         highlightedTitleColor: '#111827',
         benefitIconColor: '#2563EB',
         benefitTitleColor: '#111827',
@@ -809,9 +1024,48 @@ export const {
   reorderSections,
   updateSectionContent,
   updateHeroContent,
+  undo,
+  redo,
+  undoSection,
+  redoSection,
+  undoSections,
+  redoSections,
+  updateSectionsHistory,
   togglePreviewMode,
   doneSection,
-  markSectionAsReady
+  markSectionAsReady,
+  setInlineEditMode,
+  setEditingSection
 } = builderSlice.actions;
+
+// Selectors
+export const selectCanUndo = (state: { builder: BuilderState }) => {
+  const { editingSectionId, sectionHistory } = state.builder;
+  return !!(editingSectionId && sectionHistory[editingSectionId]?.past.length > 0);
+};
+export const selectCanRedo = (state: { builder: BuilderState }) => {
+  const { editingSectionId, sectionHistory } = state.builder;
+  return !!(editingSectionId && sectionHistory[editingSectionId]?.future.length > 0);
+};
+export const selectSectionCanUndo = (sectionId: string) => (state: { builder: BuilderState }) => 
+  state.builder.sectionHistory[sectionId]?.past.length > 0;
+export const selectSectionCanRedo = (sectionId: string) => (state: { builder: BuilderState }) => 
+  state.builder.sectionHistory[sectionId]?.future.length > 0;
+
+// Selectors for sections-level undo/redo (for SectionList)
+export const selectSectionsCanUndo = (state: { builder: BuilderState }) => {
+  const canUndo = state.builder.sectionsHistory.past.length > 0;
+  console.log('selectSectionsCanUndo - past length:', state.builder.sectionsHistory.past.length, 'canUndo:', canUndo);
+  return canUndo;
+};
+export const selectSectionsCanRedo = (state: { builder: BuilderState }) => {
+  const canRedo = state.builder.sectionsHistory.future.length > 0;
+  console.log('selectSectionsCanRedo - future length:', state.builder.sectionsHistory.future.length, 'canRedo:', canRedo);
+  return canRedo;
+};
+// Selector to get pending banner sections for restoration after undo/redo
+export const selectPendingBannerSections = (state: { builder: BuilderState }) => {
+  return (state.builder as any)._pendingBannerSections;
+};
 
 export default builderSlice.reducer;

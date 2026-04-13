@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { useAppSelector } from "../../hooks/reduxHooks";
-import { Video, MessageCircle, Star, Zap, Shield, Globe } from "lucide-react";
+import { Video, MessageCircle, Star, Zap, Shield, Globe, Edit } from "lucide-react";
 import HeroImage from "../../../../public/sword.svg";
 import Audience from "../../../../public/audience.svg";
 import Gift from "../../../../public/gift.svg";
@@ -38,9 +38,10 @@ interface BannerContent {
 interface DynamicBannerProps {
   sectionId: string;
   sectionContent?: BannerContent;
+  onEdit?: (sectionId: string, contentType: 'text' | 'style' | 'image', elementId: string) => void;
 }
 
-const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent }) => {
+const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent, onEdit }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -53,6 +54,10 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   const bannerSection = useAppSelector(state => 
     state.banner.sections.find(s => s.id === sectionId)
   );
+  
+  console.log('DynamicBanner - Looking for section:', sectionId);
+  console.log('DynamicBanner - Builder section:', builderSection);
+  console.log('DynamicBanner - Banner section:', bannerSection);
   
   // Helper function to render correct icon - MOVED INSIDE COMPONENT
   const renderIcon = (iconName: string, className: string, sectionType?: string, featureIndex?: number) => {
@@ -109,14 +114,35 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   console.log('DynamicBanner - builderSection:', builderSection);
   console.log('DynamicBanner - builderSection.type:', builderSection?.type);
   
-  // Merge content: use section content from Redux or fallback to prop content
-  const getDefaultLayout = () => {
-    const sectionType = builderSection?.type || bannerSection?.type;
-    if (sectionType === 'live-streaming' || sectionType === 'second') return 'left'; // Image on left, content on right
-    if (sectionType === 'pk-battle' || sectionType === 'third') return 'right'; // Image on right, content on left
-    return 'left'; // Default for banner
-  };
+  // Helper function to determine default layout based on section type
+ const getDefaultLayout = () => {
+  const type = builderSection?.type || bannerSection?.type || "";
+  const id = sectionId || "";
 
+  // 🔥 Live Streaming → LEFT
+  if (
+    type === "second" ||
+    type === "live-streaming" ||
+    id.includes("second") ||
+    id.includes("live-streaming")
+  ) {
+    return "left";
+  }
+
+  // 🔥 PK Battle → RIGHT
+  if (
+    type === "third" ||
+    type === "pk-battle" ||
+    id.includes("third") ||
+    id.includes("pk-battle")
+  ) {
+    return "right";
+  }
+
+  return "right"; // default fallback
+};
+
+  // Merge content: prioritize builder section content, then banner section, then fallback
   const baseContent = builderSection?.content || bannerSection?.content || sectionContent || {
     dotText: 'Demo Live Streaming',
     title: 'Demo Title',
@@ -144,10 +170,10 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   };
 
   // Apply default layout if not set
-  const bannerContent = {
-    ...baseContent,
-    layout: baseContent.layout || getDefaultLayout()
-  };
+const bannerContent = {
+  ...baseContent,
+  layout: baseContent.layout || getDefaultLayout()
+};
 
   useEffect(() => {
     setIsMounted(true);
@@ -198,15 +224,15 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
     const isCenterLayout = layout === 'center';
 
     return (
-      <div className={`w-full max-w-7xl mx-auto grid grid-cols-1 ${
+      <div className={`w-full max-w-6xl mx-auto grid grid-cols-1 ${
         isCenterLayout ? 'lg:grid-cols-1' : 
-        isRightLayout ? 'lg:grid-cols-[1fr_auto]' : 
+        isRightLayout ? 'lg:grid-cols-2' : 
         'lg:grid-cols-2'
       } items-center gap-8 lg:gap-12`}>
         
         {/* Image Section */}
         {isCenterLayout ? (
-          <div className="flex justify-center">
+          <div className="flex justify-center order-1">
             {renderImageSection()}
           </div>
         ) : isRightLayout ? (
@@ -214,7 +240,7 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
             {renderImageSection()}
           </div>
         ) : (
-          <div className="order-2 lg:order-2">
+          <div className="order-1 lg:order-2">
             {renderImageSection()}
           </div>
         )}
@@ -224,11 +250,11 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
           ref={contentRef}
           className={`flex flex-col space-y-4 xl:space-y-6 w-full overflow-x-hidden ${
             isRightLayout ? 'order-2 lg:order-2 lg:pl-4' :
-            isCenterLayout ? 'text-center items-center' :
-            'order-1 lg:order-1 lg:pr-4'
+            isCenterLayout ? 'text-center items-center order-2' :
+            'order-2 lg:order-1 lg:pr-4'
           }`}
         >
-          <div className={`${getAnimationClass()} ${getVisibilityClass()} w-full ${isCenterLayout ? 'flex flex-col items-center' : ''}`}>
+          <div className={`transition-opacity duration-500 w-full ${isCenterLayout ? 'flex flex-col items-center' : ''} ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             {bannerContent.dotText && (
               <span className="inline-flex items-center gap-2 mb-3 xl:mb-5 text-[14px] font-normal tracking-normal uppercase break-words" 
                     style={{ color: bannerContent.dotTextColor || bannerContent.descriptionColor }}>
@@ -238,16 +264,18 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
             )}
             
             <h2 
-              className="text-3xl md:text-5xl xl:text-6xl tracking-tight font-medium leading-[1.1] xl:leading-[1] break-words w-full"
+              className={`text-3xl md:text-5xl xl:text-6xl tracking-tight font-medium leading-[1.1] xl:leading-[1] break-words w-full ${onEdit ? 'cursor-pointer hover:opacity-80' : ''} transition-opacity`}
               style={{ color: bannerContent.titleColor }}
+              onClick={() => onEdit && onEdit(sectionId, 'text', 'banner-title')}
             >
               {bannerContent.title}
             </h2>
             
             
             <p 
-              className="mt-4 xl:mt-6 text-[15px] xl:text-[17px] leading-relaxed break-words w-full"
+              className={`mt-4 xl:mt-6 text-[15px] xl:text-[17px] leading-relaxed break-words w-full ${onEdit ? 'cursor-pointer hover:opacity-80' : ''} transition-opacity`}
               style={{ color: bannerContent.descriptionColor }}
+              onClick={() => onEdit && onEdit(sectionId, 'text', 'banner-description')}
             >
               {bannerContent.description}
             </p>
@@ -257,12 +285,12 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
             {(bannerContent.features || []).map((feature: any, index: number) => (
               <div
                 key={index}
-                className={`group flex items-start gap-4 py-3 xl:py-4 px-1.5 rounded-2xl cursor-pointer ${getAnimationClass()} ${isCenterLayout ? 'max-w-2xl mx-auto' : 'w-full'}`}
+                className={`group flex items-start gap-4 py-3 xl:py-4 px-1.5 rounded-2xl cursor-pointer transition-all duration-500 ${isCenterLayout ? 'max-w-2xl mx-auto' : 'w-full'}`}
                 style={{ 
-                  transitionDelay: `${(index + 1) * 200}ms`,
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateY(0)' : 'translateY(8px)'
+                  opacity: isVisible ? 1 : 0.5,
+                  transform: isVisible ? 'translateY(0)' : 'translateY(4px)'
                 }}
+                onClick={() => onEdit && onEdit(sectionId, 'text', `banner-feature-${index}`)}
               >
                 {isCenterLayout ? (
                   <div className="flex flex-col items-center text-center w-full">
@@ -321,100 +349,121 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
     );
   };
 
- const renderImageSection = () => {
-    const isRightLayout = bannerContent.layout === 'right';
-    const isLeftLayout = bannerContent.layout === 'left';
+const renderImageSection = () => {
+  const isRightLayout = bannerContent.layout === 'right';
+  const isLeftLayout = bannerContent.layout === 'left';
     
-    // Determine rotation direction based on layout
-    const getMainRotation = () => {
-      if (isRightLayout) {
-        // Image on right - tilt toward left (negative)
-        return isMounted && isClicked ? '-2deg' : '-12deg';
-      } else {
-        // Image on left or center - tilt toward right (positive)
-        return isMounted && isClicked ? '2deg' : '12deg';
-      }
-    };
-    
-    const getSecondaryRotation = () => {
-      if (isRightLayout) {
-        return '12deg';
-      } else {
-        return '-12deg';
-      }
-    };
-    
-    return (
-      <div className="relative flex justify-center mt-10">
-        {/* Background Decorative Box */}
-        <div
-          onClick={() => setIsClicked(false)}
-          className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] md:w-[450px] md:h-[450px] lg:w-[400px] lg:h-[400px] xl:w-[550px] xl:h-[550px] rounded-[20px] hide-scrollbar overflow-hidden cursor-pointer"
-          style={{
-            backgroundColor: bannerContent.backgroundColor || '#4A72FF',
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.15) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255,255,255,0.15) 1.5px, transparent 1.5px)",
-            backgroundSize: "38px 38px",
-            backgroundPosition: "center center"
-          }}
-        />
-
-        {/* Image Container */}
-        <div
-          onClick={(e) => { e.stopPropagation(); setIsClicked(!isClicked); }}
-          className={`absolute top-1/2 -translate-y-1/2 w-[200px] sm:w-[240px] md:w-[300px] lg:w-[280px] xl:w-[350px] group cursor-pointer ${
-            isRightLayout 
-              ? 'left-[54%] sm:left-1/2 xl:left-28 lg:left-15 -translate-x-1/2 lg:translate-x-0' 
-              : 'right-[54%] sm:right-1/2 xl:right-28 lg:right-15 translate-x-1/2 lg:translate-x-0'
-          }`}
-        >
-          <div 
-            className="absolute inset-0"
-            style={{ 
-              transform: `rotate(${getSecondaryRotation()})`
-            }}
-          >
-            {bannerContent.backgroundImage && (
-              <Image
-                src={bannerContent.backgroundImage}
-                alt="Secondary View"
-                width={850}
-                height={710}
-                className="rounded-[2rem] sm:rounded-[3rem] w-[180px] h-[280px] sm:w-[220px] sm:h-[320px] md:w-[400px] md:h-[420px] lg:w-[480px] lg:h-[450px] xl:w-[780px] xl:h-[650px]"
-              />
-            )}
-          </div>
-
-          <div
-            className={`relative transform transition-transform duration-500 ease-out ${
-              isRightLayout
-                ? (isMounted && isClicked
-                    ? 'rotate-[2deg]'
-                    : 'rotate-[12deg] group-hover:rotate-[-2deg]')
-                : (isMounted && isClicked
-                    ? 'rotate-[-2deg]'
-                    : 'rotate-[-12deg] group-hover:rotate-[2deg]')
-            }`}
-          >
-            {bannerContent.backgroundImage && (
-              <Image
-                src={bannerContent.backgroundImage}
-                alt="Main View"
-                width={850}
-                height={710}
-                priority
-                className="rounded-[2rem] sm:rounded-[3rem] w-[180px] h-[280px] sm:w-[220px] sm:h-[320px] md:w-[400px] md:h-[420px] lg:w-[480px] lg:h-[450px] xl:w-[780px] xl:h-[650px]"
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  const getMainRotation = () => {
+    if (isLeftLayout) {
+      // Image on LEFT → tilt RIGHT (+)
+      return isMounted && isClicked ? '2deg' : '12deg';
+    }
+    if (isRightLayout) {
+      // Image on RIGHT → tilt LEFT (-)
+      return isMounted && isClicked ? '-2deg' : '-12deg';
+    }
+    return '0deg';
   };
+
+  const getSecondaryRotation = () => {
+    if (isLeftLayout) {
+      // Image on LEFT → secondary tilts LEFT (-)
+      return isMounted && isClicked ? '-2deg' : '-12deg';
+    }
+    if (isRightLayout) {
+      // Image on RIGHT → secondary tilts RIGHT (+)
+      return isMounted && isClicked ? '2deg' : '12deg';
+    }
+    return '0deg';
+  };
+    
+  return (
+    <div className="relative flex justify-center mt-10">
+      {/* Background Decorative Box */}
+      <div
+        onClick={() => {
+          setIsClicked(false);
+          onEdit && onEdit(sectionId, 'image', 'banner-background');
+        }}
+        className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] md:w-[450px] md:h-[450px] lg:w-[400px] lg:h-[400px] xl:w-[550px] xl:h-[550px] rounded-[20px] hide-scrollbar overflow-hidden cursor-pointer"
+        style={{
+          backgroundColor: bannerContent.backgroundColor || '#4A72FF',
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.15) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255,255,255,0.15) 1.5px, transparent 1.5px)",
+          backgroundSize: "38px 38px",
+          backgroundPosition: "center center"
+        }}
+      />
+
+    {/* Image Container */}
+<div
+  onClick={(e) => { e.stopPropagation(); setIsClicked(!isClicked); }}
+  className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[260px] sm:w-[240px] md:w-[300px] lg:w-[280px] xl:w-[350px] group cursor-pointer lg:left-auto lg:right-auto lg:translate-x-0 ${
+      isRightLayout 
+      ? 'lg:left-[15%] xl:left-10 2xl:left-24 lg:left-15 lg:-translate-x-1/2' 
+      : 'lg:left-[55%] xl:left-10 2xl:left-32 lg:left-15 lg:-translate-x-1/2'
+  }`}
+>
+  {/* Secondary Image - tilts opposite direction */}
+  <div 
+    className="absolute inset-0 transition-transform duration-500 ease-out"
+    style={{ 
+      transform: `rotate(${getSecondaryRotation()})`
+    }}
+  >
+    {bannerContent.backgroundImage && (
+      <Image
+        src={bannerContent.backgroundImage}
+        alt="Secondary View"
+        width={850}
+        height={710}
+        className="rounded-[2rem] sm:rounded-[3rem] w-[220px] h-[320px] sm:w-[220px] sm:h-[320px] md:w-[400px] md:h-[420px] lg:w-[480px] lg:h-[450px] 2xl:w-[780px] 2xl:h-[650px] xl:w-[680px] xl:h-[620px]"
+      />
+    )}
+  </div>
+
+  {/* Main Image */}
+  <div
+    className={`relative transform transition-transform duration-500 ease-out ${
+      isRightLayout
+        ? (isMounted && isClicked
+            ? 'rotate-[2deg]'
+            : 'rotate-[12deg] group-hover:rotate-[-2deg]')
+        : (isMounted && isClicked
+            ? 'rotate-[-2deg]'
+            : 'rotate-[-12deg] group-hover:rotate-[2deg]')
+    }`}
+  >
+    {bannerContent.backgroundImage && (
+      <Image
+        src={bannerContent.backgroundImage}
+        alt="Main View"
+        width={850}
+        height={710}
+        priority
+        className="rounded-[2rem] sm:rounded-[3rem] w-[220px] h-[320px] sm:w-[220px] sm:h-[320px] md:w-[400px] md:h-[420px] lg:w-[480px] lg:h-[450px] 2xl:w-[780px] 2xl:h-[650px] xl:w-[680px] xl:h-[620px]"
+      />
+    )}
+  </div>
+</div>
+    </div>
+  );
+};
   return (
     <section 
       id={sectionId} 
-      className="relative w-full py-10 xl:py-20 px-4 md:px-12 lg:px-24 bg-white overflow-x-hidden"
+      className="relative w-full py-10 xl:py-20 px-4 md:px-8 bg-white overflow-x-hidden"
     >
+      {/* Edit Icon - Top Right Corner - Only visible in builder mode */}
+      {onEdit && (
+        <button
+          onClick={() => onEdit(sectionId, 'text', 'banner-title')}
+          className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105 transition-all z-10 hover:bg-gray-50"
+          title="Edit Banner Section"
+        >
+          <Edit size={16} className="text-gray-600" />
+        </button>
+      )}
+      
       {renderContent()}
     </section>
   );

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { X, Edit3, ChevronLeft } from "lucide-react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { X, Edit3, ChevronLeft, Undo, Redo } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/reduxHooks";
+import { store } from "../../store";
 import { 
   toggleBuilderMode, 
   setActiveSection, 
@@ -10,7 +11,17 @@ import {
   deleteSection, 
   addSectionAndSetActive, 
   reorderSections, 
-  updateSectionContent
+  updateSectionContent,
+  undo,
+  redo,
+  undoSections,
+  redoSections,
+  updateSectionsHistory,
+  selectCanUndo,
+  selectCanRedo,
+  selectSectionsCanUndo,
+  selectSectionsCanRedo,
+  selectPendingBannerSections
 } from "../../store/builderSlice";
 import { 
   setActiveBannerSection, 
@@ -19,7 +30,12 @@ import {
   deleteBannerSection,
   toggleBannerSectionVisibility,
   setBannerSectionOrder,
-  reorderBannerSections
+  reorderBannerSections,
+  setAllBannerSections,
+  undoBanner,
+  redoBanner,
+  selectBannerCanUndo,
+  selectBannerCanRedo
 } from "../../store/bannerSlice";
 import { 
   setActiveSection as setActiveAdminSection,
@@ -29,7 +45,7 @@ import {
   toggleAdminSectionVisibility,
   reorderAdminSections
 } from "../../store/adminSlice";
-import { openEditor } from "../../store/editorSlice";
+import { openEditor, setEditingOverlay } from "../../store/editorSlice";
 import HeroEditor from "./WebsiteBuilder/HeroEditor";
 import BannerEditor from "./WebsiteBuilder/BannerEditor";
 import FeaturesEditor from "./WebsiteBuilder/FeaturesEditor";
@@ -37,49 +53,209 @@ import AdminEditor from "./WebsiteBuilder/AdminEditor";
 import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 
+// Import homepage section components for preview
+import Hero from "../../Pages/Home/Hero";
+import SecondSection from "../../Pages/Home/SecondSection";
+import ThirdSection from "../../Pages/Home/ThirdSection";
+import FourthSection from "../../Pages/Home/FourthSection";
+import FifthSection from "../../Pages/Home/FifthSection";
+import SixthSection from "../../Pages/Home/SixthSection";
+import DynamicBanner from "../../sections/Home/DynamicBanner";
+import DynamicBenefits from "../../sections/Home/DynamicBenefits";
+import DynamicFeatures from "../../sections/Home/DynamicFeatures";
+
 const WebsiteBuilder: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isBuilderMode, sections, activeSection } = useAppSelector(state => state.builder);
+  const { isBuilderMode, sections, activeSection, isInlineEditMode } = useAppSelector(state => state.builder);
+  const canUndo = useAppSelector(selectCanUndo);
+  const canRedo = useAppSelector(selectCanRedo);
+  const sectionsCanUndo = useAppSelector(selectSectionsCanUndo);
+  const sectionsCanRedo = useAppSelector(selectSectionsCanRedo);
   const { sections: bannerSections, activeSection: activeBannerSection } = useAppSelector(state => state.banner);
+  const bannerCanUndo = useAppSelector(selectBannerCanUndo);
+  const bannerCanRedo = useAppSelector(selectBannerCanRedo);
   const { sections: adminSections, activeSection: activeAdminSection } = useAppSelector(state => state.admin);
   const { editorSection } = useAppSelector(state => state.editor);
   
+  // Create a ref for the preview container
+  const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Sections-level undo/redo handlers for SectionList
+  const handleSectionsUndo = () => {
+    console.log('handleSectionsUndo called - sectionsCanUndo:', sectionsCanUndo);
+    if (sectionsCanUndo) {
+      console.log('Using sections undo');
+      dispatch(undoSections());
+    } else {
+      console.log('No sections undo available');
+    }
+  };
+
+  const handleSectionsRedo = () => {
+    console.log('handleSectionsRedo called - sectionsCanRedo:', sectionsCanRedo);
+    if (sectionsCanRedo) {
+      console.log('Using sections redo');
+      dispatch(redoSections());
+    } else {
+      console.log('No sections redo available');
+    }
+  };
+
+  // Get pending banner sections for restoration
+  const pendingBannerSections = useAppSelector(selectPendingBannerSections);
+
+  // Restore banner sections after undo/redo
+  useEffect(() => {
+    if (pendingBannerSections && Array.isArray(pendingBannerSections) && pendingBannerSections.length > 0) {
+      console.log('Restoring banner sections after undo/redo:', pendingBannerSections.length, 'sections');
+      // Restore all banner sections at once
+      dispatch(setAllBannerSections(pendingBannerSections));
+    }
+  }, [pendingBannerSections, dispatch]);
+
+  // Wrapper functions for banner operations
+  const handleAddBannerSection = () => {
+    const allOrders = [
+      ...sections.map(s => s.order || 0),
+      ...bannerSections.map(s => s.order || 0),
+      ...adminSections.map(s => s.order || 0)
+    ];
+    const maxOrder = Math.max(...allOrders, 0);
+    
+    console.log('Before adding banner - banner sections count:', bannerSections.length);
+    
+    // FIRST: Save current state to history BEFORE adding (this captures state with 0 banners)
+    // This ensures undo will restore to this state (0 banners)
+    dispatch(updateSectionsHistory({ bannerSections }));
+    console.log('History saved with', bannerSections.length, 'banner sections');
+    
+    // THEN: Add the banner section
+    dispatch(addBannerSection({ type: 'banner', maxOrder }));
+    
+    console.log('Banner section added');
+  };
+
+  const handleDeleteBannerSection = (id: string) => {
+    console.log('Before deleting banner - banner sections count:', bannerSections.length);
+    
+    // Delete banner section - the useEffect will automatically track the change
+    dispatch(deleteBannerSection(id));
+    
+    console.log('Banner section deleted');
+  };
+
+  const handleDeleteAdminSection = (id: string) => {
+    console.log('Before deleting admin - admin sections count:', adminSections.length);
+    
+    // Delete admin section - the useEffect will automatically track the change
+    dispatch(deleteAdminSection(id));
+    
+    console.log('Admin section deleted');
+  };
+  
+  // Note: We no longer auto-update history when banner sections change
+  // History is now manually managed in handleAddBannerSection and handleDeleteBannerSection
+  // This ensures proper undo/redo behavior
+
+  // Add keyboard shortcuts for sections-level undo/redo
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + Z (undo) or Ctrl/Cmd + Y (redo)
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+        if (event.key === 'z') {
+          event.preventDefault();
+          console.log('Keyboard shortcut: Sections Undo');
+          handleSectionsUndo();
+        } else if (event.key === 'y') {
+          event.preventDefault();
+          console.log('Keyboard shortcut: Sections Redo');
+          handleSectionsRedo();
+        }
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleSectionsUndo, handleSectionsRedo]);
+
   // Update editorSection when activeSection changes
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('WebsiteBuilder useEffect:', { activeSection, activeBannerSection });
     
     if (activeSection) {
       const section = sections.find(s => s.id === activeSection);
       console.log('Found section:', section);
       
-      if (section && (section.type === 'hero' || section.type === 'fourth' || section.type === 'features' || section.type === 'sixth' || section.type === 'benefits')) {
-        console.log('Opening editor for section type:', section.type);
-        dispatch(openEditor({ section }));
+      if (section) {
+        if (section.type === 'features') {
+          // Don't auto-open features editor - only open on manual click
+          console.log('Features section activated:', section.id);
+        } else if (section.type === 'benefits') {
+          // Don't auto-open benefits editor - only open on manual click
+          console.log('Benefits section activated:', section.id);
+        } 
       }
     } else if (activeBannerSection) {
-      const section = bannerSections.find(s => s.id === activeBannerSection);
+      // Look for banner section in both builder and banner slices
+      const section = bannerSections.find(s => s.id === activeBannerSection) || 
+                   sections.find(s => s.id === activeBannerSection && s.type === 'banner');
       if (section) {
         dispatch(openEditor({ section }));
       }
     }
   }, [activeSection, activeBannerSection, sections, bannerSections, dispatch]);
+
+  // Handle hash scroll on page load
+  useEffect(() => {
+    // Always scroll to top on page load
+    window.scrollTo(0, 0);
+    
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      console.log('Page load - Found hash:', hash);
+      setTimeout(() => {
+        const element = document.getElementById(hash);
+        console.log('Page load - Found element:', element);
+        if (element) {
+          console.log('Page load - Scrolling to element:', element);
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 500);
+    }
+  }, []);
+
+  // Debug active sections
+  useEffect(() => {
+    console.log('Active sections changed:', {
+      activeSection,
+      activeBannerSection,
+      activeAdminSection
+    });
+  }, [activeSection, activeBannerSection, activeAdminSection]);
   
   // Memoize banner sections to prevent infinite re-renders
-  const builderBannerSections = React.useMemo(() => 
+  const builderBannerSections = useMemo(() => 
     sections.filter(s => s.type === 'banner'), 
     [sections]
   );
   
   // Combine ALL sections (including fifth, hero, etc.) with banner sections - MUST MATCH SECTIONLIST
-  const allSections = React.useMemo(() => {
+  const allSections = useMemo(() => {
     const sectionsMap = new Map();
     
-    // Add all sections first (including fifth, hero, fourth, etc.)
+    // Add all sections first (excluding banner sections to avoid duplicates)
     sections.forEach(section => {
-      sectionsMap.set(section.id, { ...section, source: 'builder' });
+      if (section.type !== 'banner') {
+        sectionsMap.set(section.id, { ...section, source: 'builder' });
+      }
     });
     
-    // Add banner sections
+    // Add banner sections (only from banner slice)
     bannerSections.forEach(section => {
       sectionsMap.set(section.id, { ...section, source: 'banner' });
     });
@@ -89,7 +265,7 @@ const WebsiteBuilder: React.FC = () => {
   }, [sections, bannerSections]);
   
   // Keep allBannerSections for backward compatibility but use allSections for drag/drop
-  const allBannerSections = React.useMemo(() => 
+  const allBannerSections = useMemo(() => 
     [...builderBannerSections, ...bannerSections], 
     [builderBannerSections, bannerSections]
   );
@@ -98,8 +274,13 @@ const WebsiteBuilder: React.FC = () => {
   const [dragOverItem, setDragOverItem] = useState<number>(-1);
   const [imageUploadType, setImageUploadType] = useState<string>('');
   const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
+  const [showSectionSelection, setShowSectionSelection] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-   
+  const editingOverlay = useAppSelector(state => state.editor.editingOverlay);
+  
+  // Mobile navigation state
+  const [mobileView, setMobileView] = useState<'list' | 'preview'>('list');
+  
 
 
   // Handle active banner section change
@@ -167,13 +348,11 @@ useEffect(() => {
   };
 
  const handleDragEnd = () => {
-  console.log('=== handleDragEnd called ===');
+  console.log('=== handleDragEnd START ===');
   console.log('dragItem:', dragItem, 'dragOverItem:', dragOverItem);
-  console.log('allSections.length:', allSections.length);
-  console.log('allSections:', allSections.map(s => ({ id: s.id, type: s.type, order: s.order })));
   
-  if (dragItem === -1 || dragOverItem === -1) {
-    console.log('One of the indices is -1, returning early');
+  if (dragItem === dragOverItem || dragItem === -1 || dragOverItem === -1) {
+    console.log('No drag operation needed');
     setDragItem(-1);
     setDragOverItem(-1);
     return;
@@ -184,9 +363,27 @@ useEffect(() => {
   
   console.log('Attempting reorder from', fromIndex, 'to', toIndex);
   
-  // Get the dragged and target sections from allSections
-  const draggedSection = allSections[fromIndex];
-  const targetSection = allSections[toIndex];
+  // Create the same sections logic as SectionList for drag and drop
+  const sectionsMap = new Map();
+  
+  // Add all sections first (these include hero, fourth, features, etc. and also second-1, third-1)
+  sections.forEach(section => {
+    sectionsMap.set(section.id, { ...section, source: 'builder' });
+  });
+  
+  // Add banner sections, but don't overwrite existing builder sections with the same ID
+  bannerSections.forEach(section => {
+    if (!sectionsMap.has(section.id)) {
+      sectionsMap.set(section.id, { ...section, source: 'banner' });
+    }
+  });
+  
+  // Convert Map to array and sort by order (same as SectionList)
+  const dragSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
+  
+  // Get the dragged and target sections from dragSections
+  const draggedSection = dragSections[fromIndex];
+  const targetSection = dragSections[toIndex];
   
   console.log('Dragged section at index', fromIndex, ':', draggedSection);
   console.log('Target section at index', toIndex, ':', targetSection);
@@ -212,14 +409,14 @@ useEffect(() => {
   // Case 1: Both are builder sections (not banners)
   if (!isDraggedBanner && !isTargetBanner) {
     console.log('Reordering builder sections');
-    // Use the indices directly from allSections since that's what's displayed
-    // Create a filtered array of builder sections from allSections to get correct indices
-    const builderSectionsInAllSections = allSections.filter(s => s.source === 'builder');
-    const builderDragIndex = builderSectionsInAllSections.findIndex(s => s.id === draggedSection.id);
-    const builderTargetIndex = builderSectionsInAllSections.findIndex(s => s.id === targetSection.id);
+    // Use the indices directly from dragSections since that's what's displayed
+    // Create a filtered array of builder sections from dragSections to get correct indices
+    const builderSectionsInDragSections = dragSections.filter(s => s.source === 'builder');
+    const builderDragIndex = builderSectionsInDragSections.findIndex(s => s.id === draggedSection.id);
+    const builderTargetIndex = builderSectionsInDragSections.findIndex(s => s.id === targetSection.id);
     
     console.log('builderDragIndex:', builderDragIndex, 'builderTargetIndex:', builderTargetIndex);
-    console.log('Builder sections in allSections:', builderSectionsInAllSections.map(s => s.id));
+    console.log('Builder sections in dragSections:', builderSectionsInDragSections.map(s => s.id));
     
     if (builderDragIndex !== -1 && builderTargetIndex !== -1) {
       dispatch(reorderSections({ fromIndex: builderDragIndex, toIndex: builderTargetIndex }));
@@ -250,8 +447,141 @@ useEffect(() => {
 };
 
 const handleBackToList = () => {
-  setShowEditorOnMobile(false);
-  // Don't clear active sections - just hide mobile editor
+  if (showSectionSelection) {
+    setShowSectionSelection(false);
+  } else {
+    setShowEditorOnMobile(false);
+  }
+  // Don't clear active sections - just hide mobile views;
+};
+
+// Robust scroll function that works for both mobile and desktop
+const scrollToSection = (sectionId: string) => {
+  console.log('=== scrollToSection START ===');
+  console.log('Target section ID:', sectionId);
+  
+  // Try multiple times with increasing delays to ensure element is rendered
+  const attempts = [100, 300, 500, 1000];
+  let hasScrolled = false;
+  
+  const attemptScroll = (delay: number, index: number) => {
+    setTimeout(() => {
+      if (hasScrolled) return; // Stop if already scrolled successfully
+      
+      const previewContainer = document.getElementById('preview-container');
+      const element = document.getElementById(sectionId);
+      
+      console.log(`scrollToSection Attempt ${index + 1} (${delay}ms):`, {
+        sectionId,
+        previewContainer: !!previewContainer,
+        element: !!element,
+        elementId: element?.id,
+        elementTagName: element?.tagName,
+        elementPosition: element ? element.getBoundingClientRect().top : 'N/A',
+        previewContainerScrollTop: previewContainer?.scrollTop,
+        previewContainerHeight: previewContainer?.scrollHeight
+      });
+      
+      if (element) {
+        // Element found, now scroll to it
+        hasScrolled = true;
+        
+        // Add visual feedback first
+        element.style.transition = 'background-color 0.3s ease';
+        element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+        setTimeout(() => {
+          element.style.backgroundColor = '';
+        }, 1000);
+        
+        if (previewContainer) {
+          // Use element's offsetTop relative to the container for more accurate positioning
+          const elementOffsetTop = element.offsetTop;
+          const offset = 100; // Header offset
+          const targetScrollTop = elementOffsetTop - offset;
+          
+          // Set scroll-margin-top on the element for better scroll positioning
+          element.style.scrollMarginTop = `${offset}px`;
+          
+          console.log('Scrolling within preview container:', {
+            elementId: element.id,
+            elementOffsetTop: elementOffsetTop,
+            currentScrollTop: previewContainer.scrollTop,
+            targetScrollTop: targetScrollTop,
+            containerScrollHeight: previewContainer.scrollHeight,
+            containerClientHeight: previewContainer.clientHeight
+          });
+          
+          // Ensure we don't scroll beyond bounds
+          const maxScroll = previewContainer.scrollHeight - previewContainer.clientHeight;
+          const finalScrollTop = Math.max(0, Math.min(targetScrollTop, maxScroll));
+          
+          // Try scrollTo first, if it doesn't work well, fallback to scrollIntoView
+          previewContainer.scrollTo({
+            top: finalScrollTop,
+            behavior: 'smooth'
+          });
+          
+          // Fallback: if scrollTo doesn't work properly, use scrollIntoView with the element
+          setTimeout(() => {
+            const newScrollTop = previewContainer.scrollTop;
+            const tolerance = 50; // 50px tolerance
+            const expectedScrollTop = finalScrollTop;
+            
+            if (Math.abs(newScrollTop - expectedScrollTop) > tolerance) {
+              console.log('ScrollTo was not accurate, using scrollIntoView fallback');
+              element.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start',
+                inline: 'nearest'
+              });
+            }
+          }, 500);
+          
+        } else {
+          // Fallback to window scrollIntoView
+          console.log('Fallback: Using window scrollIntoView');
+          // Set scroll-margin-top for better positioning
+          element.style.scrollMarginTop = '100px';
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+        
+        console.log('=== scrollToSection SUCCESS ===');
+        return;
+      }
+      
+      // List all available elements for debugging on last attempt
+      if (index === attempts.length - 1) {
+        const allElements = document.querySelectorAll('[id]');
+        const sectionElements = Array.from(allElements).filter(el => 
+          el.id.includes('hero') || 
+          el.id.includes('second') || 
+          el.id.includes('third') || 
+          el.id.includes('fourth') || 
+          el.id.includes('fifth') || 
+          el.id.includes('sixth') ||
+          el.id.includes('banner')
+        );
+        
+        console.log('All section elements found:', sectionElements.map(el => ({
+          id: el.id,
+          tagName: el.tagName,
+          isVisible: (el as HTMLElement).offsetParent !== null,
+          position: el.getBoundingClientRect().top
+        })));
+        
+        console.error('=== scrollToSection FAILED - Element not found ===');
+        console.error('Looking for sectionId:', sectionId);
+      }
+    }, delay);
+  };
+  
+  attempts.forEach((delay, index) => {
+    attemptScroll(delay, index);
+  });
 };
 
 useEffect(() => {
@@ -259,9 +589,10 @@ useEffect(() => {
     dispatch(setActiveSection(null));
   }
 }, [activeBannerSection]);
+
 useEffect(() => {
-  // Only run if we have an active section and we're in desktop view (not mobile editor)
-  if (!showEditorOnMobile && !activeSection && !activeBannerSection) return;
+  // Only handle editor opening, not scrolling
+  if (!showEditorOnMobile) return;
 
   // HERO
   if (activeSection) {
@@ -384,330 +715,418 @@ useEffect(() => {
     );
   }
 
+  const renderHomepagePreview = () => {
+    // Create the same sections logic as SectionList for consistency
+    const sectionsMap = new Map();
+    
+    // Add all sections first (these include hero, fourth, features, etc. and also second-1, third-1)
+    sections.forEach(section => {
+      sectionsMap.set(section.id, { ...section, source: 'builder' });
+    });
+    
+    // Add banner sections, but don't overwrite existing builder sections with the same ID
+    bannerSections.forEach(section => {
+      if (!sectionsMap.has(section.id)) {
+        sectionsMap.set(section.id, { ...section, source: 'banner' });
+      }
+    });
+    
+    // Convert Map to array and sort by order (same as SectionList)
+    const allSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
+    
+        
+    return (
+      <div ref={previewRef} className="flex-1 bg-white overflow-y-auto" id="preview-container">
+        <div className="min-h-full flex flex-col lg:flex-col md:flex-col">
+          {allSections.map((section) => {
+            // Only render section if it's visible
+            if (!section.visible) return null;
+            
+            switch (section.type) {
+              case 'hero':
+                return <Hero key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  console.log('Hero section clicked:', { sectionId, contentType, elementId });
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionId,
+                    sectionType: 'hero',
+                    contentType
+                  }));
+                }} />;
+              case 'second':
+                return <SecondSection key={section.id} sectionId={section.id} />;
+              case 'third':
+                return <ThirdSection key={section.id} sectionId={section.id} />;
+              case 'fourth':
+                return <FourthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  console.log('Fourth section clicked:', { sectionId, contentType, elementId });
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionId,
+                    sectionType: 'features',
+                    contentType
+                  }));
+                }} />;
+              case 'banner':
+                return <DynamicBanner key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionId,
+                    sectionType: 'banner',
+                    contentType
+                  }));
+                }} />;
+              case 'text':
+              case 'image':
+                return <Hero key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  console.log('Hero section clicked:', { sectionId, contentType, elementId });
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'hero',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
+              case 'features':
+                return <DynamicFeatures 
+                  key={section.id} 
+                  section={section} 
+                  onEdit={(sectionId, contentType, elementId) => {
+                    console.log('Features section clicked:', { sectionId, contentType, elementId });
+                    // On mobile, switch to preview view first, then open editor
+                    if (isMobile) {
+                      setMobileView('preview');
+                    }
+                    dispatch(setEditingOverlay({
+                      isOpen: true,
+                      sectionType: 'features',
+                      sectionId,
+                      contentType
+                    }));
+                  }} 
+                />;
+              case 'fifth':
+                return <FifthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType) => {
+                  console.log('Fifth section clicked:', { sectionId, contentType });
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    dispatch(toggleBuilderMode());
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'admin',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
+              case 'sixth':
+                return <SixthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  console.log('Sixth section clicked:', { sectionId, contentType, elementId });
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'admin',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
+              case 'benefits':
+                return <DynamicBenefits key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'benefits',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
+              default:
+                return null;
+            }
+          })}
+          
+          {/* Add New Section Options */}
+          <div className="border-t-2 border-dashed border-gray-300 p-8 bg-gray-50" data-add-section-options>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Add New Section</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
+              <button
+                onClick={() => {
+                  dispatch(addSectionAndSetActive({ type: 'hero', name: 'Hero Section' }));
+                }}
+                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
+              >
+                <div className="font-medium text-gray-900">Text and Image</div>
+                <div className="text-sm text-gray-500">Hero section</div>
+              </button>
+              
+              <button
+                onClick={handleAddBannerSection}
+                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
+              >
+                <div className="font-medium text-gray-900">Banner</div>
+                <div className="text-sm text-gray-500">Promotional</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  dispatch(addSectionAndSetActive({ type: 'features', name: 'Features Section' }));
+                }}
+                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
+              >
+                <div className="font-medium text-gray-900">Features</div>
+                <div className="text-sm text-gray-500">Showcase</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  dispatch(addSectionAndSetActive({ type: 'fifth', name: 'Admin Panel Section' }));
+                }}
+                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
+              >
+                <div className="font-medium text-gray-900">Admin Panel</div>
+                <div className="text-sm text-gray-500">Dashboard</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  dispatch(addSectionAndSetActive({ type: 'benefits', name: 'Benefits Section' }));
+                }}
+                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
+              >
+                <div className="font-medium text-gray-900">Benefits</div>
+                <div className="text-sm text-gray-500">Highlight advantages</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEditingOverlay = () => {
+    if (!editingOverlay.isOpen) return null;
+
+    console.log('renderEditingOverlay - sectionType:', editingOverlay.sectionType, 'sectionId:', editingOverlay.sectionId);
+
+    return (
+      <div className="fixed top-0 right-0 bottom-0 w-96 bg-white shadow-2xl z-50 border-l overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Edit {editingOverlay.sectionType} - {editingOverlay.contentType}
+          </h3>
+          <button
+            onClick={() => dispatch(setEditingOverlay({
+              isOpen: false,
+              sectionId: null,
+              sectionType: null,
+              contentType: null
+            }))}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="flex-1 h-full overflow-hidden">
+          {editingOverlay.sectionType === 'banner' ? <BannerEditor /> : 
+           editingOverlay.sectionType === 'hero' ? <HeroEditor /> : 
+           editingOverlay.sectionType === 'features' ? <FeaturesEditor /> : 
+           editingOverlay.sectionType === 'benefits' ? <BenefitsEditor /> :
+           editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth') ? <BenefitsEditor /> : 
+           editingOverlay.sectionType === 'admin' ? <AdminEditor /> : null}
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 mt-auto">
+          <div className="flex gap-3">
+            <button
+              onClick={() => dispatch(setEditingOverlay({
+                isOpen: false,
+                sectionId: null,
+                sectionType: null,
+                contentType: null
+              }))}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                // Save logic here
+                dispatch(setEditingOverlay({
+                  isOpen: false,
+                  sectionId: null,
+                  sectionType: null,
+                  contentType: null
+                }));
+              }}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     console.log('=== renderContent START ===', { editorSection, activeSection, activeBannerSection, isMobile });
     
     // Mobile View (max-width: 768px)
     if (isMobile) {
-      // Show editor only for hero or banner sections
-     const hasEditableSection = activeBannerSection || activeSection || activeAdminSection;
-       console.log('Mobile hasEditableSection:', hasEditableSection);
-      
-     if (showEditorOnMobile && hasEditableSection) {
-      // 🔥 ALWAYS PRIORITIZE BANNER FIRST
-      console.log('Mobile: showEditorOnMobile && hasEditableSection', { showEditorOnMobile, hasEditableSection });
-      console.log('Mobile checking banner section, activeBannerSection:', activeBannerSection);
-
-  if (activeBannerSection) {
-    const builderBannerSection = builderBannerSections.find(
-      (s: any) => s.id === activeBannerSection
-    );
-
-    if (builderBannerSection) {
-      return (
-        <div className="w-full bg-gray-50 flex flex-col">
-          {/* header */}
-          <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-            <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-              <ChevronLeft size={20} />
-            </button>
-            <h3 className="font-semibold text-black">Edit {builderBannerSection.name}</h3>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <BannerEditor />
-          </div>
-        </div>
-      );
-    }
-
-    const newBannerSection = bannerSections.find(
-      (s: any) => s.id === activeBannerSection
-    );
-
-    if (newBannerSection) {
-      return (
-        <div className="w-full bg-gray-50 flex flex-col">
-          <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-            <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-              <ChevronLeft size={20} />
-            </button>
-            <h3 className="font-semibold text-black">Edit {newBannerSection.name}</h3>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <BannerEditor />
-          </div>
-        </div>
-      );
-    }
-
-    // Handle regular sections (hero, fourth, features, fifth, sixth, benefits)
-    if (activeSection) {
-      console.log('Mobile: activeSection ===', activeSection);
-      console.log('Mobile: sections array ===', sections.map(s => ({ id: s.id, type: s.type, name: s.name })));
-      const section = sections.find(s => s.id === activeSection);
-      console.log('Mobile checking regular section:', section);
-      console.log('Mobile: section.type ===', section?.type);
-      console.log('Mobile: checking benefits condition:', section?.type === 'sixth' || section?.type === 'benefits');
-      
-      if (section && (section.type === 'hero' || section.type === 'fourth' || section.type === 'features' || section.type === 'fifth' || section.type === 'sixth' || section.type === 'benefits')) {
-        console.log('Mobile: returning section editor for type:', section?.type);
+      // Section List View
+      if (mobileView === 'list') {
         return (
-          <div className="w-full bg-gray-50 flex flex-col">
-            {/* header */}
-            <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-              <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-                <ChevronLeft size={20} />
-              </button>
-              <h3 className="font-semibold text-black">Edit {section?.name || 'Section'}</h3>
+          <div className="w-full h-full flex flex-col bg-gray-50">
+            <div className="bg-white border-b p-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Sections</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSectionsUndo}
+                  disabled={!sectionsCanUndo}
+                  className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+                  title="Undo"
+                >
+                  <Undo size={16} className="text-gray-600" />
+                </button>
+                <button
+                  onClick={handleSectionsRedo}
+                  disabled={!sectionsCanRedo}
+                  className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+                  title="Redo"
+                >
+                  <Redo size={16} className="text-gray-600" />
+                </button>
+                <button
+                  onClick={() => dispatch(toggleBuilderMode())}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {section.type === 'hero' && <HeroEditor />}
-              {(section.type === 'fourth' || section.type === 'features') && <FeaturesEditor />}
-              {section.type === 'fifth' && <AdminEditor />}
-              {(section.type === 'sixth' || section.type === 'benefits') && <BenefitsEditor />}
-            </div>
-          </div>
-        );
-      } else {
-        console.log('Mobile: section condition failed, section.type:', section?.type);
-      }
-    }
-  }
-
-  // ✅ THEN HERO
-  if (activeSection) {
-    const section = sections.find(s => s.id === activeSection);
-    console.log('Mobile checking hero section:', section);
-
-    if (section && section.type === 'hero') {
-      const heroSections = sections.filter(s => s.type === 'hero');
-      const isFirstHero = heroSections[0]?.id === section.id;
-
-      let heroContent;
-      if (isFirstHero) {
-        const staticContent = getHeroContentFromStaticHero();
-        heroContent = { ...staticContent, ...section.content };
-      } else {
-        heroContent = section.content;
-      }
-
-      return (
-        <div className="w-full bg-gray-50 flex flex-col">
-          <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-            <button
-              onClick={handleBackToList}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-black"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <h3 className="font-semibold text-gray-900">Edit {section.name}</h3>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <HeroEditor />
-          </div>
-        </div>
-      );
-    }
-  }
-
-  // ✅ THEN FOURTH (FEATURES)
-  if (activeSection) {
-    const section = sections.find(s => s.id === activeSection);
-    console.log('Mobile checking features section:', section);
-    
-    if (section && (section.type === 'fourth' || section.type === 'features')) {
-      return (
-        <div className="w-full bg-gray-50 flex flex-col">
-          {/* header */}
-          <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-            <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-              <ChevronLeft size={20} />
-            </button>
-            <h3 className="font-semibold text-black">Edit {section?.name || 'Section'}</h3>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <FeaturesEditor />
-          </div>
-        </div>
-      );
-    }
-
-    // ✅ THEN SIXTH/BENEFITS SECTION
-    if (section && (section.type === 'sixth' || section.type === 'benefits')) {
-      return (
-        <div className="w-full bg-gray-50 flex flex-col">
-          {/* header */}
-          <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-            <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-              <ChevronLeft size={20} />
-            </button>
-            <h3 className="font-semibold text-black">Edit {section?.name || 'Benefits Section'}</h3>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <BenefitsEditor />
-          </div>
-        </div>
-      );
-    }
-
-    // ✅ THEN ADMIN PANEL
-    if (activeAdminSection) {
-      const section = adminSections.find(s => s.id === activeAdminSection);
-      console.log('Mobile checking admin section:', section);
-      
-      if (section) {
-        return (
-          <div className="w-full bg-gray-50 flex flex-col">
-            {/* header */}
-            <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center">
-              <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-                <ChevronLeft size={20} />
-              </button>
-              <h3 className="font-semibold text-black">Edit {section?.label || 'Admin Section'}</h3>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <AdminEditor />
+            <div className="flex-1 overflow-y-auto p-4">
+              <SectionList
+                sections={sections}
+                bannerSections={allBannerSections}
+                adminSections={adminSections}
+                activeSection={activeSection}
+                activeBannerSection={activeBannerSection}
+                activeAdminSection={activeAdminSection}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                onDragEnd={handleDragEnd}
+                onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
+                onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
+                onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
+                onSetActive={(id) => {
+                  console.log('*** onSetActive called with id:', id);
+                  dispatch(setActiveSection(id));
+                  dispatch(setActiveBannerSection(null));
+                  dispatch(setActiveAdminSection(null));
+                  // Only switch to preview view on mobile
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  // Manual scroll to ensure it works
+                  setTimeout(() => {
+                    scrollToSection(id);
+                  }, 200);
+                }}
+                onSetActiveBanner={(id) => {
+                  console.log('*** onSetActiveBanner called with id:', id);
+                  dispatch(setActiveBannerSection(id));
+                  dispatch(setActiveSection(null));
+                  dispatch(setActiveAdminSection(null));
+                  // Only switch to preview view on mobile
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  // Manual scroll to ensure it works
+                  setTimeout(() => {
+                    scrollToSection(id);
+                  }, 200);
+                }}
+                onSetActiveAdmin={(id) => {
+                  console.log('*** onSetActiveAdmin called with id:', id);
+                  dispatch(setActiveAdminSection(id));
+                  dispatch(setActiveSection(null));
+                  dispatch(setActiveBannerSection(null));
+                  // Only switch to preview view on mobile
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  // Manual scroll to ensure it works
+                  setTimeout(() => {
+                    scrollToSection(id);
+                  }, 200);
+                }}
+                onDelete={(id) => dispatch(deleteSection(id))}
+                onDeleteBanner={handleDeleteBannerSection}
+                onDeleteAdmin={handleDeleteAdminSection}
+                onUndo={handleSectionsUndo}
+                onRedo={handleSectionsRedo}
+                canUndo={sectionsCanUndo}
+                canRedo={sectionsCanRedo}
+                dragOverItem={dragOverItem}
+                onSwitchToPreview={() => {
+                  console.log('Switching to preview view on mobile');
+                  setMobileView('preview');
+                }}
+              />
             </div>
           </div>
         );
       }
-    }
-    
-    // THEN FIFTH SECTION (Admin Panel) - Check by looking up in sections using activeSection
-    if (activeSection) {
-      const section = sections.find(s => s.id === activeSection);
-      if (section && section.type === 'fifth') {
-        console.log('Mobile opening AdminEditor for fifth section via activeSection');
-        return (
-          <div className="w-full bg-gray-50 flex flex-col">
-            {/* header */}
-            <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-              <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-                <ChevronLeft size={20} />
-              </button>
-              <h3 className="font-semibold text-black">Edit {section?.name || 'Section'}</h3>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <AdminEditor />
-            </div>
-          </div>
-        );
-      }
-      if (section && (section.type === 'sixth' || section.type === 'benefits')) {
-        console.log('Mobile opening BenefitsEditor for', section.type, 'section via activeSection');
-        return (
-          <div className="w-full bg-gray-50 flex flex-col">
-            {/* header */}
-            <div className="sticky top-0 z-10 bg-white border-b p-4 flex items-center ">
-              <button onClick={handleBackToList} className="p-2 hover:bg-gray-100 rounded-lg text-black">
-                <ChevronLeft size={20} />
-              </button>
-              <h3 className="font-semibold text-black">Edit {section?.name || 'Benefits Section'}</h3>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <BenefitsEditor />
-            </div>
-          </div>
-        );
-      }
-    }
-  }
-}
       
+      // Preview View
       return (
-        <div className="w-full bg-white shadow-xl flex flex-col">
-          <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-xl font-bold text-gray-900">Website Builder</h2>
-            <button
-              onClick={() => dispatch(toggleBuilderMode())}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
-            >
-              <X size={20} />
-            </button>
+        <div className="w-full h-full flex flex-col bg-gray-50">
+          <div className="bg-white border-b p-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Preview</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMobileView('list')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
+                title="Back to Section List"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5l-7 7 7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => dispatch(toggleBuilderMode())}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto hide-scrollbar p-6">
-          <SectionList
-  sections={sections}  // ← Only builder sections (hero, fourth, features, etc.)
-  bannerSections={bannerSections}  // ← Only banner sections (live streaming, pk battle)
-  adminSections={adminSections}  // ← Admin sections
-  activeSection={activeSection}
-  activeBannerSection={activeBannerSection}
-  activeAdminSection={activeAdminSection}
-  onDragStart={handleDragStart}
-  onDragEnter={handleDragEnter}
-  onDragEnd={handleDragEnd}
-  onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
-  onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
-  onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
-  onSetActive={(id) => {
-    console.log('=== MOBILE onSetActive ===', id);
-    console.log('Available sections:', sections);
-    dispatch(setActiveBannerSection(null)); // Clear banner
-    dispatch(setActiveAdminSection(null)); // Clear admin
-    dispatch(setActiveSection(id));
-    // Show editor for hero, fourth, and features sections
-    const section = sections.find(s => s.id === id);
-    console.log('Found section:', section);
-    console.log('Section type:', section?.type);
-    if (section?.type === 'hero' || section?.type === 'fourth' || section?.type === 'features' || section?.type === 'fifth' || section?.type === 'admin-panel' || section?.type === 'sixth' || section?.type === 'benefits') {
-      console.log('Opening mobile editor for section type:', section?.type);
-      setShowEditorOnMobile(true);
-    } else {
-      console.log('Not opening mobile editor for section type:', section?.type);
-    }
-  }}
-  onSetActiveBanner={(id) => {
-    console.log('=== MOBILE onSetActiveBanner ===', id);
-    dispatch(setActiveSection(null)); // Clear hero
-    dispatch(setActiveAdminSection(null)); // Clear admin
-    dispatch(setActiveBannerSection(id));
-    setShowEditorOnMobile(true); // Always show editor for banner sections
-  }}
-  onSetActiveAdmin={(id) => {
-    console.log('=== MOBILE onSetActiveAdmin ===', id);
-    dispatch(setActiveSection(null)); // Clear hero
-    dispatch(setActiveBannerSection(null)); // Clear banner
-    dispatch(setActiveAdminSection(id));
-    setShowEditorOnMobile(true); // Always show editor for admin sections
-  }}
-  onDelete={(id) => dispatch(deleteSection(id))}
-  onDeleteBanner={(id) => dispatch(deleteBannerSection(id))}
-  onDeleteAdmin={(id) => dispatch(deleteAdminSection(id))}
-  onAddSection={(type) => {
-    if (type === 'banner') {
-      // Calculate the maximum order from all sections (both builder and banner)
-      const allOrders = [
-        ...sections.map(s => s.order || 0),
-        ...bannerSections.map(s => s.order || 0),
-        ...adminSections.map(s => s.order || 0)
-      ];
-      const maxOrder = Math.max(...allOrders, 0);
-      
-      // Add banner section with correct order
-      const result = dispatch(addBannerSection({ type, maxOrder }));
-      
-      // Set as active banner section using the returned ID
-      if (result.payload?.id) {
-        dispatch(setActiveBannerSection(result.payload.id));
-      }
-    } else if (type === 'admin-panel') {
-      // Add a new fifth type section (Admin Panel with tabs inside)
-      dispatch(addSectionAndSetActive({ type: 'fifth', name: 'Admin Panel Section' }));
-    } else {
-      dispatch(addSectionAndSetActive({ type: type as any }));
-    }
-  }}
-  dragOverItem={dragOverItem}
-/>
-          </div>
+          {renderHomepagePreview()}
         </div>
       );
     }
@@ -716,17 +1135,35 @@ useEffect(() => {
     return (
       <>
         {/* Section List Panel - Reduced width on md screens */}
-        <div className="w-full md:w-80 lg:w-96 bg-white shadow-xl flex flex-col">
-          <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-xl font-bold text-gray-900">Website Builder</h2>
-            <button
-              onClick={() => dispatch(toggleBuilderMode())}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
-            >
-              <X size={20} />
-            </button>
+        <div className="w-full md:w-70  xl:w-96 bg-white shadow-xl flex flex-col">
+          <div className="flex items-center justify-between p-4 xl:p-6 border-b">
+            <h2 className="text-xl font-bold text-gray-900">Sections</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSectionsUndo}
+                disabled={!sectionsCanUndo}
+                className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+                title="Undo"
+              >
+                <Undo size={16} className="text-gray-600" />
+              </button>
+              <button
+                onClick={handleSectionsRedo}
+                disabled={!sectionsCanRedo}
+                className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+                title="Redo"
+              >
+                <Redo size={16} className="text-gray-600" />
+              </button>
+              <button
+                onClick={() => dispatch(toggleBuilderMode())}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 xl:p-6">
             <SectionList
               sections={sections}
               bannerSections={allBannerSections}
@@ -741,11 +1178,15 @@ useEffect(() => {
               onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
               onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
               onSetActive={(id) => {
-                console.log('=== onSetActive called ===', id);
-                dispatch(setActiveBannerSection(null)); // Clear banner
-                dispatch(setActiveAdminSection(null)); // Clear admin
+                console.log('*** onSetActive called with id:', id);
                 dispatch(setActiveSection(id));
+                dispatch(setActiveBannerSection(null));
+                dispatch(setActiveAdminSection(null));
                 console.log('activeSection set to:', id, 'activeBannerSection cleared');
+                // Manual scroll to ensure it works
+                setTimeout(() => {
+                  scrollToSection(id);
+                }, 200);
               }}
               onSetActiveBanner={(id) => {
                 console.log('=== onSetActiveBanner called ===', id);
@@ -753,6 +1194,10 @@ useEffect(() => {
                 dispatch(setActiveAdminSection(null)); // Clear admin
                 dispatch(setActiveBannerSection(id));
                 console.log('activeBannerSection set to:', id, 'activeSection cleared to null');
+                // Manual scroll to ensure it works
+                setTimeout(() => {
+                  scrollToSection(id);
+                }, 200);
               }}
               onSetActiveAdmin={(id) => {
                 console.log('=== onSetActiveAdmin called ===', id);
@@ -760,128 +1205,24 @@ useEffect(() => {
                 dispatch(setActiveBannerSection(null)); // Clear banner
                 dispatch(setActiveAdminSection(id));
                 console.log('activeAdminSection set to:', id, 'other sections cleared');
+                // Manual scroll to ensure it works
+                setTimeout(() => {
+                  scrollToSection(id);
+                }, 200);
               }}
               onDelete={(id) => dispatch(deleteSection(id))}
-              onDeleteBanner={(id) => dispatch(deleteBannerSection(id))}
-              onDeleteAdmin={(id) => dispatch(deleteAdminSection(id))}
-              onAddSection={(type) => {
-                if (type === 'banner') {
-                  // Calculate the maximum order from all sections (both builder and banner)
-                  const allOrders = [
-                    ...sections.map(s => s.order || 0),
-                    ...bannerSections.map(s => s.order || 0),
-                    ...adminSections.map(s => s.order || 0)
-                  ];
-                  const maxOrder = Math.max(...allOrders, 0);
-                  
-                  // Add banner section with correct order
-                  const result = dispatch(addBannerSection({ type, maxOrder }));
-                  
-                  // Set as active banner section using the returned ID
-                  if (result.payload?.id) {
-                    dispatch(setActiveBannerSection(result.payload.id));
-                  }
-                } else if (type === 'admin-panel') {
-                  // Add a new fifth type section (Admin Panel with tabs inside)
-                  dispatch(addSectionAndSetActive({ type: 'fifth', name: 'Admin Panel Section' }));
-                } else {
-                  dispatch(addSectionAndSetActive({ type: type as any }));
-                }
-              }}
-            dragOverItem={dragOverItem}
+              onDeleteBanner={handleDeleteBannerSection}
+              onDeleteAdmin={handleDeleteAdminSection}
+              onUndo={handleSectionsUndo}
+              onRedo={handleSectionsRedo}
+              canUndo={sectionsCanUndo}
+              canRedo={sectionsCanRedo}
+              dragOverItem={dragOverItem}
             />
           </div>
         </div>
 
-        {/* Section Editor Panel - Only show for hero, fourth, features, admin, or banner sections */}
-        {((activeSection && (sections.find(s => s.id === activeSection)?.type === 'hero' || sections.find(s => s.id === activeSection)?.type === 'fourth' || sections.find(s => s.id === activeSection)?.type === 'features' || sections.find(s => s.id === activeSection)?.type === 'fifth' || sections.find(s => s.id === activeSection)?.type === 'sixth' || sections.find(s => s.id === activeSection)?.type === 'benefits')) || activeBannerSection || activeAdminSection) && (
-          <div className="flex-1 bg-gray-50 border-l overflow-y-auto">
-            {(() => {
-              console.log('=== Desktop render ===', { activeSection, activeBannerSection });
-              // Handle hero section
-              if (activeSection && !activeBannerSection) {
-                const section = sections.find(s => s.id === activeSection);
-                console.log('Desktop checking section:', { activeSection, section, sectionType: section?.type });
-                if (section && section.type === 'hero') {
-                  const heroSections = sections.filter(s => s.type === 'hero');
-                  const isFirstHero = heroSections[0]?.id === section.id;
-                  let heroContent;
-                  if (isFirstHero) {
-                    const staticContent = getHeroContentFromStaticHero();
-                    heroContent = { ...staticContent, ...section.content };
-                  } else {
-                    heroContent = section.content;
-                  }
-                  
-                  return <HeroEditor />;
-                }
-                if (section && (section.type === 'fourth' || section.type === 'features')) {
-                  console.log('Desktop opening FeaturesEditor for', section.type, 'section');
-                  return <FeaturesEditor />;
-                }
-                if (section && section.type === 'fifth') {
-                  console.log('Desktop opening AdminEditor for fifth section');
-                  return <AdminEditor />;
-                }
-                if (section && (section.type === 'sixth' || section.type === 'benefits')) {
-                  console.log('Desktop opening BenefitsEditor for', section.type, 'section');
-                  return <BenefitsEditor />;
-                }
-              }
-              
-              // Handle admin section (including fifth sections that were set via activeAdminSection)
-              if (activeAdminSection) {
-                console.log('Desktop opening AdminEditor for admin section:', activeAdminSection);
-                return <AdminEditor />;
-              }
-              
-              // Handle banner section (Live Streaming, PK Battle, new banners)
-              console.log('Desktop checking banner, activeBannerSection:', activeBannerSection);
-             // FIRST: Banner (priority)
-if (activeBannerSection) {
-  const builderBannerSection = builderBannerSections.find(
-    (s: any) => s.id === activeBannerSection
-  );
-
-  if (builderBannerSection) return <BannerEditor />;
-
-  const newBannerSection = bannerSections.find(
-    (s: any) => s.id === activeBannerSection
-  );
-
-  if (newBannerSection) return <BannerEditor />;
-}
-
-// SECOND: Hero
-if (editorSection) {
-  const section = editorSection;
-  console.log('Checking section:', { editorSection, section, sectionType: section?.type });
-  
-  if (section?.type === 'hero') {
-    console.log('Returning HeroEditor');
-    return <HeroEditor />;
-  }
-  if (section?.type === 'fourth' || section?.type === 'features') {
-    console.log('Opening FeaturesEditor for', section?.type, 'section');
-    return <FeaturesEditor />;
-  }
-  if (section?.type === 'fifth') {
-    console.log('Opening AdminEditor for fifth section');
-    return <AdminEditor />;
-  }
-  if (section?.type === 'sixth' || section?.type === 'benefits') {
-    console.log('Opening BenefitsEditor for', section?.type, 'section');
-    console.log('Section details:', { id: section?.id, name: section?.name, content: section?.content });
-    console.log('About to return BenefitsEditor');
-    return <BenefitsEditor />;
-  }
-  console.log('No matching section type, returning null');
-}
-              
-              return null;
-            })()}
-          </div>
-        )}
+        {renderHomepagePreview()}
       </>
     );
   };
@@ -889,6 +1230,19 @@ if (editorSection) {
   return (
     <div className="fixed top-[70px] left-0 right-0 bottom-0 z-50 bg-black/50 flex">
       {renderContent()}
+      {renderEditingOverlay()}
+      {/* Backdrop to close overlay */}
+      {editingOverlay.isOpen && (
+        <div 
+          className="absolute inset-0 bg-black/20 z-40"
+          onClick={() => dispatch(setEditingOverlay({
+            isOpen: false,
+            sectionId: null,
+            sectionType: null,
+            contentType: null
+          }))}
+        />
+      )}
     </div>
   );
 };

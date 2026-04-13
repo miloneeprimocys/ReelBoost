@@ -3,10 +3,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../../hooks/reduxHooks";
 import { iconMap } from "../../store/benefitsSlice";
-import { Phone } from "lucide-react";
+import { Phone, Edit } from "lucide-react";
 import { Benefit } from "../../store/benefitsSlice";
 
-const SixthSection = () => {
+interface SixthSectionProps {
+  sectionId?: string;
+  onEdit?: (sectionId: string, contentType: 'text' | 'style' | 'image' | 'admin' | null, elementId?: string) => void;
+}
+
+const SixthSection: React.FC<SixthSectionProps> = ({ sectionId, onEdit }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeCard, setActiveCard] = useState<number | null>(null);
@@ -41,7 +46,12 @@ const SixthSection = () => {
     if (isVisible && rowRefs.current.length > 0) {
       // Small delay to ensure DOM is fully rendered
       const timer = setTimeout(() => {
-        const heights = rowRefs.current.map(ref => ref?.offsetHeight || 0);
+        const heights = rowRefs.current.map(ref => {
+          if (!ref) return 0;
+          // Get the actual height of the row content (excluding padding)
+          const rect = ref.getBoundingClientRect();
+          return rect.height;
+        });
         
         // Calculate cumulative heights for line positions
         const cumulativeHeights: number[] = [];
@@ -51,7 +61,7 @@ const SixthSection = () => {
           cumulativeHeights.push(sum);
         }
         setRowHeights(cumulativeHeights);
-      }, 100);
+      }, 150); // Increased delay for better accuracy
       
       return () => clearTimeout(timer);
     }
@@ -90,15 +100,29 @@ const SixthSection = () => {
   return (
     <section 
       ref={sectionRef} 
-      id="sixth-1" 
-      className="w-full py-4 md:py-14 px-4 sm:px-6 overflow-x-hidden"
+      id={sectionId || "sixth-1"} 
+      className="w-full py-4 md:py-14 px-4 sm:px-6 overflow-x-hidden relative cursor-pointer"
       style={{ backgroundColor: content?.backgroundColor || '#ffffff' }}
+      onClick={() => onEdit && onEdit(sectionId || "sixth-1", 'admin')}
     >
+      {/* Edit Icon - Top Right Corner - Only visible in builder mode */}
+      {onEdit && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(sectionId || "sixth-1", 'admin');
+          }}
+          className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105 transition-all z-10 hover:bg-gray-50"
+          title="Edit Benefits Section"
+        >
+          <Edit size={16} className="text-gray-600" />
+        </button>
+      )}
       <div className="max-w-7xl mx-auto w-full">
         {/* Header Section */}
         <div className={`text-center mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div 
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-[14px] font-medium tracking-widest uppercase mb-2 sm:mb-4"
+            className="inline-flex items-center gap-2 px-4 py-1.5 text-[14px] font-medium tracking-widest uppercase mb-2 "
             style={{ color: content?.dotTextColor || '#000000' }}
           >
             <span 
@@ -108,7 +132,7 @@ const SixthSection = () => {
             <span className="truncate">{content?.dotText || 'Main Benefits'}</span>
           </div>
           <h2 
-            className="text-[28px] md:text-5xl lg:text-5xl font-semibold tracking-normal leading-[1.2] mb-4 sm:mb-6 break-words"
+            className="text-[28px] md:text-4xl lg:text-5xl font-semibold tracking-normal leading-[1.2] mb-4 sm:mb-6 break-words"
             style={{ color: content?.titleColor || '#111827' }}
           >
             {content?.title || 'Many Benefits You Get'} <br className="hidden md:block" /> 
@@ -119,7 +143,7 @@ const SixthSection = () => {
         </div>
 
         {/* Grid Container */}
-        <div className="grid grid-cols-1 md:grid-cols-3 relative gap-x-0 gap-y-0 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 relative gap-x-0 gap-y-0 w-full">
           
           {/* Dynamic Horizontal Dashed Lines based on actual row heights */}
           {rowHeights.map((height, i) => (

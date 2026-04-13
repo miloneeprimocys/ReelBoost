@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAppSelector } from "../../hooks/reduxHooks";
+import type { RootState } from "../../store";
 
 interface HeroContent {
   title: string;
@@ -26,7 +27,7 @@ interface HeroContent {
 }
 
 const DynamicHero: React.FC<{ sectionContent?: HeroContent }> = ({ sectionContent }) => {
-  const sections = useAppSelector(state => state.builder.sections);
+  const sections = useAppSelector((state: RootState) => state.builder.sections);
   
   // Use provided sectionContent or get from Redux state
   const heroContent = sectionContent || sections.find(s => s.type === 'hero')?.content || {
@@ -132,7 +133,7 @@ const DynamicHero: React.FC<{ sectionContent?: HeroContent }> = ({ sectionConten
                     >
                         Short Video
                     </button>
-                    {heroContent.tags?.map((tag) => (
+                    {heroContent.tags?.map((tag: string) => (
                         <button
                             key={tag}
                             onClick={() => handleTagClick(tag)}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useAppSelector, useAppDispatch } from "../../../hooks/reduxHooks";
 import { 
   updateFeaturesContent, 
@@ -15,11 +15,16 @@ import {
 } from "../../../store/featuresSlice";
 import { 
   updateSectionContent,
-  toggleBuilderMode 
+  toggleBuilderMode,
+  undo,
+  redo,
+  undoSection,
+  redoSection,
+  setEditingSection
 } from "../../../store/builderSlice";
-import { closeEditor } from "../../../store/editorSlice";
-import { Trash2, Upload, Plus, X, GripVertical } from "lucide-react";
-import Image from "next/image";
+import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
+import { closeEditor, setEditingOverlay } from "../../../store/editorSlice";
+import { Plus, Trash2, Upload, GripVertical, X, Undo, Redo, ChevronUp, ChevronDown } from "lucide-react";
 
 interface Feature {
   id: string;
@@ -40,6 +45,7 @@ interface Card {
 const FeaturesEditor: React.FC = () => {
   console.log('=== FEATURES EDITOR COMPONENT LOADED ===');
   const dispatch = useAppDispatch();
+  const [activeTab, setActiveTab] = useState<'features' | 'style' | 'cards'>('features');
   const [draggedItem, setDraggedItem] = useState<{ type: 'feature' | 'card', index: number } | null>(null);
   const [expandedFeatureId, setExpandedFeatureId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -47,13 +53,48 @@ const FeaturesEditor: React.FC = () => {
   console.log('FeaturesEditor rendering...');
   
   // Get editor state from editorSlice
-  const { editorSection } = useAppSelector(state => state.editor);
+  const { editorSection, editingOverlay } = useAppSelector(state => state.editor);
   
   // Get builder state as fallback
   const { activeSection, sections } = useAppSelector(state => state.builder);
   
-  // Use section-specific content from editorSection, or fallback to activeSection
-  const section = editorSection || (activeSection ? sections.find(s => s.id === activeSection) : null);
+  // Get section directly from Redux store using editingOverlay.sectionId
+  const section = useMemo(() => {
+    if (!editingOverlay.sectionId) return null;
+    
+    // Find section in Redux store
+    const foundSection = sections.find(s => s.id === editingOverlay.sectionId);
+    
+    // Create deep copy to prevent data swapping
+    if (foundSection) {
+      return JSON.parse(JSON.stringify(foundSection));
+    }
+    
+    return null;
+  }, [editingOverlay.sectionId, sections]);
+  
+  // Get undo/redo state
+  const canUndo = useAppSelector(selectCanUndo);
+  const canRedo = useAppSelector(selectCanRedo);
+  
+  // Set editing section ID when component mounts
+  React.useEffect(() => {
+    if (section) {
+      dispatch(setEditingSection({ sectionId: section.id, field: null }));
+    }
+  }, [section?.id]);
+  
+  const handleUndo = () => {
+    if (section) {
+      dispatch(undoSection(section.id));
+    }
+  };
+  
+  const handleRedo = () => {
+    if (section) {
+      dispatch(redoSection(section.id));
+    }
+  };
   
   // Get features content from featuresSlice as fallback
   const { featuresContent } = useAppSelector(state => state.features);
@@ -70,15 +111,22 @@ const FeaturesEditor: React.FC = () => {
     contentKeys: content ? Object.keys(content) : 'no content'
   });
   
-  // Ensure localContent always has proper default values
+  // Get fourth section demo data from featuresSlice (already declared above)
+  
+  // Ensure localContent always has proper default values from fourth section
   const [localContent, setLocalContent] = useState(() => ({
-    dotText: 'Main Features',
-    title: 'Achieving More Through Digital Excellence',
-    features: [],
-    cards: [],
-    backgroundColor: '#000000',
-    textColor: '#ffffff',
-    titleColor: '#ffffff',
+    dotText: featuresContent.dotText || 'Main Features',
+    title: featuresContent.title || 'Achieving More Through Digital Excellence',
+    features: featuresContent.features || [],
+    cards: featuresContent.cards || [],
+    backgroundColor: featuresContent.backgroundColor || '#000000',
+    textColor: featuresContent.textColor || '#ffffff',
+    titleColor: featuresContent.titleColor || '#ffffff',
+    descriptionColor: featuresContent.descriptionColor || '#ffffff',
+    dotTextColor: featuresContent.dotTextColor || '#ffffff',
+    dotColor: featuresContent.dotColor || '#a8aff5',
+    cardTitleColor: featuresContent.cardTitleColor || '#000000',
+    cardDescriptionColor: featuresContent.cardDescriptionColor || '#6B7280',
     ...content
   }));
   
@@ -93,6 +141,14 @@ const FeaturesEditor: React.FC = () => {
     }
   }, [section?.id]);
 
+  // Listen to section content changes for undo/redo
+  React.useEffect(() => {
+    if (section && section.content) {
+      const newContent = { ...featuresContent, ...section.content };
+      setLocalContent(newContent);
+    }
+  }, [section?.content, JSON.stringify(section?.content)]);
+
   // Set first feature as expanded when features change or component loads
   React.useEffect(() => {
     console.log('Expanded feature useEffect:', { 
@@ -105,7 +161,7 @@ const FeaturesEditor: React.FC = () => {
       console.log('Setting expanded feature to:', localContent.features[0].id);
       setExpandedFeatureId(localContent.features[0].id);
     }
-  }, [JSON.stringify(localContent.features.map((f: Feature) => f.id)), expandedFeatureId]);
+  }, [JSON.stringify(localContent.features.map((f: Feature) => f.id))]);
 
   const updateField = (field: string, value: any) => {
     const updatedContent = { ...localContent, [field]: value };
@@ -164,6 +220,7 @@ const FeaturesEditor: React.FC = () => {
     input.click();
   };
 
+  
   const addNewFeature = () => {
     if (localContent.features.length < 6) {
       const demoFeatures = [
@@ -292,39 +349,93 @@ const FeaturesEditor: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-full">
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-        <h3 className="text-xl font-semibold text-gray-900">Features Section Editor</h3>
-        <button
-          onClick={handleDone}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm hover:shadow-md"
-        >
-          Done
-        </button>
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap">
+          Features Section Editor
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo size={16} className="text-gray-600" />
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={!canRedo}
+            className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo size={16} className="text-gray-600" />
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        {/* Header Content */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Header Content</h4>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 bg-white">
+        <button
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'features' 
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setActiveTab('features')}
+        >
+          Features
+        </button>
+         <button
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'cards' 
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setActiveTab('cards')}
+        >
+          Cards
+        </button>
+        <button
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'style' 
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+          onClick={() => setActiveTab('style')}
+        >
+          Style
+        </button>
+       
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Features Tab */}
+        {activeTab === 'features' && (
           <div className="space-y-4">
+        {/* Header Content */}
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+          <h4 className="text-lg font-semibold text-gray-800 mb-4">Header Content</h4>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dot Text</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Dot Text</label>
               <input
                 type="text"
                 value={localContent.dotText || ''}
                 onChange={(e) => updateField('dotText', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                className=" w-full  px-2 py-1.5  border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                 placeholder="Main Features"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
               <input
                 type="text"
                 value={localContent.title}
                 onChange={(e) => updateField('title', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                className=" w-full  px-2 py-1.5  border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                 placeholder="Achieving More Through Digital Excellence"
               />
             </div>
@@ -332,23 +443,26 @@ const FeaturesEditor: React.FC = () => {
         </div>
 
         {/* Main Features (Max 6) */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-gray-800">Main Features (Max 6)</h4>
-            <button
-              onClick={addNewFeature}
-              disabled={localContent.features.length >= 6}
-              className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm flex items-center gap-1"
-            >
-              <Plus size={16} />
-              Add Feature
-            </button>
-          </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+         <div className="flex items-center justify-between mb-4">
+  <div>
+    <h4 className="text-lg font-semibold text-gray-800 m-0">Main Features</h4>
+    <p className="text-xs text-gray-500 ">(max 6)</p>
+  </div>
+  <button
+    onClick={addNewFeature}
+    disabled={localContent.features.length >= 6}
+    className="p-1.5 px-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm flex items-center gap-1"
+  >
+    <Plus size={14} />
+    Add Feature
+  </button>
+</div>
           <div className="space-y-4">
             {localContent.features.map((feature: any, index: number) => (
               <div 
                 key={feature.id || `feature-${index}`} 
-                className={`border border-gray-200 rounded-lg p-4 transition-all ${
+                className={`border border-gray-200 rounded-lg p-2 transition-all ${
                   dragOverIndex === index ? 'border-blue-400 bg-blue-50' : ''
                 }`}
                 draggable
@@ -363,169 +477,141 @@ const FeaturesEditor: React.FC = () => {
                     onClick={() => setExpandedFeatureId(expandedFeatureId === feature.id ? null : feature.id)}
                     className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
                   >
-                    <span className="text-sm font-medium text-gray-600">Feature {feature.id ? feature.id.split('-')[1] : index + 1}</span>
-                    <span className="text-xs text-gray-400">
-                      {expandedFeatureId === feature.id ? 'Click to collapse' : 'Click to expand'}
-                    </span>
+                    <span className="text-sm font-medium text-gray-600">{feature.title || 'Feature ' + (index + 1)}</span>
                   </button>
-                  <button
-                    onClick={() => removeFeature(feature.id)}
-                    className="ml-auto p-1 text-red-500 hover:text-red-700 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="ml-auto flex items-center gap-1">
+                   
+                    <button
+                      onClick={() => removeFeature(feature.id)}
+                      className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                     <button
+                      onClick={() => setExpandedFeatureId(expandedFeatureId === feature.id ? null : feature.id)}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                    >
+                      {expandedFeatureId === feature.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
                 </div>
                 {expandedFeatureId === feature.id && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Feature Title</label>
-                    <input
-                      type="text"
-                      value={feature.title}
-                      onChange={(e) => handleUpdateFeatureField(feature.id, 'title', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
-                    <div className="flex gap-2">
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Feature Title</label>
                       <input
                         type="text"
-                        value={feature.icon}
-                        onChange={(e) => handleUpdateFeatureField(feature.id, 'icon', e.target.value)}
-                        placeholder="/icon.svg"
-                        className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        value={feature.title}
+                        onChange={(e) => handleUpdateFeatureField(feature.id, 'title', e.target.value)}
+                        className=" w-full  px-2 py-1.5  border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        placeholder="Enter feature title"
                       />
-                      <button
-                        onClick={() => handleImageUpload('icon', feature.id)}
-                        className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Upload size={16} />
-                      </button>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Background Image</label>
-                    <div className="flex gap-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={feature.icon}
+                          onChange={(e) => handleUpdateFeatureField(feature.id, 'icon', e.target.value)}
+                          placeholder="/icon.svg"
+                          className="flex-1 px-2 py-1.5  border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        />
+                        <button
+                          onClick={() => handleImageUpload('icon', feature.id)}
+                          className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                          title="Upload Icon"
+                        >
+                          <Upload size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
                       <input
                         type="text"
                         value={feature.backgroundImage || ''}
                         onChange={(e) => handleUpdateFeatureField(feature.id, 'backgroundImage', e.target.value)}
                         placeholder="/background.svg"
-                        className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
-                      <button
-                        onClick={() => handleImageUpload('backgroundImage', feature.id)}
-                        className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Upload size={16} />
-                      </button>
+                      {feature.backgroundImage && feature.backgroundImage !== '' && (
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                          <img 
+                            src={feature.backgroundImage} 
+                            alt="Feature background" 
+                            className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              const newWindow = window.open(feature.backgroundImage, '_blank');
+                              if (newWindow) newWindow.focus();
+                            }}
+                          />
+                          <button
+                            onClick={() => handleImageUpload('backgroundImage', feature.id)}
+                            className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                            title="Change background image"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Cards (7 compulsory cards) */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Cards (7 Compulsory Cards)</h4>
+              </div>
+        )}
+
+        {/* Style Tab */}
+        {activeTab === 'style' && (
           <div className="space-y-4">
-            {localContent.cards.map((card: Card, index: number) => (
-              <div key={card.id || `card-${index}`} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <GripVertical className="text-gray-400 cursor-move" size={20} />
-                  <span className="text-sm font-medium text-gray-600">Card {index + 1}</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Card Title</label>
+            {/* Colors */}
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Colors</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.backgroundColor || '#000000'}
+                      onChange={(e) => updateField('backgroundColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                    />
                     <input
                       type="text"
-                      value={card.title}
-                      onChange={(e) => updateCardField(card.id, 'title', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      value={localContent.backgroundColor || '#000000'}
+                      onChange={(e) => updateField('backgroundColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                      placeholder="#000000"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Card Description</label>
-                    <textarea
-                      value={card.description}
-                      onChange={(e) => updateCardField(card.id, 'description', e.target.value)}
-                      rows={2}
-                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Image</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={card.image}
-                        onChange={(e) => updateCardField(card.id, 'image', e.target.value)}
-                        placeholder="/image.svg"
-                        className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      />
-                      <button
-                        onClick={() => handleImageUpload('image', undefined, card.id)}
-                        className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Upload size={16} />
-                      </button>
-                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-        {/* Colors */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Colors</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.backgroundColor || '#000000'}
-                  onChange={(e) => updateField('backgroundColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.backgroundColor || '#000000'}
-                  onChange={(e) => updateField('backgroundColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
-                  placeholder="#000000"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Main Title Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.titleColor || '#ffffff'}
-                  onChange={(e) => updateField('titleColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.titleColor || '#ffffff'}
-                  onChange={(e) => updateField('titleColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
-                  placeholder="#ffffff"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Feature Label Color</label>
-              <div className="flex items-center gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Main Title Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.titleColor || '#ffffff'}
+                      onChange={(e) => updateField('titleColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0 shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.titleColor || '#ffffff'}
+                      onChange={(e) => updateField('titleColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                      placeholder="#ffffff"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Feature Label Color</label>
+                  <div className="flex items-center gap-2">
                 <input
                   type="color"
                   value={localContent.textColor || '#ffffff'}
@@ -634,6 +720,83 @@ const FeaturesEditor: React.FC = () => {
           </div>
         </div>
       </div>
+        )}
+
+        {/* Cards Tab */}
+        {activeTab === 'cards' && (
+          <div className="space-y-4">
+
+            {/* Cards (7 compulsory cards) */}
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Cards (7 Compulsory Cards)</h4>
+              <div className="space-y-4">
+                {localContent.cards.map((card: Card, index: number) => (
+                  <div key={card.id || `card-${index}`} className="border border-gray-200 rounded-lg p-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-bold text-black">Card {index + 1}</span>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Card Title</label>
+                        <input
+                          type="text"
+                          value={card.title}
+                          onChange={(e) => updateCardField(card.id, 'title', e.target.value)}
+                          className=" w-full  px-2 py-1.5  border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                          placeholder="Enter card title"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Card Description</label>
+                        <textarea
+                          value={card.description}
+                          onChange={(e) => updateCardField(card.id, 'description', e.target.value)}
+                          rows={3}
+                          className=" w-full  px-2 py-1.5  border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-none"
+                          placeholder="Enter card description"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Card Image</label>
+                        <input
+                          type="text"
+                          value={card.image}
+                          onChange={(e) => updateCardField(card.id, 'image', e.target.value)}
+                          placeholder="/image.svg"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        />
+                        {card.image && card.image !== '' && (
+                          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                            <img 
+                              src={card.image} 
+                              alt="Card image" 
+                              className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                const newWindow = window.open(card.image, '_blank');
+                                if (newWindow) newWindow.focus();
+                              }}
+                            />
+                            <button
+                              onClick={() => handleImageUpload('image', undefined, card.id)}
+                              className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                              title="Change image"
+                            >
+                              Change
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

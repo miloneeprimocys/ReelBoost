@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Edit } from "lucide-react";
 import { useAppSelector } from "../../hooks/reduxHooks";
 
 // --- Types ---
@@ -26,9 +26,10 @@ interface AdminTabContent {
 
 interface FifthSectionProps {
     sectionId?: string;
+    onEdit?: (sectionId: string, contentType: 'text' | 'style' | 'image' | 'admin' | null, elementId?: string) => void;
 }
 
-const FifthSection = ({ sectionId }: FifthSectionProps) => {
+const FifthSection = ({ sectionId, onEdit }: FifthSectionProps) => {
     const { sections: builderSections } = useAppSelector(state => state.builder);
     const sectionRef = useRef<HTMLDivElement>(null);
     const [animate, setAnimate] = useState(false);
@@ -123,8 +124,22 @@ const FifthSection = ({ sectionId }: FifthSectionProps) => {
         <section 
             id={sectionId || "admin-panel"} 
             ref={sectionRef} 
-            className="w-full bg-white py-12 sm:py-16 md:py-20 overflow-x-hidden scroll-mt-20"
+            className="w-full bg-white py-12 sm:py-16 md:py-20 overflow-x-hidden scroll-mt-20 relative cursor-pointer"
+            onClick={() => onEdit && onEdit(sectionId || "admin-panel", 'admin')}
         >
+            {/* Edit Icon - Top Right Corner - Only visible in builder mode */}
+            {onEdit && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(sectionId || "admin-panel", 'admin');
+                    }}
+                    className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105 transition-all z-10 hover:bg-gray-50"
+                    title="Edit Admin Section"
+                >
+                    <Edit size={16} className="text-gray-600" />
+                </button>
+            )}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
                 {/* Header Section */}
                 <div className="sm:mb-6 md:mb-8 mb-4 text-center lg:text-left">
@@ -167,7 +182,7 @@ const FifthSection = ({ sectionId }: FifthSectionProps) => {
                 </div>
 
                 {/* Content Area */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-14 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 xl:gap-14 items-center">
                     {layout === 'left' ? (
                         <>
                             {/* Left Side: Image */}
@@ -178,7 +193,7 @@ const FifthSection = ({ sectionId }: FifthSectionProps) => {
                                         alt={activeTab.title}
                                         width={800}
                                         height={600}
-                                        className="w-full h-[300px] md:h-[380px] lg:h-[450px] xl:h-[550px] object-cover"
+                                        className="w-full h-[300px] md:h-[380px] lg:h-[450px] 2xl:h-[550px] object-cover"
                                         priority
                                     />
                                 </div>
@@ -235,7 +250,7 @@ const FifthSection = ({ sectionId }: FifthSectionProps) => {
                                         alt={activeTab.title}
                                         width={800}
                                         height={600}
-                                        className="w-full h-[300px] md:h-[380px] lg:h-[450px] xl:h-[550px] object-cover"
+                                        className="w-full h-[300px] md:h-[380px] lg:h-[450px] 2xl:h-[550px] object-cover"
                                         priority
                                     />
                                 </div>

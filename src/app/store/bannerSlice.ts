@@ -37,6 +37,11 @@ interface BannerSliceState {
   activeSection: string | null;
   isLoading: boolean;
   error: string | null;
+  history: {
+    past: BannerSection[][];
+    present: BannerSection[];
+    future: BannerSection[][];
+  };
 }
 
 const initialState: BannerSliceState = {
@@ -44,6 +49,11 @@ const initialState: BannerSliceState = {
   activeSection: null,
   isLoading: false,
   error: null,
+  history: {
+    past: [],
+    present: [],
+    future: []
+  }
 };
 
 // Async thunks
@@ -79,6 +89,10 @@ const bannerSlice = createSlice({
   reducers: {
     // Section management
     addBannerSection: (state, action: PayloadAction<{ type: string; id?: string; maxOrder?: number }>) => {
+      // Save current state to history before adding
+      state.history.past = [...state.history.past, state.history.present];
+      state.history.future = [];
+      
       const { type, maxOrder } = action.payload;
       let content;
       
@@ -99,7 +113,10 @@ const bannerSlice = createSlice({
         order: maxOrder !== undefined ? maxOrder + 1 : state.sections.length + 1, // Use provided maxOrder or fallback
         content
       };
+      // Add to banner slice state
       state.sections.push(newSection);
+      // Update history.present with the new sections array AFTER adding the section
+      state.history.present = [...state.sections];
       // Store the ID for the reducer to return
       action.payload.id = newSection.id;
     },
@@ -194,6 +211,31 @@ const bannerSlice = createSlice({
     clearBannerSections: (state) => {
       state.sections = [];
       state.activeSection = null;
+    },
+    // Set all banner sections at once (for undo/redo restoration)
+    setAllBannerSections: (state, action: PayloadAction<BannerSection[]>) => {
+      state.sections = action.payload;
+      // Update history to reflect the new state
+      state.history.present = [...action.payload];
+    },
+    // Undo/Redo actions
+    undoBanner: (state) => {
+      const previous = state.history.past[state.history.past.length - 1];
+      if (previous) {
+        state.history.past = state.history.past.slice(0, state.history.past.length - 1);
+        state.history.future = [state.history.present, ...state.history.future];
+        state.history.present = previous;
+        state.sections = [...previous];
+      }
+    },
+    redoBanner: (state) => {
+      const next = state.history.future[0];
+      if (next) {
+        state.history.future = state.history.future.slice(1);
+        state.history.past = [...state.history.past, state.history.present];
+        state.history.present = next;
+        state.sections = [...next];
+      }
     }
   },
   extraReducers: (builder) => {
@@ -341,5 +383,12 @@ export const {
   updateBannerFeature,
   deleteBannerFeature,
   reorderBannerSections,
-  clearBannerSections
+  clearBannerSections,
+  setAllBannerSections,
+  undoBanner,
+  redoBanner
 } = bannerSlice.actions;
+
+// Selectors
+export const selectBannerCanUndo = (state: { banner: BannerSliceState }) => state.banner.history.past.length > 0;
+export const selectBannerCanRedo = (state: { banner: BannerSliceState }) => state.banner.history.future.length > 0;

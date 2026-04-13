@@ -8,7 +8,7 @@ import ThirdSection from '../Pages/Home/ThirdSection';
 import FourthSection from '../Pages/Home/FourthSection';
 import FifthSection from '../Pages/Home/FifthSection';
 import SixthSection from '../Pages/Home/SixthSection';
-import DynamicBenefits from './DynamicBenefits';
+import DynamicBenefits from '../sections/Home/DynamicBenefits';
 
 const DynamicSections: React.FC = () => {
   const { sections } = useAppSelector(state => state.builder);

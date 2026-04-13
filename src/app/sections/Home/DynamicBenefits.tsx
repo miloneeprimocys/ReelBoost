@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAppSelector } from "../../hooks/reduxHooks";
 import { iconMap, Benefit } from "../../store/benefitsSlice";
+import { Edit } from "lucide-react";
 
 interface DynamicBenefitsProps {
   sectionId?: string;
+  onEdit?: (sectionId: string, contentType: 'text' | 'style' | 'image' | 'admin' | null, elementId?: string) => void;
 }
 
-const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId }) => {
+const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId, onEdit }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeCard, setActiveCard] = useState<string | null>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -20,8 +22,22 @@ const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId }) => {
   // Get benefits content from benefits slice as fallback
   const { benefitsContent } = useAppSelector(state => state.benefits);
 
-  // Use section content if available, otherwise use benefits content
-  const content = section?.content || benefitsContent;
+  // Use section content if available, otherwise use default benefits content
+  const content = section?.content || (benefitsContent.benefits ? benefitsContent : {
+    dotText: 'Main Benefits',
+    title: 'Many Benefits You Get',
+    highlightedTitle: 'Using Product',
+    benefits: benefitsContent.benefits || [],
+    dotColor: '#4A6CF7',
+    dotTextColor: '#000000',
+    titleColor: '#111827',
+    highlightedTitleColor: '#111827',
+    benefitIconColor: '#2563EB',
+    benefitTitleColor: '#111827',
+    benefitDescriptionColor: '#6B7280',
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF'
+  });
 
   // Get benefits from content
   const benefits: Benefit[] = content?.benefits || benefitsContent.benefits;
@@ -74,14 +90,28 @@ const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId }) => {
     <section 
       ref={sectionRef} 
       id={sectionId || "benefits"} 
-      className="w-full py-4 md:py-14 px-4 sm:px-6 overflow-x-hidden scroll-mt-20"
+      className="w-full py-4 md:py-14 px-4 sm:px-6 overflow-x-hidden scroll-mt-20 relative cursor-pointer"
       style={{ backgroundColor: content?.backgroundColor || '#FFFFFF' }}
+      onClick={() => onEdit && onEdit(sectionId || "benefits", 'admin')}
     >
+      {/* Edit Icon - Top Right Corner - Only visible in builder mode */}
+      {onEdit && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(sectionId || "benefits", 'admin');
+          }}
+          className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105 transition-all z-10 hover:bg-gray-50"
+          title="Edit Benefits Section"
+        >
+          <Edit size={16} className="text-gray-600" />
+        </button>
+      )}
       <div className="max-w-7xl mx-auto w-full">
         {/* Header Section */}
         <div className={`text-center mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div 
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-[14px] font-medium tracking-widest uppercase mb-2 sm:mb-4"
+            className="inline-flex items-center gap-2 px-4 py-1.5 text-[14px] font-medium tracking-widest uppercase mb-2 "
             style={{ color: content?.dotTextColor || '#000000' }}
           >
             <span 
@@ -91,7 +121,7 @@ const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId }) => {
             <span className="truncate">{content?.dotText || 'Main Benefits'}</span>
           </div>
           <h2 
-            className="text-[28px] md:text-5xl lg:text-5xl font-semibold tracking-normal leading-[1.2] mb-4 sm:mb-6 break-words"
+            className="text-[28px] md:text-4xl lg:text-5xl font-semibold tracking-normal leading-[1.2] mb-4 sm:mb-6 break-words"
             style={{ color: content?.titleColor || '#111827' }}
           >
             {content?.title || 'Many Benefits You Get'} <br className="hidden md:block" />
@@ -132,7 +162,10 @@ const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId }) => {
             return (
               <div 
                 key={benefit.id} 
-                onClick={() => setActiveCard(benefit.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveCard(benefit.id);
+                }}
                 className={`relative group p-4 pb-7 md:p-6 lg:p-8 transition-all duration-1000 ease-out z-10 w-full overflow-hidden`}
                 style={{ 
                     transitionDelay: isVisible ? `${rowDelay}ms` : "0ms",

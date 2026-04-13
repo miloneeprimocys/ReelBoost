@@ -13,15 +13,23 @@ import {
 } from "../../../store/benefitsSlice";
 import { 
   updateSectionContent,
-  toggleBuilderMode 
+  toggleBuilderMode,
+  undo,
+  redo,
+  undoSection,
+  redoSection,
+  setEditingSection,
+  selectCanUndo,
+  selectCanRedo
 } from "../../../store/builderSlice";
 import { closeEditor } from "../../../store/editorSlice";
-import { Trash2, Plus, GripVertical, ChevronDown } from "lucide-react";
+import { Trash2, Plus, GripVertical, ChevronDown, Undo, Redo, Upload } from "lucide-react";
 
 const availableIcons = Object.keys(iconMap);
 
 const BenefitsEditor: React.FC = () => {
   const dispatch = useAppDispatch();
+  const [activeTab, setActiveTab] = useState<'text' | 'style' | 'image'>('text');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [expandedBenefitId, setExpandedBenefitId] = useState<string | null>(null);
@@ -30,56 +38,55 @@ const BenefitsEditor: React.FC = () => {
   // Get editor state from editorSlice
   const { editorSection } = useAppSelector(state => state.editor);
   
+  // Get undo/redo state
+  const canUndo = useAppSelector(selectCanUndo);
+  const canRedo = useAppSelector(selectCanRedo);
+  
   // Get benefits content from benefitsSlice
   const { benefitsContent } = useAppSelector(state => state.benefits);
   
-  // Get builder sections to find sixth-1 content
+  // Get builder sections to find the current benefits section
   const { sections } = useAppSelector(state => state.builder);
-  const sixthSection = sections.find(s => s.id === 'sixth-1');
+  const currentBenefitsSection = sections.find(s => s.id === editorSection?.id);
   
-  // Local state for editing - prioritize the section's own content
+  // Set editing section ID when component mounts
+  React.useEffect(() => {
+    if (currentBenefitsSection) {
+      dispatch(setEditingSection({ sectionId: currentBenefitsSection.id, field: null }));
+    }
+  }, [currentBenefitsSection?.id]);
+  
+  // Local state for editing - prioritize current benefits section data
   const [localContent, setLocalContent] = useState(() => {
+    // For any benefits section, use its specific content first (highest priority)
+    if (editorSection?.id && currentBenefitsSection?.content) {
+      return currentBenefitsSection.content;
+    }
+    
     // If we have an editor section with content, use it
     if (editorSection?.content) {
       return editorSection.content;
     }
     
-    // For sixth-1 section, use its specific content
-    if (editorSection?.id === 'sixth-1' && sixthSection?.content) {
-      return sixthSection.content;
-    }
-    
-    // For new sections, they should have default content with 3 demo benefits
-    // If no content exists, create minimal default
-    return {
-      dotText: 'Main Benefits',
-      title: 'Many Benefits You Get',
-      highlightedTitle: 'Using Product',
-      benefits: [
-        { id: 'benefit-1', iconName: 'Star', title: 'Benefit 1', description: 'Description for benefit 1', order: 1 },
-        { id: 'benefit-2', iconName: 'Star', title: 'Benefit 2', description: 'Description for benefit 2', order: 2 },
-        { id: 'benefit-3', iconName: 'Star', title: 'Benefit 3', description: 'Description for benefit 3', order: 3 }
-      ],
-      dotColor: '#4A6CF7',
-      dotTextColor: '#000000',
-      titleColor: '#111827',
-      highlightedTitleBgColor: 'transparent',
-      highlightedTitleColor: '#111827',
-      benefitIconColor: '#2563EB',
-      benefitTitleColor: '#111827',
-      benefitDescriptionColor: '#6B7280',
-      borderColor: '#D1D5DB',
-      backgroundColor: '#FFFFFF'
-    };
+    // Default to benefitsContent for fallback
+    return benefitsContent;
   });
 
   // Update local content when section changes - preserve existing edits
   React.useEffect(() => {
     const currentSectionId = editorSection?.id || null;
     
-    // Only update if the section ID actually changed
-    if (currentSectionId !== previousSectionId.current) {
-      if (editorSection?.content) {
+    // Always update when we have a current benefits section with content
+    if (currentSectionId !== previousSectionId.current || currentBenefitsSection?.content) {
+      if (currentBenefitsSection?.content) {
+        // Use the current benefits section content - this is the correct source
+        setLocalContent((prev: typeof localContent) => ({ 
+          ...currentBenefitsSection.content,
+          // Ensure we have the benefits array
+          benefits: currentBenefitsSection.content.benefits || []
+        }));
+      } else if (editorSection?.content) {
+        // Fallback to editor section content
         setLocalContent((prev: typeof localContent) => ({ 
           ...prev, 
           ...editorSection.content,
@@ -89,7 +96,7 @@ const BenefitsEditor: React.FC = () => {
       }
       previousSectionId.current = currentSectionId;
     }
-  }, [editorSection?.id, editorSection?.content]);
+  }, [editorSection?.id, editorSection?.content, currentBenefitsSection?.content]);
 
   
   const updateField = (field: string, value: any) => {
@@ -135,29 +142,34 @@ const BenefitsEditor: React.FC = () => {
   };
 
   const addNewBenefit = () => {
-    // For new sections (not sixth-1), start with 3 demo benefits
-    const isEditingExistingSection = editorSection?.id === 'sixth-1';
-    
-    const demoBenefits: Benefit[] = [
-      { id: `benefit-${Date.now()}-1`, iconName: 'Star', title: 'Benefit 1', description: 'Description for benefit 1', order: 1 },
-      { id: `benefit-${Date.now()}-2`, iconName: 'Star', title: 'Benefit 2', description: 'Description for benefit 2', order: 2 },
-      { id: `benefit-${Date.now()}-3`, iconName: 'Star', title: 'Benefit 3', description: 'Description for benefit 3', order: 3 }
+    // Demo benefit templates for new sections
+    const demoBenefitTemplates: Benefit[] = [
+      { id: `benefit-${Date.now()}-1`, iconName: 'Star', title: 'Demo Data 1', description: 'This is demo data for the first benefit. You can customize this text to match your specific product or service features.', order: 1 },
+      { id: `benefit-${Date.now()}-2`, iconName: 'CheckCircle', title: 'Demo Data 2', description: 'This is demo data for the second benefit. Replace this with actual benefits that your customers will receive.', order: 2 },
+      { id: `benefit-${Date.now()}-3`, iconName: 'Zap', title: 'Demo Data 3', description: 'This is demo data for the third benefit. Make sure to highlight the unique value propositions of your offering.', order: 3 }
     ];
     
     const newBenefit: Benefit = {
       id: `benefit-${Date.now()}`,
       iconName: 'Star',
-      title: 'New Benefit',
-      description: 'Description for this benefit',
+      title: 'New Feature',
+      description: 'Description for this new benefit feature goes here.',
       order: localContent.benefits.length + 1
     };
     
-    const updatedBenefits = isEditingExistingSection 
-      ? [...localContent.benefits, newBenefit]
-      : [...demoBenefits, newBenefit];
-      
-    updateField('benefits', updatedBenefits);
-    dispatch(addBenefit(newBenefit));
+    // If editing existing section with no benefits, add demo data first
+    if (localContent.benefits.length === 0) {
+      const updatedBenefits = [...demoBenefitTemplates, newBenefit];
+      updateField('benefits', updatedBenefits);
+      demoBenefitTemplates.forEach(benefit => dispatch(addBenefit(benefit)));
+      dispatch(addBenefit(newBenefit));
+    } else {
+      // Just add the new benefit
+      const updatedBenefits = [...localContent.benefits, newBenefit];
+      updateField('benefits', updatedBenefits);
+      dispatch(addBenefit(newBenefit));
+    }
+    
     setExpandedBenefitId(newBenefit.id);
   };
 
@@ -191,48 +203,66 @@ const BenefitsEditor: React.FC = () => {
     setDragOverIndex(null);
   };
 
-  const handleDone = () => {
-    if (editorSection) {
-      // Ensure all content is saved to the section
-      const finalContent = {
-        ...localContent,
-        // Make sure benefits array is properly included
-        benefits: localContent.benefits || []
-      };
-      
-      // Update the section content with all edits
-      dispatch(updateSectionContent({ id: editorSection.id, content: finalContent }));
-      
-      // Also update benefitsSlice for consistency
-      dispatch(updateBenefitsContent(finalContent));
-    }
-    dispatch(closeEditor());
-    dispatch(toggleBuilderMode());
-    
-    // Redirect to the edited section
-    setTimeout(() => {
-      const targetId = editorSection?.id || 'sixth-1';
-      const sectionElement = document.getElementById(targetId);
-      if (sectionElement) {
-        // Directly scroll to the section from current position
-        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 300);
-  };
-
   return (
-    <div className="p-6 bg-gray-50 min-h-full">
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+    <div className=" bg-gray-50 min-h-full">
+      <div className="flex items-center justify-between mb-2 p-3 border-b border-gray-200">
         <h3 className="text-xl font-semibold text-gray-900">Benefits Section Editor</h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => currentBenefitsSection && dispatch(undoSection(currentBenefitsSection.id))}
+            disabled={!canUndo}
+            className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo size={16} className="text-gray-600" />
+          </button>
+          <button
+            onClick={() => currentBenefitsSection && dispatch(redoSection(currentBenefitsSection.id))}
+            disabled={!canRedo}
+            className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo size={16} className="text-gray-600" />
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 bg-white">
         <button
-          onClick={handleDone}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm hover:shadow-md"
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'text'
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              : 'text-gray-600 hover:text-gray-900'
+            }`}
+          onClick={() => setActiveTab('text')}
         >
-          Done
+          Text Fields
+        </button>
+        <button
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'style'
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              : 'text-gray-600 hover:text-gray-900'
+            }`}
+          onClick={() => setActiveTab('style')}
+        >
+          Style
+        </button>
+        <button
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'image'
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              : 'text-gray-600 hover:text-gray-900'
+            }`}
+          onClick={() => setActiveTab('image')}
+        >
+          Image
         </button>
       </div>
 
-      <div className="space-y-6">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Text Fields Tab */}
+        {activeTab === 'text' && (
+          <div className="space-y-4 p-3">
         {/* Header Content */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-800 mb-4">Header Content</h4>
@@ -283,7 +313,7 @@ const BenefitsEditor: React.FC = () => {
             </button>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-96 overflow-y-auto overflow-x-hidden hide-scrollbar">
             {localContent.benefits?.map((benefit: Benefit, index: number) => (
               <div 
                 key={benefit.id}
@@ -360,8 +390,7 @@ const BenefitsEditor: React.FC = () => {
                             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                             title="Upload custom icon image"
                           >
-                            Upload
-                          </button>
+                          <Upload className="h-4 w-4"/>                          </button>
                         </div>
                         {benefit.iconImage && (
                           <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
@@ -390,174 +419,161 @@ const BenefitsEditor: React.FC = () => {
           <p className="text-xs text-gray-500 mt-3">Drag to reorder benefits. Click a benefit to expand/collapse.</p>
         </div>
 
-        {/* Colors */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Colors</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dot Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.dotColor || '#4A6CF7'}
-                  onChange={(e) => updateField('dotColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.dotColor || '#4A6CF7'}
-                  onChange={(e) => updateField('dotColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#4A6CF7"
-                />
+       
+      </div>
+        )}
+
+        {/* Style Tab */}
+        {activeTab === 'style' && (
+          <div className="p-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Style Settings</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dot Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.dotColor || '#4A6CF7'}
+                      onChange={(e) => updateField('dotColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.dotColor || '#4A6CF7'}
+                      onChange={(e) => updateField('dotColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#4A6CF7"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dot Text Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.dotTextColor || '#000000'}
+                      onChange={(e) => updateField('dotTextColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.dotTextColor || '#000000'}
+                      onChange={(e) => updateField('dotTextColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.titleColor || '#111827'}
+                      onChange={(e) => updateField('titleColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.titleColor || '#111827'}
+                      onChange={(e) => updateField('titleColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#111827"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Benefit Icon Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.benefitIconColor || '#2563EB'}
+                      onChange={(e) => updateField('benefitIconColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.benefitIconColor || '#2563EB'}
+                      onChange={(e) => updateField('benefitIconColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#2563EB"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Benefit Title Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.benefitTitleColor || '#111827'}
+                      onChange={(e) => updateField('benefitTitleColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.benefitTitleColor || '#111827'}
+                      onChange={(e) => updateField('benefitTitleColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#111827"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Benefit Description Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.benefitDescriptionColor || '#6B7280'}
+                      onChange={(e) => updateField('benefitDescriptionColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.benefitDescriptionColor || '#6B7280'}
+                      onChange={(e) => updateField('benefitDescriptionColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#6B7280"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Border Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localContent.borderColor || '#D1D5DB'}
+                      onChange={(e) => updateField('borderColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={localContent.borderColor || '#D1D5DB'}
+                      onChange={(e) => updateField('borderColor', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
+                      placeholder="#D1D5DB"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dot Text Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.dotTextColor || '#000000'}
-                  onChange={(e) => updateField('dotTextColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.dotTextColor || '#000000'}
-                  onChange={(e) => updateField('dotTextColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#000000"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.titleColor || '#111827'}
-                  onChange={(e) => updateField('titleColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.titleColor || '#111827'}
-                  onChange={(e) => updateField('titleColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#111827"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Highlighted Title Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.highlightedTitleColor || '#111827'}
-                  onChange={(e) => updateField('highlightedTitleColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.highlightedTitleColor || '#111827'}
-                  onChange={(e) => updateField('highlightedTitleColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#111827"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Benefit Icon Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.benefitIconColor || '#2563EB'}
-                  onChange={(e) => updateField('benefitIconColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.benefitIconColor || '#2563EB'}
-                  onChange={(e) => updateField('benefitIconColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#2563EB"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Benefit Title Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.benefitTitleColor || '#111827'}
-                  onChange={(e) => updateField('benefitTitleColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.benefitTitleColor || '#111827'}
-                  onChange={(e) => updateField('benefitTitleColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#111827"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Benefit Description Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.benefitDescriptionColor || '#6B7280'}
-                  onChange={(e) => updateField('benefitDescriptionColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.benefitDescriptionColor || '#6B7280'}
-                  onChange={(e) => updateField('benefitDescriptionColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#6B7280"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Border Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.borderColor || '#D1D5DB'}
-                  onChange={(e) => updateField('borderColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.borderColor || '#D1D5DB'}
-                  onChange={(e) => updateField('borderColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#D1D5DB"
-                />
-              </div>
-            </div>
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={localContent.backgroundColor || '#FFFFFF'}
-                  onChange={(e) => updateField('backgroundColor', e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-0"
-                />
-                <input
-                  type="text"
-                  value={localContent.backgroundColor || '#FFFFFF'}
-                  onChange={(e) => updateField('backgroundColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono"
-                  placeholder="#FFFFFF"
-                />
-              </div>
-            </div> */}
           </div>
-        </div>
+        )}
+
+        {/* Image Tab */}
+        {activeTab === 'image' && (
+          <div className="p-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Image Settings</h4>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  In the Text Fields tab, you can upload custom icons for each benefit. 
+                  Click on a benefit to expand it, then use the "Upload" button to add a custom icon image.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
