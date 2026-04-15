@@ -50,16 +50,16 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
     );
     
         
-    // Use content from Redux or fallback to static content
+    // Use content from Redux or fallback to default content
     const content: BannerContent = section?.content || {
       dotText: 'Live Streaming',
-      title: 'Start video, interact with the user.',
+      title: 'Start video, interact with your user.',
       subtitle: '',
-      description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
+      description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like, stream, and send virtual gifts to show their support.',
       features: [
         {
           title: 'List of Live Streamers',
-          description: 'You can check the list of live streamers, and can view the likes and audience connected to the stream',
+          description: 'You can check the list of live streamers, and can view likes and audience connected to the stream',
           icon: '/list.svg'
         },
         {
@@ -93,6 +93,15 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
         if (contentRef.current) observer.observe(contentRef.current);
         return () => observer.disconnect();
     }, []);
+
+    // Sync component when section content changes in Redux
+    useEffect(() => {
+        if (section?.content) {
+            console.log('SecondSection - Section content updated:', section.content);
+            // Force re-render by updating a local state that depends on section content
+            setIsVisible(prev => prev);
+        }
+    }, [section?.content]);
 
     const getAnimationClass = () => {
         if (!isVisible) return '';
@@ -188,10 +197,27 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
                                     className="flex items-start gap-3 md:gap-4 w-full overflow-x-hidden"
                                 >
                                     <div className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center mt-0.5 md:mt-1">
-                                        {index === 0 && <Image src={list} alt="List icon" width={24} height={24} className="w-full h-full object-contain" />}
-                                        {index === 1 && <Image src={live} alt="Live icon" width={24} height={24} className="w-full h-full object-contain" />}
-                                        {index === 2 && <Image src={HeroImage} alt="Hero icon" width={24} height={24} className="w-full h-full object-contain" />}
-                                        {index > 2 && <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-blue-500"></div>}
+                                        {feature.icon && feature.icon !== '' ? (
+                                            <img 
+                                                src={feature.icon} 
+                                                alt={feature.title || 'Feature icon'} 
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => {
+                                                    // Fallback to static icons if dynamic icon fails
+                                                    const target = e.target as HTMLImageElement;
+                                                    if (index === 0) target.src = list.src;
+                                                    if (index === 1) target.src = live.src;
+                                                    if (index === 2) target.src = HeroImage.src;
+                                                }}
+                                            />
+                                        ) : (
+                                            <>
+                                                {index === 0 && <Image src={list} alt="List icon" width={24} height={24} className="w-full h-full object-contain" />}
+                                                {index === 1 && <Image src={live} alt="Live icon" width={24} height={24} className="w-full h-full object-contain" />}
+                                                {index === 2 && <Image src={HeroImage} alt="Hero icon" width={24} height={24} className="w-full h-full object-contain" />}
+                                                {index > 2 && <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-blue-500"></div>}
+                                            </>
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0 overflow-x-hidden">
                                         <h4 

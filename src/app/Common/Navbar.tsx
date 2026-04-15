@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { ChevronDown, Menu, X, Edit3 } from "lucide-react";
-import { useAppDispatch } from "../hooks/reduxHooks";
+import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import { toggleBuilderMode } from "../store/builderSlice";
+import { updateNavbarContent } from "../store/navbarSlice";
 import Image from "next/image";
 import logo from "../../../public/logo.svg";
 
@@ -12,7 +13,12 @@ const Navbar = () => {
     const [scrolled, setScrolled] = useState(false);
     const [openMobileDropdown, setOpenMobileDropdown] = useState<string | null>(null);
     const dispatch = useAppDispatch();
-
+    
+    // Get navbar state from Redux store
+    const navbar = useAppSelector(state => state.navbar);
+    const { content } = navbar;
+    
+    
     // Handle scroll for sticky effect
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -36,14 +42,7 @@ const Navbar = () => {
         }
     };
 
-    const navLinks = [
-        { name: "Live Streaming", id: "second-1", hasDropdown: false, options: [] as string[] },
-        { name: "Pk Battle", id: "third-1", hasDropdown: false, options: [] as string[] },
-        { name: "Features", id: "fourth-1", hasDropdown: false, options: [] as string[] },
-        { name: "Admin Panel", id: "fifth-1", hasDropdown: false, options: [] as string[] },
-        { name: "Benefits", id: "sixth-1", hasDropdown: false, options: [] as string[] },
-    ];
-
+    
     const toggleMobileDropdown = (name: string) => {
         setOpenMobileDropdown(openMobileDropdown === name ? null : name);
     };
@@ -51,39 +50,23 @@ const Navbar = () => {
     return (
         <>
             {/* --- NAVBAR --- */}
-            <nav className={`fixed top-0 w-full z-[100] transition-all duration-300 py-4 ${scrolled ? "bg-white shadow-md" : "bg-white shadow-md"}`}>
+            <nav className={`fixed top-0 w-full z-[100] transition-all duration-300 py-4 ${scrolled ? "bg-white shadow-md" : "bg-white shadow-md"}`} style={{ backgroundColor: content?.backgroundColor }}>
                 <div className="max-w-7xl mx-auto px-2 flex items-center justify-between">
 
                     {/* 1. Logo (Left) */}
-                   <Image src={logo} alt="ReelBoost" width={40} height={40} />
+                   <Image src={content?.logo || logo} alt="ReelBoost" width={40} height={40} />
 
                     {/* 2. Desktop Navigation Links (Center) */}
                     <div className="hidden lg:flex items-center gap-8">
-                        {navLinks.map((link) => (
-                            <div key={link.name} className="group relative">
+                        {content?.links?.filter(link => link.visible).map((link) => (
+                            <div key={link.id} className="group relative">
                                 <button 
-                                    onClick={() => scrollToSection(link.id)}
-                                    className="flex cursor-pointer items-center gap-1 text-[16px] font-semibold text-[#2b49c5] hover:text-black transition-colors"
+                                    onClick={() => scrollToSection(link.sectionId)}
+                                    className="flex cursor-pointer items-center gap-1 text-[16px] font-semibold hover:text-black transition-colors"
+                                    style={{ color: content?.textColor }}
                                 >
-                                    {link.name}
-                                    {link.hasDropdown && <ChevronDown size={16} className="group-hover:rotate-180 transition-transform duration-300" />}
+                                    {link.label}
                                 </button>
-
-                                {link.hasDropdown && (
-                                    <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-                                        <div className="bg-[#2b49c5] shadow-xl rounded-xl py-2 min-w-[200px] border border-blue-400/20">
-                                            {link.options?.map((opt: any) => (
-                                                <a
-                                                    key={opt}
-                                                    href="#"
-                                                    className="block px-4 py-2 text-[16px] text-white hover:text-yellow-400 cursor-pointer rounded-lg transition-all"
-                                                >
-                                                    {opt}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>
@@ -100,13 +83,22 @@ const Navbar = () => {
                         </button>
 
                         {/* Create Account Button / Live Demo */}
-                        <button className="relative group/btn bg-[#2b49c5] text-white px-3 sm:px-7 py-2 sm:py-3 text-[10px] sm:text-[14px] rounded-lg font-bold transition-all whitespace-nowrap overflow-hidden flex items-center justify-center min-w-[100px] sm:min-w-[160px]">
+                        <button 
+                            className="relative group/btn px-3 sm:px-7 py-2 sm:py-3 text-[10px] sm:text-[14px] rounded-lg font-bold transition-all whitespace-nowrap overflow-hidden flex items-center justify-center min-w-[100px] sm:min-w-[160px]"
+                            style={{ 
+                                backgroundColor: content?.liveDemoButton?.backgroundColor || '#2b49c5',
+                                color: content?.liveDemoButton?.textColor || '#ffffff'
+                            }}
+                        >
                             <span
-                                className="absolute inset-x-0 top-0 w-full h-[160%] bg-black transition-transform duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] translate-y-[-101%] group-hover/btn:translate-y-0 z-0 pointer-events-none"
-                                style={{ clipPath: 'ellipse(100% 40% at 50% 35%)' }}
+                                className="absolute inset-x-0 top-0 w-full h-[160%] transition-transform duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] translate-y-[-101%] group-hover/btn:translate-y-0 z-0 pointer-events-none"
+                                style={{ 
+                                    clipPath: 'ellipse(100% 40% at 50% 35%)',
+                                    backgroundColor: content?.liveDemoButton?.hoverBackgroundColor || '#000000'
+                                }}
                             ></span>
                             <span className="relative z-10 transition-colors duration-300 pointer-events-none uppercase">
-                                live demo
+                                {content?.liveDemoButton?.label || 'live demo'}
                             </span>
                         </button>
 
@@ -146,43 +138,14 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex flex-col gap-2 overflow-y-auto max-h-[85vh]">
-                    {navLinks.map((link) => (
-                        <div key={link.name} className="py-3">
+                    {content?.links?.filter(link => link.visible).map((link) => (
+                        <div key={link.id} className="py-3">
                             <button
-                                onClick={() => link.hasDropdown ? toggleMobileDropdown(link.name) : scrollToSection(link.id)}
+                                onClick={() => scrollToSection(link.sectionId)}
                                 className="flex items-center justify-between w-full text-white text-base sm:text-lg font-bold text-left hover:text-yellow-400 transition-colors outline-none focus:outline-none"
                             >
-                                {link.name}
-                                {link.hasDropdown && (
-                                    <div className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-transform duration-300 ${openMobileDropdown === link.name ? "rotate-180" : ""}`}>
-                                        <ChevronDown size={16} />
-                                    </div>
-                                )}
+                                {link.label}
                             </button>
-
-                            {link.hasDropdown && (
-                                <div
-                                    className={`grid transition-all duration-500 ease-in-out ${openMobileDropdown === link.name
-                                        ? "grid-rows-[1fr] opacity-100 mt-1"
-                                        : "grid-rows-[0fr] opacity-0 mt-0"
-                                        }`}
-                                >
-                                    <div className="overflow-hidden">
-                                        <div className="flex flex-col gap-4 ml-2 mt-2">
-                                            {link.options?.map((opt) => (
-                                                <a
-                                                    key={opt}
-                                                    href="#"
-                                                    className="relative text-white/70 hover:text-yellow-400 pl-6 py-1 text-[16px] transition-colors block cursor-pointer flex items-center 
-                                        before:content-[''] before:absolute before:left-0 before:w-1.5 before:h-1.5 before:bg-white/40 before:rounded-full before:transition-colors hover:before:bg-yellow-400"
-                                                >
-                                                    {opt}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     ))}
                     {/* Builder Option in Mobile */}

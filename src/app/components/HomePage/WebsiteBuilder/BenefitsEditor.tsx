@@ -8,8 +8,7 @@ import {
   updateBenefit,
   deleteBenefit,
   reorderBenefits,
-  Benefit,
-  iconMap
+  Benefit
 } from "../../../store/benefitsSlice";
 import { 
   updateSectionContent,
@@ -23,7 +22,10 @@ import {
   selectCanRedo
 } from "../../../store/builderSlice";
 import { closeEditor } from "../../../store/editorSlice";
+import { openImageModal } from "../../../store/modalSlice";
+import ImageModal from "./ImageModal";
 import { Trash2, Plus, GripVertical, ChevronDown, Undo, Redo, Upload } from "lucide-react";
+import { iconMap } from "../../../store/benefitsSlice";
 
 const availableIcons = Object.keys(iconMap);
 
@@ -55,6 +57,41 @@ const BenefitsEditor: React.FC = () => {
       dispatch(setEditingSection({ sectionId: currentBenefitsSection.id, field: null }));
     }
   }, [currentBenefitsSection?.id]);
+
+  const handleUndo = React.useCallback(() => {
+    if (currentBenefitsSection) {
+      dispatch(undoSection(currentBenefitsSection.id));
+    }
+  }, [currentBenefitsSection, dispatch]);
+  
+  const handleRedo = React.useCallback(() => {
+    if (currentBenefitsSection) {
+      dispatch(redoSection(currentBenefitsSection.id));
+    }
+  }, [currentBenefitsSection, dispatch]);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + Z (undo)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) {
+          handleUndo();
+        }
+      }
+      // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        if (canRedo) {
+          handleRedo();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, handleUndo, handleRedo]);
   
   // Local state for editing - prioritize current benefits section data
   const [localContent, setLocalContent] = useState(() => {
@@ -392,23 +429,45 @@ const BenefitsEditor: React.FC = () => {
                           >
                           <Upload className="h-4 w-4"/>                          </button>
                         </div>
-                        {benefit.iconImage && (
-                          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                        {/* Icon Preview */}
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          {benefit.iconImage ? (
                             <img 
                               src={benefit.iconImage} 
                               alt="Custom icon" 
-                              className="w-8 h-8 object-cover rounded"
+                              className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                              onClick={() => benefit.iconImage && dispatch(openImageModal({ imageSrc: benefit.iconImage, alt: 'Custom Icon' }))}
                             />
-                            <span className="text-xs text-gray-600">Custom image uploaded</span>
+                          ) : (
+                            <div className="w-8 h-8 bg-white rounded border border-gray-200 p-1 flex items-center justify-center shrink-0">
+                              {(() => {
+                                const IconComponent = iconMap[benefit.iconName] || iconMap.Star;
+                                return <IconComponent className="w-5 h-5 text-gray-600" />;
+                              })()}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 font-medium truncate">Icon Preview</p>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{benefit.iconImage ? 'Custom icon image' : benefit.iconName}</p>
+                          </div>
+                          {benefit.iconImage ? (
                             <button
                               onClick={() => handleUpdateBenefit(benefit.id, 'iconImage', '')}
-                              className="ml-auto text-red-500 hover:text-red-700 text-sm"
-                              title="Remove custom image"
+                              className="ml-auto text-red-600 hover:text-red-700 text-sm hover:underline cursor-pointer shrink-0"
+                              title="Remove custom icon"
                             >
                               Remove
                             </button>
-                          </div>
-                        )}
+                          ) : (
+                            <button
+                              onClick={() => handleIconImageUpload(benefit.id)}
+                              className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
+                              title="Upload custom icon"
+                            >
+                              Upload
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -575,6 +634,9 @@ const BenefitsEditor: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Image Modal */}
+      <ImageModal />
     </div>
   );
 };

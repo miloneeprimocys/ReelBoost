@@ -21,6 +21,8 @@ import {
 import { closeEditor } from "../../../store/editorSlice";
 import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
 import { Trash2, Upload, Plus, X, Undo, Redo } from "lucide-react";
+import { openImageModal } from "../../../store/modalSlice";
+import ImageModal from "./ImageModal";
 import HeroImage from "../../../../../public/third.svg";
 import Audience from "../../../../../public/audience.svg";
 import Gift from "../../../../../public/gift.svg";
@@ -32,19 +34,19 @@ import Image from "next/image";
 // Helper function to get the correct icon for Second and Third sections
 const getFeatureIcon = (sectionType: string, featureIndex: number) => {
   if (sectionType === 'second') {
-    if (featureIndex === 0) return list;
-    if (featureIndex === 1) return live;
-    if (featureIndex === 2) return HeroImage;
+    if (featureIndex === 0) return '/list.svg';
+    if (featureIndex === 1) return '/livestream.svg';
+    if (featureIndex === 2) return '/video.svg';
   }
   
   if (sectionType === 'third') {
-    if (featureIndex === 0) return HeroImage;
-    if (featureIndex === 1) return Audience;
-    if (featureIndex === 2) return Gift;
-    if (featureIndex === 3) return Sword;
+    if (featureIndex === 0) return '/sword.svg';
+    if (featureIndex === 1) return '/gift.svg';
+    if (featureIndex === 2) return '/audience.svg';
+    if (featureIndex === 3) return '/crown.svg';
   }
   
-  return null;
+  return '/default-icon.svg'; // Fallback icon
 };
 
 interface BannerContent {
@@ -111,24 +113,104 @@ const BannerEditor: React.FC = () => {
   const canUndo = useAppSelector(selectCanUndo);
   const canRedo = useAppSelector(selectCanRedo);
   
-  // Set editing section ID when component mounts
+  // Set editing section ID when component mounts (only for builderSlice sections that support undo/redo)
   React.useEffect(() => {
-    if (section) {
+    console.log('BannerEditor setEditingSection useEffect:', {
+      sectionId: section?.id,
+      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
+      shouldSetSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
+    });
+    
+    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+      console.log('BannerEditor - setting editing section:', section.id);
       dispatch(setEditingSection({ sectionId: section.id, field: null }));
     }
   }, [section?.id]);
   
-  const handleUndo = () => {
-    if (section) {
+  const handleUndo = React.useCallback(() => {
+    console.log('BannerEditor handleUndo called:', {
+      sectionId: section?.id,
+      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
+      willDispatch: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
+    });
+    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+      console.log('BannerEditor - dispatching undoSection for:', section.id);
       dispatch(undoSection(section.id));
+    } else {
+      console.log('BannerEditor - handleUndo: section not eligible for undo');
     }
-  };
+  }, [section, dispatch]);
   
-  const handleRedo = () => {
-    if (section) {
+  const handleRedo = React.useCallback(() => {
+    console.log('BannerEditor handleRedo called:', {
+      sectionId: section?.id,
+      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
+      willDispatch: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
+    });
+    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+      console.log('BannerEditor - dispatching redoSection for:', section.id);
       dispatch(redoSection(section.id));
+    } else {
+      console.log('BannerEditor - handleRedo: section not eligible for redo');
     }
-  };
+  }, [section, dispatch]);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keyboard events when BannerEditor is active
+      if (!section || !(section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+        return;
+      }
+
+      console.log('BannerEditor ANY keyboard event detected:', {
+        key: e.key,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        canUndo,
+        canRedo,
+        sectionId: section?.id,
+        target: (e.target as HTMLElement)?.tagName,
+        targetInput: (e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA'
+      });
+      
+      // Check for Ctrl/Cmd + Z (undo)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('BannerEditor - undo triggered, canUndo:', canUndo);
+        if (canUndo) {
+          console.log('BannerEditor - calling handleUndo');
+          handleUndo();
+        } else {
+          console.log('BannerEditor - undo not available');
+        }
+        return;
+      }
+      // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('BannerEditor - redo triggered, canRedo:', canRedo);
+        if (canRedo) {
+          console.log('BannerEditor - calling handleRedo');
+          handleRedo();
+        } else {
+          console.log('BannerEditor - redo not available');
+        }
+        return;
+      }
+    };
+    
+    console.log('BannerEditor - Adding keyboard event listener to document');
+    // Use document level event listener with capture to ensure it catches events
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      console.log('BannerEditor - Removing keyboard event listener from document');
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [canUndo, canRedo, handleUndo, handleRedo, section?.id]);
   
   // Ensure content is properly initialized with default values
  const getDefaultLayout = () => {
@@ -185,10 +267,23 @@ const BannerEditor: React.FC = () => {
       } else {
         // Use default content based on section type
         console.log('BannerEditor - Using default content for section type:', section.type);
-        setContent(JSON.parse(JSON.stringify(defaultContent)));
+        const newContent = { ...defaultContent, layout: getDefaultLayout() };
+        setContent(JSON.parse(JSON.stringify(newContent)) as BannerContent);
       }
     }
   }, [section?.id, section?.content, section?.type]); // Include section type for layout
+
+  // Sync local content with Redux state changes (for undo/redo and real-time updates)
+  React.useEffect(() => {
+    if (section && section.content) {
+      console.log('BannerEditor - Syncing content with Redux state:', section.content);
+      const newContent = { ...defaultContent, ...section.content };
+      if (!newContent.layout) {
+        newContent.layout = getDefaultLayout();
+      }
+      setContent(JSON.parse(JSON.stringify(newContent)) as BannerContent);
+    }
+  }, [section?.content]); // Sync when section content changes in Redux
 
   const updateField = (field: keyof BannerContent, value: any) => {
     console.log('BannerEditor - updateField called:', field, value);
@@ -255,45 +350,24 @@ const BannerEditor: React.FC = () => {
       icon: ''
     };
     const updatedFeatures = [...content.features, newFeature];
+    
+    // Just call updateField - it handles the Redux dispatch properly
     updateField('features', updatedFeatures);
-    if (section) {
-      // Check if this is a builderSlice section
-      if (section.id.startsWith('second-') || section.id.startsWith('third-')) {
-        // For builderSlice sections, just update the content with the new feature
-        dispatch(updateSectionContent({ id: section.id, content: { features: updatedFeatures } }));
-      } else {
-        dispatch(addBannerFeature({ id: section.id, feature: newFeature }));
-      }
-    }
   };
 
   const updateFeature = (index: number, field: 'title' | 'description' | 'icon', value: string) => {
     const updatedFeatures = [...content.features];
     updatedFeatures[index] = { ...updatedFeatures[index], [field]: value };
+    
+    // Just call updateField - it handles the Redux dispatch properly
     updateField('features', updatedFeatures);
-    if (section) {
-      // Check if this is a builderSlice section
-      if (section.id.startsWith('second-') || section.id.startsWith('third-')) {
-        // For builderSlice sections, just update the content
-        dispatch(updateSectionContent({ id: section.id, content: { features: updatedFeatures } }));
-      } else {
-        dispatch(updateBannerFeature({ id: section.id, featureIndex: index, feature: { [field]: value } }));
-      }
-    }
   };
 
   const removeFeature = (index: number) => {
     const updatedFeatures = content.features.filter((_, i) => i !== index);
+    
+    // Just call updateField - it handles the Redux dispatch properly
     updateField('features', updatedFeatures);
-    if (section) {
-      // Check if this is a builderSlice section
-      if (section.id.startsWith('second-') || section.id.startsWith('third-')) {
-        // For builderSlice sections, just update the content
-        dispatch(updateSectionContent({ id: section.id, content: { features: updatedFeatures } }));
-      } else {
-        dispatch(deleteBannerFeature({ id: section.id, featureIndex: index }));
-      }
-    }
   };
 
 
@@ -630,19 +704,20 @@ const BannerEditor: React.FC = () => {
                 className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
               {content.backgroundImage && content.backgroundImage !== '' && (
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
                   <img 
                     src={content.backgroundImage} 
                     alt="Banner background" 
-                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => {
-                      const newWindow = window.open(content.backgroundImage, '_blank');
-                      if (newWindow) newWindow.focus();
-                    }}
+                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    onClick={() => content.backgroundImage && dispatch(openImageModal({ imageSrc: content.backgroundImage, alt: 'Banner Background' }))}
                   />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 font-medium truncate">Banner Image</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{content.backgroundImage}</p>
+                  </div>
                   <button
                     onClick={() => section && handleImageUpload(section.id, 'backgroundImage')}
-                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
                     title="Change image"
                   >
                     Change
@@ -654,52 +729,71 @@ const BannerEditor: React.FC = () => {
             {/* Feature Icons */}
             <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
               <label className="block text-sm font-semibold text-gray-800 mb-2">Feature Icons</label>
-              <div className="space-y-3">
+              <div className="space-y-2 max-h-96 overflow-x-hidden overflow-y-auto">
                 {content.features?.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={feature.icon}
-                        onChange={(e) => updateFeature(index, 'icon', e.target.value)}
-                        placeholder="/icon.svg"
-                        className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      />
+                  <div key={index} className="flex items-start gap-2 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex gap-2 items-center min-w-0">
+                        <input
+                          type="text"
+                          value={feature.icon}
+                          onChange={(e) => updateFeature(index, 'icon', e.target.value)}
+                          placeholder="/icon.svg"
+                          className="flex-1 min-w-0 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 truncate"
+                        />
+                        <button
+                          onClick={() => handleFeatureImageUpload(index)}
+                          className="p-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-sm shrink-0"
+                          title="Upload icon"
+                        >
+                          <Upload size={16} />
+                        </button>
+                      </div>
                       {/* Icon Preview */}
-                      {section && (section.type === 'second' || section.type === 'third') && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Preview:</span>
-                            {getFeatureIcon(section.type, index) && (
+                      {(feature.icon && feature.icon !== '') || getFeatureIcon(section?.type, index) ? (
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2 min-w-0">
+                          {feature.icon && feature.icon !== '' ? (
+                            <img 
+                              src={feature.icon} 
+                              alt="Feature icon" 
+                              className="w-12 h-12 object-contain rounded bg-white p-1 border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                              onClick={() => dispatch(openImageModal({ imageSrc: feature.icon, alt: 'Feature Icon' }))}
+                            />
+                          ) : getFeatureIcon(section?.type, index) ? (
+                            <div className="w-12 h-12 bg-white rounded border border-gray-200 p-1 flex items-center justify-center shrink-0">
                               <Image 
                                 src={getFeatureIcon(section.type, index)} 
                                 alt="Feature icon" 
-                                width={20} 
-                                height={20}
+                                width={40} 
+                                height={40}
                                 className="object-contain"
                               />
-                            )}
-                            {!getFeatureIcon(section.type, index) && (
-                              <div className="w-5 h-5 bg-gray-300 rounded-full"></div>
-                            )}
+                            </div>
+                          ) : null}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 font-medium truncate">Icon Preview</p>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{feature.icon || getFeatureIcon(section?.type, index)}</p>
                           </div>
+                          <button
+                            onClick={() => handleFeatureImageUpload(index)}
+                            className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
+                            title="Change icon"
+                          >
+                            Change
+                          </button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
-                    <button
-                      onClick={() => handleFeatureImageUpload(index)}
-                      className="p-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-sm shrink-0"
-                    >
-                      <Upload size={16} />
-                    </button>
                   </div>
                 ))}
               </div>
             </div>
-
-                      </div>
+          </div>
         )}
       </div>
+      
+      {/* Image Modal */}
+      <ImageModal />
     </div>
   );
 };

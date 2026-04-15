@@ -63,16 +63,38 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   const renderIcon = (iconName: string, className: string, sectionType?: string, featureIndex?: number) => {
     const iconProps = { className };
     
+    console.log('renderIcon - sectionId:', sectionId, 'sectionType:', sectionType, 'featureIndex:', featureIndex, 'iconName:', iconName);
+    
+    // If iconName is a data URL or starts with '/', use it as an image
+    if (iconName && (iconName.startsWith('data:') || iconName.startsWith('/'))) {
+      console.log('renderIcon - Using dynamic icon:', iconName);
+      return <img src={iconName} alt="Feature icon" className={className} onError={(e) => {
+        // Fallback to static icons if dynamic icon fails
+        const target = e.target as HTMLImageElement;
+        const isSecondSection = sectionType === 'second' || sectionType === 'live-streaming' || (sectionId && (sectionId.includes('second') || sectionId.includes('live-streaming')));
+        const isThirdSection = sectionType === 'third' || sectionType === 'pk-battle' || (sectionId && (sectionId.includes('third') || sectionId.includes('pk-battle')));
+        
+        if (isSecondSection) {
+          if (featureIndex === 0) target.src = list.src;
+          if (featureIndex === 1) target.src = live.src;
+        } else if (isThirdSection) {
+          if (featureIndex === 0) target.src = HeroImage.src;
+          if (featureIndex === 1) target.src = Gift.src;
+          if (featureIndex === 2) target.src = Audience.src;
+          if (featureIndex === 3) target.src = Sword.src;
+        }
+      }} />;
+    }
+    
     // Check if this is a second or third section based on sectionId or sectionType
     const isSecondSection = sectionType === 'second' || sectionType === 'live-streaming' || (sectionId && (sectionId.includes('second') || sectionId.includes('live-streaming')));
     const isThirdSection = sectionType === 'third' || sectionType === 'pk-battle' || (sectionId && (sectionId.includes('third') || sectionId.includes('pk-battle')));
     
-    console.log('renderIcon - sectionId:', sectionId, 'sectionType:', sectionType, 'featureIndex:', featureIndex, 'iconName:', iconName);
     console.log('isSecondSection:', isSecondSection, 'isThirdSection:', isThirdSection);
     
-    // Use SVG icons for second and third sections
+    // Use SVG icons for second and third sections as fallback
     if (isSecondSection) {
-      console.log('renderIcon - Using second section icons');
+      console.log('renderIcon - Using second section icons fallback');
       if (featureIndex === 0) return <Image src={list} alt="List icon" className={className} />;
       if (featureIndex === 1) return <Image src={live} alt="Live icon" className={className} />;
       // Fallback
@@ -80,7 +102,7 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
     }
     
     if (isThirdSection) {
-      console.log('renderIcon - Using third section icons');
+      console.log('renderIcon - Using third section icons fallback');
       if (featureIndex === 0) return <Image src={HeroImage} alt="Hero icon" className={className} />;
       if (featureIndex === 1) return <Image src={Gift} alt="Audience icon" className={className} />;
       if (featureIndex === 2) return <Image src={Audience} alt="Gift icon" className={className} />;

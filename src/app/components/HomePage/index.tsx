@@ -1,12 +1,13 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '../../store';
-import { useAppSelector } from '../../hooks/reduxHooks';
+import { useAppSelector, useAppDispatch } from '../../hooks/reduxHooks';
 import Navbar from "../../Common/Navbar";
 import WebsiteBuilder from "./WebsiteBuilder";
-import Footer from "../../Common/Footer";
+import BuilderNavbar from "./WebsiteBuilder/BuilderNavbar";
+import DynamicFooter from "../../sections/Home/DynamicFooter";
 import Hero from "../../Pages/Home/Hero";
 import DynamicHero from "../../sections/Home/DynamicHero";
 import DynamicBanner from "../../sections/Home/DynamicBanner";
@@ -20,19 +21,42 @@ import SixthSection from "../../Pages/Home/SixthSection";
 import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 
 function HomePageContent() {
-  const { sections } = useAppSelector(state => state.builder);
+  const { sections, isBuilderMode } = useAppSelector(state => state.builder);
   const { sections: bannerSections } = useAppSelector(state => state.banner);
+  const { content: navbarContent } = useAppSelector(state => state.navbar);
+  const { content: footerContent } = useAppSelector(state => state.footer);
+  const dispatch = useAppDispatch();
+  const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   
+    
   // Combine all sections from both slices
   const allSections = [...sections, ...bannerSections];
   
   // Sort sections by order
   const sortedSections = allSections.sort((a, b) => a.order - b.order);
 
+  const handlePublish = () => {
+    // Save all changes and redirect to home
+    console.log('Publishing website...');
+    // This would save all the current state
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 1000);
+  };
+
   return (
     <main>
-      <div className='mb-10'>    
-          <Navbar />
+      {isBuilderMode && (
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <BuilderNavbar 
+            currentDevice={currentDevice}
+            onDeviceChange={setCurrentDevice}
+            onPublish={handlePublish}
+          />
+        </div>
+      )}
+      <div className={isBuilderMode ? 'mt-16 mb-10' : 'mb-10'}>    
+          {!isBuilderMode && <Navbar />}
       </div>
 
       {/* Render all sections in correct order */}
@@ -74,7 +98,7 @@ function HomePageContent() {
       })}
       
       <WebsiteBuilder />
-      <Footer />
+      <DynamicFooter />
     </main>
   );
 }

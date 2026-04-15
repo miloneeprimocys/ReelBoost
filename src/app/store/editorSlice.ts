@@ -30,11 +30,12 @@ interface EditorState {
     isOpen: boolean;
     sectionId: string | null;
     sectionType: string | null;
-    contentType: 'text' | 'style' | 'image' | 'admin' | null;
+    contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | null;
   };
 }
 
 const initialState: EditorState = {
+  section: null,
   activeSection: null,
   isEditorOpen: false,
   editorSection: null,
@@ -70,7 +71,7 @@ const editorSlice = createSlice({
       isOpen: boolean;
       sectionId: string | null;
       sectionType: string | null;
-      contentType: 'text' | 'style' | 'image' | 'admin' | null;
+      contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | null;
     }>) => {
       state.editingOverlay = action.payload;
       

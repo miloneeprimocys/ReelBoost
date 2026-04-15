@@ -6,6 +6,9 @@ import bannerReducer from './bannerSlice';
 import featuresReducer from './featuresSlice';
 import adminReducer from './adminSlice';
 import benefitsReducer from './benefitsSlice';
+import navbarReducer from './navbarSlice';
+import modalReducer from './modalSlice';
+import footerReducer, { selectFooterContent } from './footerSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +19,9 @@ export const store = configureStore({
     features: featuresReducer,
     admin: adminReducer,
     benefits: benefitsReducer,
+    navbar: navbarReducer,
+    modal: modalReducer,
+    footer: footerReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -27,3 +33,6 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+// Re-export footer selector
+export { selectFooterContent };

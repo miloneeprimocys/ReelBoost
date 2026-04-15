@@ -23,10 +23,10 @@ const DynamicSections: React.FC = () => {
         return null;
       case 'second':
         // Only render SecondSection if it's the currently active banner section
-        return activeBannerSection === section.id ? <SecondSection key={section.id} /> : null;
+        return activeBannerSection === section.id ? <SecondSection key={section.id} sectionId={section.id} /> : null;
       case 'third':
         // Only render ThirdSection if it's the currently active banner section
-        return activeBannerSection === section.id ? <ThirdSection key={section.id} /> : null;
+        return activeBannerSection === section.id ? <ThirdSection key={section.id} sectionId={section.id} /> : null;
       case 'fourth':
         return <FourthSection key={section.id} />;
       case 'fifth':

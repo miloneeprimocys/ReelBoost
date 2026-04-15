@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from './index';
 
 // Types
 interface HeroContent {
@@ -384,6 +385,16 @@ const builderSlice = createSlice({
       state.editingSectionId = action.payload.sectionId;
       state.editingField = action.payload.field;
     },
+    setSections: (state, action: PayloadAction<SectionConfig[]>) => {
+      state.sections = action.payload;
+      // Clear history when loading published data
+      state.sectionHistory = {};
+      state.sectionsHistory = {
+        past: [],
+        present: { builderSections: action.payload, bannerSections: [] },
+        future: []
+      };
+    },
     updateSectionContent: (state, action: PayloadAction<{ id: string; content: any }>) => {
       const { id, content } = action.payload;
       const section = state.sections.find(s => s.id === id);
@@ -401,11 +412,21 @@ const builderSlice = createSlice({
         state.sectionHistory[id].past = [...state.sectionHistory[id].past, state.sectionHistory[id].present];
         state.sectionHistory[id].future = [];
         
-        // Update the section content
-        section.content = { ...section.content, ...content };
+        // Update the section content with deep merge for nested objects and arrays
+        if (content.features && Array.isArray(content.features)) {
+          // If updating features array, replace it entirely
+          section.content = { ...section.content, features: content.features };
+        } else {
+          // For other fields, use shallow merge
+          section.content = { ...section.content, ...content };
+        }
         
-        // Update present state
-        state.sectionHistory[id].present = { ...section.content };
+        // Update present state with the same logic
+        if (content.features && Array.isArray(content.features)) {
+          state.sectionHistory[id].present = { ...section.content, features: content.features };
+        } else {
+          state.sectionHistory[id].present = { ...section.content, ...content };
+        }
       }
     },
     toggleSectionVisibility: (state, action: PayloadAction<string>) => {
@@ -1035,15 +1056,16 @@ export const {
   doneSection,
   markSectionAsReady,
   setInlineEditMode,
-  setEditingSection
+  setEditingSection,
+  setSections
 } = builderSlice.actions;
 
 // Selectors
-export const selectCanUndo = (state: { builder: BuilderState }) => {
+export const selectCanUndo = (state: { builder: BuilderState } | RootState) => {
   const { editingSectionId, sectionHistory } = state.builder;
   return !!(editingSectionId && sectionHistory[editingSectionId]?.past.length > 0);
 };
-export const selectCanRedo = (state: { builder: BuilderState }) => {
+export const selectCanRedo = (state: { builder: BuilderState } | RootState) => {
   const { editingSectionId, sectionHistory } = state.builder;
   return !!(editingSectionId && sectionHistory[editingSectionId]?.future.length > 0);
 };

@@ -21,6 +21,8 @@ interface SectionListProps {
   onSetActive: (id: string) => void;
   onSetActiveBanner: (id: string) => void;
   onSetActiveAdmin: (id: string) => void;
+  onSetActiveNavbar: () => void;
+  onSetActiveFooter: () => void;
   onDelete: (id: string) => void;
   onDeleteBanner: (id: string) => void;
   onDeleteAdmin: (id: string) => void;
@@ -48,6 +50,8 @@ const SectionList: React.FC<SectionListProps> = ({
   onSetActive,
   onSetActiveBanner,
   onSetActiveAdmin,
+  onSetActiveNavbar,
+  onSetActiveFooter,
   onDelete,
   onDeleteBanner,
   onDeleteAdmin,
@@ -111,9 +115,30 @@ const SectionList: React.FC<SectionListProps> = ({
   const allSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
   
   return (
-    <div className="mb-6">
-      {/* Existing Sections */}
+    <div className="mb-6 ">
+      {/* Navbar Section */}
       <div className="space-y-3 mb-6">
+        <div
+          onClick={() => {
+            console.log('Navbar section clicked - redirecting to navbar');
+            onSetActiveNavbar();
+          }}
+          className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white`}
+        >
+          <Layout size={18} className="text-blue-600" />
+          
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-gray-900 truncate md:text-sm lg:text-sm">Navigation Bar</div>
+            <div className="text-sm text-gray-500 capitalize md:text-xs lg:text-xs">Navbar</div>
+          </div>
+        </div>
+
+        {/* Sections Title */}
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Sections</h3>
+        </div>
+
+        {/* Existing Sections */}
         {allSections.map((section, index) => {
                               
           // Check section types
@@ -280,6 +305,122 @@ const SectionList: React.FC<SectionListProps> = ({
           <Plus size={20} />
           <span className="font-medium md:text-sm lg:text-sm">Add New Section</span>
         </button>
+      </div>
+
+      {/* Footer Section */}
+      <div className="mt-6">
+        <div
+          onClick={() => {
+            console.log('Footer section clicked - redirecting to footer');
+            
+            // Check if mobile and switch to preview if needed
+            const isMobile = window.innerWidth < 768;
+            if (isMobile && onSwitchToPreview) {
+              console.log('Mobile detected, switching to preview first');
+              onSwitchToPreview();
+            }
+            
+            // Scroll to footer section
+            setTimeout(() => {
+              console.log('Attempting to scroll to footer...');
+              
+              // List all available elements for debugging
+              const allElements = document.querySelectorAll('[id]');
+              const footerElements = Array.from(allElements).filter(el => 
+                el.id.toLowerCase().includes('footer')
+              );
+              console.log('Available footer elements:', footerElements.map(el => ({ id: el.id, tagName: el.tagName })));
+              
+              // Try different possible footer IDs
+              const possibleIds = ['footer-1', 'footer', 'dynamic-footer'];
+              let footerElement = null;
+              let foundId = null;
+              
+              for (const id of possibleIds) {
+                const element = document.getElementById(id);
+                if (element) {
+                  footerElement = element;
+                  foundId = id;
+                  console.log(`Found footer element with ID: ${id}`);
+                  break;
+                }
+              }
+              
+              const previewContainer = document.getElementById('preview-container');
+              console.log('Preview container found:', !!previewContainer);
+              
+              if (footerElement && previewContainer) {
+                console.log(`Scrolling to footer (${foundId}) within preview container`);
+                const elementOffsetTop = footerElement.offsetTop;
+                const offset = 100; // Header offset
+                const targetScrollTop = elementOffsetTop - offset;
+                
+                console.log('Scroll details:', {
+                  elementOffsetTop,
+                  targetScrollTop,
+                  containerScrollTop: previewContainer.scrollTop,
+                  containerScrollHeight: previewContainer.scrollHeight,
+                  containerClientHeight: previewContainer.clientHeight
+                });
+                
+                previewContainer.scrollTo({
+                  top: targetScrollTop,
+                  behavior: 'smooth'
+                });
+                
+                // Add visual feedback
+                setTimeout(() => {
+                  footerElement.style.transition = 'background-color 0.3s ease';
+                  footerElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                  setTimeout(() => {
+                    footerElement.style.backgroundColor = '';
+                  }, 1000);
+                }, 500);
+                
+              } else if (footerElement) {
+                console.log(`Scrolling to footer (${foundId}) using scrollIntoView`);
+                footerElement.scrollIntoView({ behavior: 'smooth' });
+                
+                // Add visual feedback
+                setTimeout(() => {
+                  footerElement.style.transition = 'background-color 0.3s ease';
+                  footerElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                  setTimeout(() => {
+                    footerElement.style.backgroundColor = '';
+                  }, 1000);
+                }, 500);
+                
+              } else {
+                console.error('Footer element not found! Tried IDs:', possibleIds);
+                console.log('All elements with IDs:', Array.from(allElements).map(el => el.id));
+              }
+            }, isMobile ? 600 : 200); // Increased delay for mobile
+          }}
+          className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white`}
+        >
+          <Layout size={18} className="text-green-600" />
+          
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-gray-900 truncate md:text-sm lg:text-sm">Footer</div>
+            <div className="text-sm text-gray-500 capitalize md:text-xs lg:text-xs">Footer Section</div>
+          </div>
+          
+          {/* <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Footer edit button clicked - opening footer editor');
+                
+                // Open footer editor
+                onSetActiveFooter();
+              }}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-gray-700 hover:text-gray-900"
+              title="Edit Footer"
+            >
+              <Edit3 size={18} className="text-gray-700" />
+            </button>
+          </div> */}
+        </div>
       </div>
 
           </div>

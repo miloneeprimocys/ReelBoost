@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { X, Edit3, ChevronLeft, Undo, Redo } from "lucide-react";
+import { X, Edit3, ChevronLeft, Undo, Redo, Facebook, Twitter, Linkedin, Instagram, Phone, Mail } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/reduxHooks";
 import { store } from "../../store";
 import { 
@@ -46,11 +46,14 @@ import {
   reorderAdminSections
 } from "../../store/adminSlice";
 import { openEditor, setEditingOverlay } from "../../store/editorSlice";
+import { setActiveNavbar } from "../../store/navbarSlice";
 import HeroEditor from "./WebsiteBuilder/HeroEditor";
 import BannerEditor from "./WebsiteBuilder/BannerEditor";
 import FeaturesEditor from "./WebsiteBuilder/FeaturesEditor";
 import AdminEditor from "./WebsiteBuilder/AdminEditor";
 import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
+import NavbarEditor from "./WebsiteBuilder/NavbarEditor";
+import FooterEditor from "./WebsiteBuilder/FooterEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 
 // Import homepage section components for preview
@@ -63,6 +66,8 @@ import SixthSection from "../../Pages/Home/SixthSection";
 import DynamicBanner from "../../sections/Home/DynamicBanner";
 import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 import DynamicFeatures from "../../sections/Home/DynamicFeatures";
+import DynamicFooter from "../../sections/Home/DynamicFooter";
+import DynamicNavbar from "../../sections/Home/DynamicNavbar";
 
 const WebsiteBuilder: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -76,6 +81,7 @@ const WebsiteBuilder: React.FC = () => {
   const bannerCanRedo = useAppSelector(selectBannerCanRedo);
   const { sections: adminSections, activeSection: activeAdminSection } = useAppSelector(state => state.admin);
   const { editorSection } = useAppSelector(state => state.editor);
+  const { isActive: isNavbarActive } = useAppSelector(state => state.navbar);
   
   // Create a ref for the preview container
   const previewRef = useRef<HTMLDivElement>(null);
@@ -152,6 +158,34 @@ const WebsiteBuilder: React.FC = () => {
     
     console.log('Admin section deleted');
   };
+
+  const handleSetActiveNavbar = () => {
+    console.log('=== Navbar section clicked ===');
+    // Scroll to the top of the preview container where navbar is located
+    const previewContainer = document.getElementById('preview-container');
+    if (previewContainer) {
+      previewContainer.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
+  
+  const handleSetActiveFooter = () => {
+    console.log('=== Footer section clicked ===');
+    dispatch(setActiveSection(null));
+    dispatch(setActiveBannerSection(null));
+    dispatch(setActiveAdminSection(null));
+    // Open footer editor using setEditingOverlay
+    console.log('About to call setEditingOverlay for footer');
+    dispatch(setEditingOverlay({
+      isOpen: true,
+      sectionId: 'footer-1',
+      sectionType: 'footer',
+      contentType: 'footer'
+    }));
+    console.log('Called setEditingOverlay for footer');
+  };
   
   // Note: We no longer auto-update history when banner sections change
   // History is now manually managed in handleAddBannerSection and handleDeleteBannerSection
@@ -160,6 +194,15 @@ const WebsiteBuilder: React.FC = () => {
   // Add keyboard shortcuts for sections-level undo/redo
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Check if the event target is within the footer editor
+      const target = event.target as HTMLElement;
+      const footerEditorElement = document.getElementById('footer-editor');
+      
+      // If within footer editor, don't handle sections undo/redo
+      if (footerEditorElement && footerEditorElement.contains(target)) {
+        return;
+      }
+      
       // Check for Ctrl/Cmd + Z (undo) or Ctrl/Cmd + Y (redo)
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
         if (event.key === 'z') {
@@ -738,6 +781,8 @@ useEffect(() => {
     return (
       <div ref={previewRef} className="flex-1 bg-white overflow-y-auto" id="preview-container">
         <div className="min-h-full flex flex-col lg:flex-col md:flex-col">
+          {/* Dynamic Navbar */}
+          <DynamicNavbar />
           {allSections.map((section) => {
             // Only render section if it's visible
             if (!section.visible) return null;
@@ -920,18 +965,42 @@ useEffect(() => {
               </button>
             </div>
           </div>
+          
+          {/* Footer Section */}
+          <DynamicFooter 
+            sectionId="footer-1" 
+            onEdit={(sectionId, contentType, elementId) => {
+              console.log('Footer section clicked:', { sectionId, contentType, elementId });
+              // On mobile, switch to preview view first, then open editor
+              if (isMobile) {
+                setMobileView('preview');
+              }
+              dispatch(setEditingOverlay({
+                isOpen: true,
+                sectionId,
+                sectionType: 'footer',
+                contentType: 'footer'
+              }));
+            }} 
+          />
         </div>
       </div>
     );
   };
 
   const renderEditingOverlay = () => {
-    if (!editingOverlay.isOpen) return null;
+    console.log('=== renderEditingOverlay called ===');
+    console.log('editingOverlay:', editingOverlay);
+    
+    if (!editingOverlay.isOpen) {
+      console.log('editingOverlay.isOpen is false, returning null');
+      return null;
+    }
 
     console.log('renderEditingOverlay - sectionType:', editingOverlay.sectionType, 'sectionId:', editingOverlay.sectionId);
 
     return (
-      <div className="fixed top-0 right-0 bottom-0 w-96 bg-white shadow-2xl z-50 border-l overflow-y-auto">
+      <div className="fixed top-0 right-0 bottom-0 w-96 bg-white shadow-2xl z-50 border-l overflow-y-auto hide-scrollbar">
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
             Edit {editingOverlay.sectionType} - {editingOverlay.contentType}
@@ -950,10 +1019,12 @@ useEffect(() => {
         </div>
         
         <div className="flex-1 h-full overflow-hidden">
-          {editingOverlay.sectionType === 'banner' ? <BannerEditor /> : 
+          {editingOverlay.sectionType === 'navbar' ? <NavbarEditor /> :
+           editingOverlay.sectionType === 'banner' ? <BannerEditor /> : 
            editingOverlay.sectionType === 'hero' ? <HeroEditor /> : 
            editingOverlay.sectionType === 'features' ? <FeaturesEditor /> : 
            editingOverlay.sectionType === 'benefits' ? <BenefitsEditor /> :
+           editingOverlay.sectionType === 'footer' ? <FooterEditor /> :
            editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth') ? <BenefitsEditor /> : 
            editingOverlay.sectionType === 'admin' ? <AdminEditor /> : null}
         </div>
@@ -1001,7 +1072,7 @@ useEffect(() => {
       if (mobileView === 'list') {
         return (
           <div className="w-full h-full flex flex-col bg-gray-50">
-            <div className="bg-white border-b p-4 flex items-center justify-between">
+            <div className="bg-white border-b p-4 flex items-center justify-between -mt-1" >
               <h2 className="text-lg font-bold text-gray-900">Sections</h2>
               <div className="flex items-center gap-2">
                 <button
@@ -1084,6 +1155,8 @@ useEffect(() => {
                     scrollToSection(id);
                   }, 200);
                 }}
+                onSetActiveNavbar={handleSetActiveNavbar}
+                onSetActiveFooter={handleSetActiveFooter}
                 onDelete={(id) => dispatch(deleteSection(id))}
                 onDeleteBanner={handleDeleteBannerSection}
                 onDeleteAdmin={handleDeleteAdminSection}
@@ -1135,9 +1208,9 @@ useEffect(() => {
     return (
       <>
         {/* Section List Panel - Reduced width on md screens */}
-        <div className="w-full md:w-70  xl:w-96 bg-white shadow-xl flex flex-col">
-          <div className="flex items-center justify-between p-4 xl:p-6 border-b">
-            <h2 className="text-xl font-bold text-gray-900">Sections</h2>
+        <div className="w-full md:w-70  xl:w-96 bg-white  flex flex-col">
+          <div className="flex items-center justify-between p-4 xl:px-6  xl:py-[13px] border-b border-r ">
+            <h2 className="text-xl font-bold text-gray-900">Components</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSectionsUndo}
@@ -1163,8 +1236,8 @@ useEffect(() => {
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 xl:p-6">
-            <SectionList
+          <div className="flex-1 overflow-y-auto p-4 xl:p-6 hide-scrollbar border-r border-gray-300">
+              <SectionList
               sections={sections}
               bannerSections={allBannerSections}
               adminSections={adminSections}
@@ -1210,6 +1283,8 @@ useEffect(() => {
                   scrollToSection(id);
                 }, 200);
               }}
+              onSetActiveNavbar={handleSetActiveNavbar}
+              onSetActiveFooter={handleSetActiveFooter}
               onDelete={(id) => dispatch(deleteSection(id))}
               onDeleteBanner={handleDeleteBannerSection}
               onDeleteAdmin={handleDeleteAdminSection}

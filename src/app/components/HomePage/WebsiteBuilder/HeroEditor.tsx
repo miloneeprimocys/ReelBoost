@@ -6,6 +6,8 @@ import { markSectionAsReady, updateSectionContent, toggleBuilderMode, undo, redo
 import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
 import { closeEditor } from "../../../store/editorSlice";
 import { Trash2, Upload, X, Undo, Redo } from "lucide-react";
+import { openImageModal } from "../../../store/modalSlice";
+import ImageModal from "./ImageModal";
 
 interface HeroContent {
   title: string;
@@ -68,18 +70,48 @@ const HeroEditor: React.FC = () => {
       dispatch(setEditingSection({ sectionId: section.id, field: null }));
     }
   }, [section?.id]);
-  
-  const handleUndo = () => {
+
+  const handleUndo = React.useCallback(() => {
     if (section) {
       dispatch(undoSection(section.id));
     }
-  };
+  }, [section, dispatch]);
   
-  const handleRedo = () => {
+  const handleRedo = React.useCallback(() => {
     if (section) {
       dispatch(redoSection(section.id));
     }
-  };
+  }, [section, dispatch]);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keyboard events when HeroEditor is active
+      if (!section) {
+        return;
+      }
+      
+      // Check for Ctrl/Cmd + Z (undo)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canUndo) {
+          handleUndo();
+        }
+      }
+      // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canRedo) {
+          handleRedo();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [canUndo, canRedo, handleUndo, handleRedo, section?.id]);
   
   // Ensure content is properly initialized with default values
   const defaultContent: HeroContent = {
@@ -453,7 +485,7 @@ const HeroEditor: React.FC = () => {
           <div className="space-y-4">
             {/* Hero Background */}
             <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Hero Background Image</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Image Section</label>
               <input
                 type="text"
                 value={content.backgroundImage}
@@ -462,19 +494,20 @@ const HeroEditor: React.FC = () => {
                 className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
               {content.backgroundImage && content.backgroundImage !== '' && (
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
                   <img 
                     src={content.backgroundImage} 
                     alt="Background image" 
-                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => {
-                      const newWindow = window.open(content.backgroundImage, '_blank');
-                      if (newWindow) newWindow.focus();
-                    }}
+                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    onClick={() => dispatch(openImageModal({ imageSrc: content.backgroundImage, alt: 'Background Image' }))}
                   />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 font-medium truncate">Image Section</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{content.backgroundImage}</p>
+                  </div>
                   <button
                     onClick={() => section && handleImageUpload(section.id, 'backgroundImage')}
-                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
                     title="Change image"
                   >
                     Change
@@ -485,7 +518,7 @@ const HeroEditor: React.FC = () => {
 
             {/* App Store Button */}
             <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">App Store Button</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Button 1</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -502,40 +535,31 @@ const HeroEditor: React.FC = () => {
                 </button>
               </div>
               {content.appStoreImage && content.appStoreImage !== '' && (
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
                   <img 
                     src={content.appStoreImage} 
                     alt="App Store button" 
-                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => {
-                      const newWindow = window.open(content.appStoreImage, '_blank');
-                      if (newWindow) newWindow.focus();
-                    }}
+                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    onClick={() => dispatch(openImageModal({ imageSrc: content.appStoreImage, alt: 'App Store Button' }))}
                   />
-                  {!content.appStoreImage.startsWith('data:') ? (
-                     <button
-                    onClick={() => section && handleImageUpload(section.id, 'backgroundImage')}
-                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 font-medium truncate">Button-1</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{content.appStoreImage}</p>
+                  </div>
+                  <button
+                    onClick={() => section && handleImageUpload(section.id, 'appStoreImage')}
+                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
                     title="Change image"
                   >
                     Change
                   </button>
-                  ) : (
-                     <button
-                    onClick={() => section && handleImageUpload(section.id, 'backgroundImage')}
-                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
-                    title="Change image"
-                  >
-                    Change
-                  </button>
-                  )}
                 </div>
               )}
             </div>
 
             {/* Google Play Button */}
             <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Google Play Button</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Button 2</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -552,39 +576,33 @@ const HeroEditor: React.FC = () => {
                 </button>
               </div>
               {content.googlePlayImage && content.googlePlayImage !== '' && (
-                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
                   <img 
                     src={content.googlePlayImage} 
                     alt="Google Play button" 
-                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => {
-                      const newWindow = window.open(content.googlePlayImage, '_blank');
-                      if (newWindow) newWindow.focus();
-                    }}
+                    className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    onClick={() => dispatch(openImageModal({ imageSrc: content.googlePlayImage, alt: 'Google Play Button' }))}
                   />
-                  {!content.googlePlayImage.startsWith('data:') ? (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 font-medium truncate">Button-2</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{content.googlePlayImage}</p>
+                  </div>
                   <button
-                    onClick={() => section && handleImageUpload(section.id, 'backgroundImage')}
-                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                    onClick={() => section && handleImageUpload(section.id, 'googlePlayImage')}
+                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
                     title="Change image"
                   >
                     Change
                   </button>
-                  ) : (
-                    <button
-                    onClick={() => section && handleImageUpload(section.id, 'backgroundImage')}
-                    className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
-                    title="Change image"
-                  >
-                    Change
-                  </button>
-                  )}
                 </div>
               )}
             </div>
           </div>
         )}
       </div>
+      
+      {/* Image Modal */}
+      <ImageModal />
     </div>
   );
 };

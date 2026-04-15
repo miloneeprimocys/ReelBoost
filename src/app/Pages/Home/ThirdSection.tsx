@@ -50,7 +50,7 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
       state.banner.sections.find(s => s.id === sectionId) || state.builder.sections.find(s => s.id === sectionId)
     );
     
-    // Use content from Redux or fallback to static content
+    // Use content from Redux or fallback to default content
     const content: BannerContent = section?.content || {
       dotText: 'PK Battle',
       title: 'Live battles to win audience support',
@@ -63,7 +63,7 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
           icon: '/sword.svg'
         },
         {
-          title: 'Send Gifts during the Battle',
+          title: 'Send Gifts during Battle',
           description: 'The winner and loser are determined based on the number of gifts received during the battle.',
           icon: '/gift.svg'
         },
@@ -98,6 +98,15 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
         if (contentRef.current) observer.observe(contentRef.current);
         return () => observer.disconnect();
     }, []);
+
+    // Sync component when section content changes in Redux
+    useEffect(() => {
+        if (section?.content) {
+            console.log('ThirdSection - Section content updated:', section.content);
+            // Force re-render by updating a local state that depends on section content
+            setIsVisible(prev => prev);
+        }
+    }, [section?.content]);
 
     const getAnimationClass = () => {
         if (!isVisible) return '';
@@ -172,11 +181,29 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
                                 }}
                             >
                                 <div className="shrink-0 w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                    {index === 0 && <Image src={HeroImage} alt="Hero icon" width={24} height={24} className="text-yellow-600" />}
-                                    {index === 1 && <Image src={Audience} alt="Audience icon" width={24} height={24} className="text-yellow-600" />}
-                                    {index === 2 && <Image src={Gift} alt="Gift icon" width={24} height={24} className="text-yellow-600" />}
-                                    {index === 3 && <Image src={Sword} alt="Sword icon" width={24} height={24} className="text-yellow-600" />}
-                                    {index > 3 && <div className="w-6 h-6 rounded-full bg-yellow-500"></div>}
+                                    {feature.icon && feature.icon !== '' ? (
+                                        <img 
+                                            src={feature.icon} 
+                                            alt={feature.title || 'Feature icon'} 
+                                            className="w-6 h-6 object-contain"
+                                            onError={(e) => {
+                                                // Fallback to static icons if dynamic icon fails
+                                                const target = e.target as HTMLImageElement;
+                                                if (index === 0) target.src = HeroImage.src;
+                                                if (index === 1) target.src = Audience.src;
+                                                if (index === 2) target.src = Gift.src;
+                                                if (index === 3) target.src = Sword.src;
+                                            }}
+                                        />
+                                    ) : (
+                                        <>
+                                            {index === 0 && <Image src={HeroImage} alt="Hero icon" width={24} height={24} className="text-yellow-600" />}
+                                            {index === 1 && <Image src={Audience} alt="Audience icon" width={24} height={24} className="text-yellow-600" />}
+                                            {index === 2 && <Image src={Gift} alt="Gift icon" width={24} height={24} className="text-yellow-600" />}
+                                            {index === 3 && <Image src={Sword} alt="Sword icon" width={24} height={24} className="text-yellow-600" />}
+                                            {index > 3 && <div className="w-6 h-6 rounded-full bg-yellow-500"></div>}
+                                        </>
+                                    )}
                                 </div>
                                 <div>
                                     <h3 

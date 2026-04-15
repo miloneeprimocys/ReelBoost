@@ -48,12 +48,12 @@ export default function Hero({ sectionId, onEdit }: HeroProps) {
     }, []);
 
     return (
-        <section id={sectionId} className="relative pt-10 w-full px-4 md:px-8 bg-white overflow-hidden pb-10 md:pb-12 lg:pb-16 group max-w-full overflow-x-hidden">
+        <section id={sectionId} className="relative w-full pt-8  px-4 md:px-8 bg-white overflow-hidden pb-10 md:pb-12 lg:pb-16 group max-w-full overflow-x-hidden">
             {/* Edit Icon - Top Right Corner - Only visible in builder mode */}
             {onEdit && (
                 <button
                     onClick={() => onEdit(sectionId, 'text', 'hero-title')}
-                    className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105  transition-all z-10 hover:bg-gray-50"
+                    className="absolute top-10 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105  transition-all z-10 hover:bg-gray-50"
                     title="Edit Hero Section"
                 >
                     <Edit size={16} className="text-gray-600" />

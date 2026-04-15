@@ -25,6 +25,26 @@ import {
 import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
 import { closeEditor, setEditingOverlay } from "../../../store/editorSlice";
 import { Plus, Trash2, Upload, GripVertical, X, Undo, Redo, ChevronUp, ChevronDown } from "lucide-react";
+import { openImageModal } from "../../../store/modalSlice";
+import ImageModal from "./ImageModal";
+import Image from "next/image";
+
+// Helper function to get default icons for features
+const getDefaultFeatureIcon = (featureTitle: string) => {
+  const title = featureTitle.toLowerCase();
+  if (title.includes('video') || title.includes('short')) return '/video.svg';
+  if (title.includes('notification')) return '/notification.svg';
+  if (title.includes('chat') || title.includes('message')) return '/message.svg';
+  if (title.includes('user') || title.includes('explore')) return '/user.svg';
+  if (title.includes('live') || title.includes('streaming')) return '/liveB.svg';
+  if (title.includes('battle') || title.includes('pk')) return '/Battle.svg';
+  if (title.includes('upload')) return '/upload.svg';
+  if (title.includes('share') || title.includes('social')) return '/share.svg';
+  if (title.includes('comment')) return '/message.svg';
+  if (title.includes('analytics') || title.includes('chart')) return '/chart.svg';
+  if (title.includes('setting')) return '/settings.svg';
+  return '/video.svg'; // Default fallback
+};
 
 interface Feature {
   id: string;
@@ -84,17 +104,47 @@ const FeaturesEditor: React.FC = () => {
     }
   }, [section?.id]);
   
-  const handleUndo = () => {
+  const handleUndo = React.useCallback(() => {
     if (section) {
       dispatch(undoSection(section.id));
     }
-  };
+  }, [section, dispatch]);
   
-  const handleRedo = () => {
+  const handleRedo = React.useCallback(() => {
     if (section) {
       dispatch(redoSection(section.id));
     }
-  };
+  }, [section, dispatch]);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keyboard events when FeaturesEditor is active
+      if (!section) {
+        return;
+      }
+      
+      // Check for Ctrl/Cmd + Z (undo)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canUndo) {
+          handleUndo();
+        }
+      }
+      // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canRedo) {
+          handleRedo();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [canUndo, canRedo, handleUndo, handleRedo, section?.id]);
   
   // Get features content from featuresSlice as fallback
   const { featuresContent } = useAppSelector(state => state.features);
@@ -349,6 +399,7 @@ const FeaturesEditor: React.FC = () => {
   };
 
   return (
+    <>
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
@@ -525,6 +576,49 @@ const FeaturesEditor: React.FC = () => {
                           <Upload size={16} />
                         </button>
                       </div>
+                      {/* Icon Preview */}
+                      {feature.id ? (
+                        <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg border border-gray-200 mt-2">
+                          {feature.icon && feature.icon !== '' ? (
+                            <Image 
+                              src={feature.icon} 
+                              alt="Feature icon" 
+                              width={32}
+                              height={32}
+                              className="w-8 h-8 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                              onClick={() => dispatch(openImageModal({ imageSrc: feature.icon, alt: 'Feature Icon' }))}
+                              onError={(e) => {
+                                console.error('Icon failed to load:', feature.icon);
+                                // If it's a file path that failed, try without the leading slash
+                                if (feature.icon.startsWith('/')) {
+                                  (e.target as HTMLImageElement).src = feature.icon.slice(1);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-white rounded border border-gray-200 p-1 flex items-center justify-center shrink-0">
+                              <Image 
+                                src={getDefaultFeatureIcon(feature.title)} 
+                                alt="Feature icon" 
+                                width={24} 
+                                height={24}
+                                className="object-contain"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 font-medium truncate">Feature Icon</p>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{feature.icon || 'No icon set'}</p>
+                          </div>
+                          <button
+                            onClick={() => handleImageUpload('icon', feature.id)}
+                            className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
+                            title={feature.icon ? "Change icon" : "Upload icon"}
+                          >
+                            {feature.icon ? "Change" : "Upload"}
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Background Image</label>
@@ -536,19 +630,20 @@ const FeaturesEditor: React.FC = () => {
                         className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
                       {feature.backgroundImage && feature.backgroundImage !== '' && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
                           <img 
                             src={feature.backgroundImage} 
                             alt="Feature background" 
-                            className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => {
-                              const newWindow = window.open(feature.backgroundImage, '_blank');
-                              if (newWindow) newWindow.focus();
-                            }}
+                            className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                            onClick={() => dispatch(openImageModal({ imageSrc: feature.backgroundImage, alt: 'Feature Background' }))}
                           />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 font-medium truncate">Feature Image</p>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{feature.backgroundImage}</p>
+                          </div>
                           <button
                             onClick={() => handleImageUpload('backgroundImage', feature.id)}
-                            className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                            className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
                             title="Change background image"
                           >
                             Change
@@ -768,19 +863,20 @@ const FeaturesEditor: React.FC = () => {
                           className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                         />
                         {card.image && card.image !== '' && (
-                          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
                             <img 
                               src={card.image} 
                               alt="Card image" 
-                              className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                const newWindow = window.open(card.image, '_blank');
-                                if (newWindow) newWindow.focus();
-                              }}
+                              className="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                              onClick={() => dispatch(openImageModal({ imageSrc: card.image, alt: 'Card Image' }))}
                             />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-700 font-medium truncate">Card Image</p>
+                              <p className="text-xs text-gray-500 mt-0.5 truncate">{card.image}</p>
+                            </div>
                             <button
                               onClick={() => handleImageUpload('image', undefined, card.id)}
-                              className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                              className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer shrink-0"
                               title="Change image"
                             >
                               Change
@@ -797,6 +893,9 @@ const FeaturesEditor: React.FC = () => {
         )}
       </div>
     </div>
+      
+      <ImageModal />
+      </>
   );
 };
 

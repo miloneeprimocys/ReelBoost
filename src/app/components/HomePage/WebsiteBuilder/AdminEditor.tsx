@@ -2,10 +2,12 @@
 
 import React, { useState, useMemo } from "react";
 import { useAppSelector, useAppDispatch } from "../../../hooks/reduxHooks";
-import { updateSectionContent, toggleBuilderMode, undo, redo } from "../../../store/builderSlice";
+import { updateSectionContent, toggleBuilderMode, undo, redo, undoSection, redoSection, setEditingSection } from "../../../store/builderSlice";
 import { closeEditor } from "../../../store/editorSlice";
 import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
 import { Trash2, Upload, Plus, GripVertical, CheckCircle, AlignLeft, AlignRight, Undo, Redo } from "lucide-react";
+import { openImageModal } from "../../../store/modalSlice";
+import ImageModal from "./ImageModal";
 
 interface AdminTabContent {
   id: string;
@@ -15,6 +17,7 @@ interface AdminTabContent {
   description: string;
   points: string[];
   image: string;
+  imageDescription?: string;
   order: number;
   visible: boolean;
 }
@@ -81,6 +84,48 @@ const AdminEditor = () => {
 
     return null;
   }, [editingOverlay.sectionId, builderSections]);
+
+  const handleUndo = React.useCallback(() => {
+    if (section) {
+      dispatch(undoSection(section.id));
+    }
+  }, [section, dispatch]);
+  
+  const handleRedo = React.useCallback(() => {
+    if (section) {
+      dispatch(redoSection(section.id));
+    }
+  }, [section, dispatch]);
+
+  // Set editing section ID when component mounts
+  React.useEffect(() => {
+    if (section) {
+      dispatch(setEditingSection({ sectionId: section.id, field: null }));
+    }
+  }, [section?.id]);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + Z (undo)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) {
+          handleUndo();
+        }
+      }
+      // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        if (canRedo) {
+          handleRedo();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, handleUndo, handleRedo]);
 
   // Get tabs from section content (for fifth section) or use empty array
   const getInitialTabs = (): AdminTabContent[] => {
@@ -185,6 +230,37 @@ const AdminEditor = () => {
       });
     }
   }, [section?.id]); // Only depend on section ID, not content changes
+
+  // Update local state when section content changes (for undo/redo)
+  React.useEffect(() => {
+    if (section?.content && currentSectionIdRef.current === section?.id) {
+      console.log('AdminEditor - updating local state from section content (undo/redo)');
+      
+      // Update tabs if they exist in section content
+      if (section.content.tabs && Array.isArray(section.content.tabs)) {
+        setTabs(section.content.tabs);
+        // Maintain active tab if it still exists, otherwise select first
+        const currentActiveTab = section.content.tabs.find((t: AdminTabContent) => t.id === activeTabId);
+        if (currentActiveTab) {
+          setActiveTabId(currentActiveTab.id);
+        } else if (section.content.tabs.length > 0) {
+          setActiveTabId(section.content.tabs[0].id);
+        }
+      }
+      
+      // Update section colors
+      setSectionColors({
+        labelColor: section.content?.labelColor || '#2b49c5',
+        subtitleColor: section.content?.subtitleColor || '#2b49c5',
+        titleColor: section.content?.titleColor || '#111827',
+        descriptionColor: section.content?.descriptionColor || '#6b7280',
+        pointsColor: section.content?.pointsColor || '#374151',
+      });
+      
+      // Update layout
+      setLayout(section.content?.layout || 'left');
+    }
+  }, [section?.content, activeTabId]); // Depend on content changes for undo/redo
 
   const updateActiveTab = (updates: Partial<AdminTabContent>) => {
     const updatedTabs = tabs.map(tab =>
@@ -375,7 +451,7 @@ const AdminEditor = () => {
         </h3>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => dispatch(undo())}
+            onClick={handleUndo}
             disabled={!canUndo}
             className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
             title="Undo (Ctrl+Z)"
@@ -383,7 +459,7 @@ const AdminEditor = () => {
             <Undo size={16} className="text-gray-600" />
           </button>
           <button
-            onClick={() => dispatch(redo())}
+            onClick={handleRedo}
             disabled={!canRedo}
             className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
             title="Redo (Ctrl+Y)"
@@ -785,17 +861,19 @@ const AdminEditor = () => {
                                   placeholder="/Admin1.svg"
                                   className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                                 />
+                          
                                 {tab.image && tab.image !== '' && (
                                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border mt-2">
                                     <img 
                                       src={tab.image} 
                                       alt="Tab image" 
                                       className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                                      onClick={() => {
-                                        const newWindow = window.open(tab.image, '_blank');
-                                        if (newWindow) newWindow.focus();
-                                      }}
+                                      onClick={() => dispatch(openImageModal({ imageSrc: tab.image, alt: 'Tab Image' }))}
                                     />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-gray-700 font-medium truncate">Tab Image</p>
+                                      <p className="text-xs text-gray-500 mt-0.5 truncate">{tab.imageDescription || 'No description set'}</p>
+                                    </div>
                                     <button
                                       onClick={() => {
                                         const input = document.createElement('input');
@@ -823,7 +901,7 @@ const AdminEditor = () => {
                                         };
                                         input.click();
                                       }}
-                                      className="ml-auto text-blue-600 hover:text-blue-700 text-sm"
+                                      className="ml-auto text-blue-600 hover:text-blue-700 text-sm hover:underline cursor-pointer"
                                       title="Change image"
                                     >
                                       Change
@@ -1199,6 +1277,9 @@ const AdminEditor = () => {
           </div>
         )}
       </div>
+      
+      {/* Image Modal */}
+      <ImageModal />
     </div>
   );
 };

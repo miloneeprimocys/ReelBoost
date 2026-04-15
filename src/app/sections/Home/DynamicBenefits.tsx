@@ -90,7 +90,7 @@ const DynamicBenefits: React.FC<DynamicBenefitsProps> = ({ sectionId, onEdit }) 
     <section 
       ref={sectionRef} 
       id={sectionId || "benefits"} 
-      className="w-full py-4 md:py-14 px-4 sm:px-6 overflow-x-hidden scroll-mt-20 relative cursor-pointer"
+      className="w-full py-4 md:py-14 px-4 sm:px-6 overflow-x-hidden relative cursor-pointer"
       style={{ backgroundColor: content?.backgroundColor || '#FFFFFF' }}
       onClick={() => onEdit && onEdit(sectionId || "benefits", 'admin')}
     >

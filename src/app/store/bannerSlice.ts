@@ -179,7 +179,14 @@ const bannerSlice = createSlice({
       const { id, content } = action.payload;
       const section = state.sections.find(s => s.id === id);
       if (section) {
-        section.content = { ...section.content, ...content };
+        // Handle features array updates properly
+        if (content.features && Array.isArray(content.features)) {
+          // If updating features array, replace it entirely
+          section.content = { ...section.content, features: content.features };
+        } else {
+          // For other fields, use shallow merge
+          section.content = { ...section.content, ...content };
+        }
       }
     },
     
