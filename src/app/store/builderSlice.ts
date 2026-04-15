@@ -25,10 +25,19 @@ interface HeroContent {
 
 interface SectionConfig {
   id: string;
-  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'contact-hero';
   name: string;
   visible: boolean;
   content: any;
+  order: number;
+}
+
+interface PageConfig {
+  id: string;
+  name: string;
+  path: string;
+  sections: SectionConfig[];
+  visible: boolean;
   order: number;
 }
 
@@ -36,6 +45,8 @@ interface BuilderState {
   isBuilderMode: boolean;
   sections: SectionConfig[];
   activeSection: string | null;
+  currentPage: string;
+  pages: PageConfig[];
   isPreviewMode: boolean;
   isInlineEditMode: boolean;
   editingSectionId: string | null;
@@ -174,28 +185,28 @@ const initialSections: SectionConfig[] = [
             title: 'Wallet',
             description: 'The wallet allows users to securely manage their balance, add funds, receive gifts, and withdraw payments from coin balance.',
             image: '/wallet.svg',
-            backgroundColor: '#F1F3EE'
+            backgroundColor: '#000000'
           },
           {
             id: 'card-2',
             title: 'Live Streaming',
             description: 'Live streaming supports up to four participants at a time, enabling real-time interaction, collaboration, and audience engagement.',
             image: '/hero.png',
-            backgroundColor: '#F1F3EE'
+            backgroundColor: '#000000'
           },
           {
             id: 'card-3',
             title: 'Payment History',
             description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
             image: '/third.svg',
-            backgroundColor: '#F1F3EE'
+            backgroundColor: '#000000'
           },
           {
             id: 'card-4',
             title: 'Reelboost',
             description: '',
             image: '/laptop.svg',
-            backgroundColor: '#F1F3EE'
+            backgroundColor: '#000000'
           },
           {
             id: 'card-5',
@@ -346,6 +357,39 @@ const initialSections: SectionConfig[] = [
     }
   ];
 
+const initialPages: PageConfig[] = [
+  {
+    id: 'home',
+    name: 'Home',
+    path: '/HomePage',
+    sections: initialSections,
+    visible: true,
+    order: 1
+  },
+  {
+    id: 'contact',
+    name: 'Contact Us',
+    path: '/ContactUs',
+    sections: [
+      {
+        id: 'contact-hero-1',
+        type: 'contact-hero',
+        name: 'Contact Hero Section',
+        visible: true,
+        order: 1,
+        content: {
+          title: 'Get in Touch',
+          description: "We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+          primaryButtonText: 'Contact Us',
+          secondaryButtonText: 'Learn More'
+        }
+      }
+    ],
+    visible: true,
+    order: 2
+  }
+];
+
 const initialState: BuilderState = {
   isBuilderMode: false,
   isInlineEditMode: false,
@@ -354,6 +398,8 @@ const initialState: BuilderState = {
   sectionHistory: {},
   isPreviewMode: false,
   activeSection: null,
+  currentPage: 'home',
+  pages: initialPages,
   sectionsHistory: {
     past: [],
     present: { builderSections: initialSections, bannerSections: [] },
@@ -374,6 +420,16 @@ const builderSlice = createSlice({
     },
     setActiveSection: (state, action: PayloadAction<string | null>) => {
       state.activeSection = action.payload;
+    },
+    setCurrentPage: (state, action: PayloadAction<string>) => {
+      state.currentPage = action.payload;
+      // Update sections to match the current page
+      const currentPage = state.pages.find(page => page.id === action.payload);
+      if (currentPage) {
+        state.sections = currentPage.sections;
+      }
+      // Clear active section when switching pages
+      state.activeSection = null;
     },
     togglePreviewMode: (state) => {
       state.isPreviewMode = !state.isPreviewMode;
@@ -480,13 +536,13 @@ const builderSlice = createSlice({
         bannerSections: state.sectionsHistory.present.bannerSections
       };
     },
-    addSectionAndSetActive: (state, action: PayloadAction<{ type: SectionConfig['type']; name?: string }>) => {
-      const { type, name } = action.payload;
-      console.log('Redux addSectionAndSetActive called with:', { type, name });
-      
+    addSectionAndSetActive: (state, action: PayloadAction<{ type: SectionConfig['type']; name?: string; sectionId?: string }>) => {
+      const { type, name, sectionId } = action.payload;
+      console.log('Redux addSectionAndSetActive called with:', { type, name, sectionId });
+
       const isNewFifth = type === 'fifth';
       const newSection: SectionConfig = {
-        id: `${type}-${Date.now()}`,
+        id: sectionId || `${type}-${Date.now()}`,
         type,
         name: name || (type === 'hero' ? 'Text and Image' : `${type.charAt(0).toUpperCase() + type.slice(1)} Section`),
         visible: true,
@@ -1038,6 +1094,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
 export const {
   toggleBuilderMode,
   setActiveSection,
+  setCurrentPage,
   toggleSectionVisibility,
   deleteSection,
   addSection,

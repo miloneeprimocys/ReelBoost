@@ -92,10 +92,10 @@ const bannerSlice = createSlice({
       // Save current state to history before adding
       state.history.past = [...state.history.past, state.history.present];
       state.history.future = [];
-      
-      const { type, maxOrder } = action.payload;
+
+      const { type, maxOrder, id } = action.payload;
       let content;
-      
+
       if (type === 'pk-battle') {
         content = getPKBattleBannerContent();
       } else if (type === 'live-streaming') {
@@ -104,9 +104,9 @@ const bannerSlice = createSlice({
         // For new banner sections, use empty content
         content = getEmptyBannerContent();
       }
-      
+
       const newSection: BannerSection = {
-        id: `banner-${Date.now()}-${Math.random()}`,
+        id: id || `banner-${Date.now()}-${Math.random()}`,
         type: 'banner',
         name: type === 'pk-battle' ? 'PK Battle' : type === 'live-streaming' ? 'Live Streaming' : 'Banner Section',
         visible: true,
@@ -117,8 +117,6 @@ const bannerSlice = createSlice({
       state.sections.push(newSection);
       // Update history.present with the new sections array AFTER adding the section
       state.history.present = [...state.sections];
-      // Store the ID for the reducer to return
-      action.payload.id = newSection.id;
     },
     
     reorderBannerSections: (state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) => {

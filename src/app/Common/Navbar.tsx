@@ -61,7 +61,7 @@ const Navbar = () => {
                         {content?.links?.filter(link => link.visible).map((link) => (
                             <div key={link.id} className="group relative">
                                 <button 
-                                    onClick={() => scrollToSection(link.sectionId)}
+                                    onClick={() => link.sectionId && scrollToSection(link.sectionId)}
                                     className="flex cursor-pointer items-center gap-1 text-[16px] font-semibold hover:text-black transition-colors"
                                     style={{ color: content?.textColor }}
                                 >
@@ -75,7 +75,7 @@ const Navbar = () => {
                     <div className="flex items-center gap-3 sm:gap-4">
                         {/* Builder Button - Desktop Only */}
                         <button
-                            onClick={() => dispatch(toggleBuilderMode())}
+                            onClick={() => window.location.href = '/WebsiteBuilder'}
                             className="hidden lg:flex items-center gap-2 bg-blue-600/10 text-blue-600 px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-600 hover:text-white transition-all border border-blue-600/20"
                         >
                             <Edit3 size={16} />
@@ -141,7 +141,7 @@ const Navbar = () => {
                     {content?.links?.filter(link => link.visible).map((link) => (
                         <div key={link.id} className="py-3">
                             <button
-                                onClick={() => scrollToSection(link.sectionId)}
+                                onClick={() => link.sectionId && scrollToSection(link.sectionId)}
                                 className="flex items-center justify-between w-full text-white text-base sm:text-lg font-bold text-left hover:text-yellow-400 transition-colors outline-none focus:outline-none"
                             >
                                 {link.label}
@@ -152,7 +152,7 @@ const Navbar = () => {
                     <div className="py-3 border-t border-white/20 mt-4 pt-4">
                         <button
                             onClick={() => {
-                                dispatch(toggleBuilderMode());
+                                window.location.href = '/WebsiteBuilder';
                                 setIsOpen(false);
                             }}
                             className="flex items-center gap-3 w-full text-white text-base sm:text-lg font-bold text-left hover:text-yellow-400 transition-colors"

@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { store } from '../../store';
 import { useAppSelector, useAppDispatch } from '../../hooks/reduxHooks';
 import Navbar from "../../Common/Navbar";
+import DynamicNavbar from "../../sections/Home/DynamicNavbar";
 import WebsiteBuilder from "./WebsiteBuilder";
 import BuilderNavbar from "./WebsiteBuilder/BuilderNavbar";
 import DynamicFooter from "../../sections/Home/DynamicFooter";
@@ -27,11 +28,51 @@ function HomePageContent() {
   const { content: footerContent } = useAppSelector(state => state.footer);
   const dispatch = useAppDispatch();
   const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  
-    
+
+  // Handle scroll target from cross-page navigation
+  useEffect(() => {
+    // Check for hash in URL
+    const hash = window.location.hash.replace('#', '');
+    const scrollTarget = hash || sessionStorage.getItem('scrollTarget');
+
+    if (scrollTarget) {
+      // Clear the stored target
+      sessionStorage.removeItem('scrollTarget');
+
+      // Wait for sections to render
+      const attemptScroll = () => {
+        const element = document.getElementById(scrollTarget);
+        if (element) {
+          const offset = 80;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+          return true;
+        }
+        return false;
+      };
+
+      // Try immediately
+      if (!attemptScroll()) {
+        // Retry a few times with increasing delays
+        let attempts = 0;
+        const maxAttempts = 10;
+        const retryInterval = setInterval(() => {
+          attempts++;
+          if (attemptScroll() || attempts >= maxAttempts) {
+            clearInterval(retryInterval);
+          }
+        }, 100);
+      }
+    }
+  }, [sections]);
+
   // Combine all sections from both slices
   const allSections = [...sections, ...bannerSections];
-  
+
   // Sort sections by order
   const sortedSections = allSections.sort((a, b) => a.order - b.order);
 
@@ -55,8 +96,8 @@ function HomePageContent() {
           />
         </div>
       )}
-      <div className={isBuilderMode ? 'mt-16 mb-10' : 'mb-10'}>    
-          {!isBuilderMode && <Navbar />}
+      <div className={isBuilderMode ? ' mb-0' : 'mb-0'}>    
+          <DynamicNavbar isPreviewMode={false} />
       </div>
 
       {/* Render all sections in correct order */}

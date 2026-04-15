@@ -3,8 +3,9 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface NavbarLink {
   id: string;
   label: string;
-  sectionId: string;
+  sectionId?: string; // Optional for page links
   visible: boolean;
+  path?: string; // For direct page navigation
 }
 
 interface NavbarContent {
@@ -14,6 +15,9 @@ interface NavbarContent {
   hoverColor: string;
   buttonColor: string;
   buttonHoverColor: string;
+  dropdownBackgroundColor: string;
+  dropdownHoverColor: string;
+  dropdownTextColor: string;
   liveDemoButton: {
     label: string;
     backgroundColor: string;
@@ -21,6 +25,7 @@ interface NavbarContent {
     hoverBackgroundColor: string;
   };
   links: NavbarLink[];
+  pageLinks: NavbarLink[]; // For main page navigation
 }
 
 interface NavbarState {
@@ -40,6 +45,9 @@ const initialState: NavbarState = {
     hoverColor: '#000000',
     buttonColor: '#2b49c5',
     buttonHoverColor: '#000000',
+    dropdownBackgroundColor: '#ffffff',
+    dropdownHoverColor: '#f3f4f6',
+    dropdownTextColor: '#374151',
     liveDemoButton: {
       label: 'live demo',
       backgroundColor: '#2b49c5',
@@ -77,6 +85,20 @@ const initialState: NavbarState = {
         sectionId: 'sixth-1',
         visible: true
       }
+    ],
+    pageLinks: [
+      {
+        id: 'nav-home',
+        label: 'Home',
+        path: '/HomePage',
+        visible: true
+      },
+      {
+        id: 'nav-contact',
+        label: 'Contact Us',
+        path: '/ContactUs',
+        visible: true
+      }
     ]
   },
   isActive: false,
@@ -110,6 +132,9 @@ const navbarSlice = createSlice({
       hoverColor?: string;
       buttonColor?: string;
       buttonHoverColor?: string;
+      dropdownBackgroundColor?: string;
+      dropdownHoverColor?: string;
+      dropdownTextColor?: string;
     }>) => {
       state.history.past.push(JSON.parse(JSON.stringify(state.content)));
       state.history.future = [];
@@ -131,12 +156,14 @@ const navbarSlice = createSlice({
     },
     addNavbarLink: (state, action: PayloadAction<{
       label: string;
-      sectionId: string;
+      sectionId?: string;
+      path?: string;
     }>) => {
       const newLink: NavbarLink = {
         id: `nav-${Date.now()}`,
         label: action.payload.label,
         sectionId: action.payload.sectionId,
+        path: action.payload.path,
         visible: true
       };
       state.history.past.push(JSON.parse(JSON.stringify(state.content)));

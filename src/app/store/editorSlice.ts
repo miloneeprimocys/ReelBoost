@@ -30,7 +30,7 @@ interface EditorState {
     isOpen: boolean;
     sectionId: string | null;
     sectionType: string | null;
-    contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | null;
+    contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | 'contact' | null;
   };
 }
 
@@ -71,7 +71,7 @@ const editorSlice = createSlice({
       isOpen: boolean;
       sectionId: string | null;
       sectionType: string | null;
-      contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | null;
+      contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | 'contact' | null;
     }>) => {
       state.editingOverlay = action.payload;
       

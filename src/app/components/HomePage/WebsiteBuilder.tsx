@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { X, Edit3, ChevronLeft, Undo, Redo, Facebook, Twitter, Linkedin, Instagram, Phone, Mail } from "lucide-react";
+import { X, Edit3, ChevronLeft, Undo, Redo, Facebook, Twitter, Linkedin, Instagram, Phone, Mail, FileText } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/reduxHooks";
 import { store } from "../../store";
 import { 
   toggleBuilderMode, 
   setActiveSection, 
+  setCurrentPage,
   toggleSectionVisibility, 
   deleteSection, 
   addSectionAndSetActive, 
@@ -23,7 +24,8 @@ import {
   selectSectionsCanRedo,
   selectPendingBannerSections
 } from "../../store/builderSlice";
-import { 
+import { addSectionToPage } from "../../store/pagesSlice";
+import {
   setActiveBannerSection, 
   updateBannerContent,
   addBannerSection,
@@ -55,6 +57,8 @@ import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
 import NavbarEditor from "./WebsiteBuilder/NavbarEditor";
 import FooterEditor from "./WebsiteBuilder/FooterEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
+import PagesList from "./WebsiteBuilder/PagesList";
+import AddPageModal from "./WebsiteBuilder/AddPageModal";
 
 // Import homepage section components for preview
 import Hero from "../../Pages/Home/Hero";
@@ -68,15 +72,26 @@ import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 import DynamicFeatures from "../../sections/Home/DynamicFeatures";
 import DynamicFooter from "../../sections/Home/DynamicFooter";
 import DynamicNavbar from "../../sections/Home/DynamicNavbar";
+import DynamicContactHero from "../../sections/Home/ContactHero";
 
 const WebsiteBuilder: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isBuilderMode, sections, activeSection, isInlineEditMode } = useAppSelector(state => state.builder);
+  const { sections, isBuilderMode, activeSection, currentPage } = useAppSelector(state => state.builder);
+  const { pages: pagesFromSlice } = useAppSelector(state => state.pages);
   const canUndo = useAppSelector(selectCanUndo);
   const canRedo = useAppSelector(selectCanRedo);
   const sectionsCanUndo = useAppSelector(selectSectionsCanUndo);
   const sectionsCanRedo = useAppSelector(selectSectionsCanRedo);
   const { sections: bannerSections, activeSection: activeBannerSection } = useAppSelector(state => state.banner);
+
+  // Transform pages from pagesSlice format
+  const pages = pagesFromSlice.map(p => ({
+    id: p.id,
+    name: p.title,
+    path: p.slug,
+    visible: p.visible,
+    isNew: p.id !== 'home' && p.id !== 'contact',
+  }));
   const bannerCanUndo = useAppSelector(selectBannerCanUndo);
   const bannerCanRedo = useAppSelector(selectBannerCanRedo);
   const { sections: adminSections, activeSection: activeAdminSection } = useAppSelector(state => state.admin);
@@ -127,18 +142,46 @@ const WebsiteBuilder: React.FC = () => {
       ...adminSections.map(s => s.order || 0)
     ];
     const maxOrder = Math.max(...allOrders, 0);
-    
+
+    // Generate section ID once
+    const sectionId = `banner-${Date.now()}`;
+
     console.log('Before adding banner - banner sections count:', bannerSections.length);
-    
+
     // FIRST: Save current state to history BEFORE adding (this captures state with 0 banners)
     // This ensures undo will restore to this state (0 banners)
     dispatch(updateSectionsHistory({ bannerSections }));
     console.log('History saved with', bannerSections.length, 'banner sections');
-    
-    // THEN: Add the banner section
-    dispatch(addBannerSection({ type: 'banner', maxOrder }));
-    
+
+    // THEN: Add the banner section with pre-generated ID
+    dispatch(addBannerSection({ type: 'banner', id: sectionId, maxOrder }));
+
+    // Also add to current page's sections (for non-home pages)
+    if (currentPage !== 'home') {
+      dispatch(addSectionToPage({
+        pageId: currentPage,
+        sectionId,
+        sectionName: 'Banner'
+      }));
+    }
+
     console.log('Banner section added');
+  };
+
+  // Helper function to add section to both builder and current page
+  const handleAddSection = (type: string, name: string) => {
+    // Generate section ID once to use for both slices
+    const sectionId = `${type}-${Date.now()}`;
+
+    // First add section to builder with the pre-generated ID
+    dispatch(addSectionAndSetActive({ type: type as any, name, sectionId }));
+
+    // Then add section to current page's sections array with SAME ID
+    dispatch(addSectionToPage({
+      pageId: currentPage,
+      sectionId,
+      sectionName: name
+    }));
   };
 
   const handleDeleteBannerSection = (id: string) => {
@@ -161,10 +204,23 @@ const WebsiteBuilder: React.FC = () => {
 
   const handleSetActiveNavbar = () => {
     console.log('=== Navbar section clicked ===');
+    // Clear all other active sections
+    dispatch(setActiveSection(null));
+    dispatch(setActiveBannerSection(null));
+    dispatch(setActiveAdminSection(null));
+    // Set navbar as active
+    dispatch(setActiveNavbar(true));
+    
     // Scroll to the top of the preview container where navbar is located
     const previewContainer = document.getElementById('preview-container');
     if (previewContainer) {
       previewContainer.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    } else {
+      // Fallback to window scroll
+      window.scrollTo({
         top: 0,
         behavior: 'smooth'
       });
@@ -291,14 +347,12 @@ const WebsiteBuilder: React.FC = () => {
   const allSections = useMemo(() => {
     const sectionsMap = new Map();
     
-    // Add all sections first (excluding banner sections to avoid duplicates)
+    // Add all sections first (including banner sections)
     sections.forEach(section => {
-      if (section.type !== 'banner') {
-        sectionsMap.set(section.id, { ...section, source: 'builder' });
-      }
+      sectionsMap.set(section.id, { ...section, source: 'builder' });
     });
     
-    // Add banner sections (only from banner slice)
+    // Add banner sections
     bannerSections.forEach(section => {
       sectionsMap.set(section.id, { ...section, source: 'banner' });
     });
@@ -308,11 +362,21 @@ const WebsiteBuilder: React.FC = () => {
   }, [sections, bannerSections]);
   
   // Keep allBannerSections for backward compatibility but use allSections for drag/drop
-  const allBannerSections = useMemo(() => 
-    [...builderBannerSections, ...bannerSections], 
+  const allBannerSections = useMemo(() =>
+    [...builderBannerSections, ...bannerSections],
     [builderBannerSections, bannerSections]
   );
-  
+
+  // Compute page-specific sections based on current page
+  const currentPageData = pagesFromSlice.find(p => p.id === currentPage);
+  const currentPageSectionIds = currentPageData?.sections.map(s => s.id) || [];
+  const pageSections = useMemo(() => {
+    if (currentPage === 'home') {
+      return allSections; // Home page shows all sections
+    }
+    return allSections.filter(section => currentPageSectionIds.includes(section.id));
+  }, [allSections, currentPage, currentPageSectionIds]);
+
   const [dragItem, setDragItem] = useState<number>(-1);
   const [dragOverItem, setDragOverItem] = useState<number>(-1);
   const [imageUploadType, setImageUploadType] = useState<string>('');
@@ -323,6 +387,9 @@ const WebsiteBuilder: React.FC = () => {
   
   // Mobile navigation state
   const [mobileView, setMobileView] = useState<'list' | 'preview'>('list');
+  
+  // View mode state: 'pages' or 'sections'
+  const [viewMode, setViewMode] = useState<'pages' | 'sections'>('pages');
   
 
 
@@ -503,6 +570,12 @@ const scrollToSection = (sectionId: string) => {
   console.log('=== scrollToSection START ===');
   console.log('Target section ID:', sectionId);
   
+  // Check if we're in pages view - if so, don't scroll
+  if (viewMode === 'pages') {
+    console.log('In pages view, skipping scroll');
+    return;
+  }
+  
   // Try multiple times with increasing delays to ensure element is rendered
   const attempts = [100, 300, 500, 1000];
   let hasScrolled = false;
@@ -606,7 +679,8 @@ const scrollToSection = (sectionId: string) => {
           el.id.includes('fourth') || 
           el.id.includes('fifth') || 
           el.id.includes('sixth') ||
-          el.id.includes('banner')
+          el.id.includes('banner') ||
+          el.id.includes('contact-hero')
         );
         
         console.log('All section elements found:', sectionElements.map(el => ({
@@ -616,8 +690,9 @@ const scrollToSection = (sectionId: string) => {
           position: el.getBoundingClientRect().top
         })));
         
-        console.error('=== scrollToSection FAILED - Element not found ===');
-        console.error('Looking for sectionId:', sectionId);
+        console.warn('=== scrollToSection WARNING - Element not found ===');
+        console.warn('Looking for sectionId:', sectionId);
+        console.warn('This might be normal if the section is not rendered yet or in pages view');
       }
     }, delay);
   };
@@ -759,31 +834,55 @@ useEffect(() => {
   }
 
   const renderHomepagePreview = () => {
+    // Hide preview when in pages view
+    if (viewMode === 'pages') {
+      return (
+        <div className="flex-1 bg-gray-50  flex items-center justify-center -mt-0.5">
+          <div className="text-center">
+            <div className="text-gray-400 mb-4">
+              <FileText size={48} className="mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-600 mb-2">Select a Page</h3>
+            <p className="text-gray-500">Choose a page from the list to view and edit its sections</p>
+          </div>
+        </div>
+      );
+    }
+
     // Create the same sections logic as SectionList for consistency
     const sectionsMap = new Map();
-    
+
     // Add all sections first (these include hero, fourth, features, etc. and also second-1, third-1)
     sections.forEach(section => {
       sectionsMap.set(section.id, { ...section, source: 'builder' });
     });
-    
+
     // Add banner sections, but don't overwrite existing builder sections with the same ID
     bannerSections.forEach(section => {
       if (!sectionsMap.has(section.id)) {
         sectionsMap.set(section.id, { ...section, source: 'banner' });
       }
     });
-    
+
     // Convert Map to array and sort by order (same as SectionList)
     const allSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
-    
-        
+
     return (
-      <div ref={previewRef} className="flex-1 bg-white overflow-y-auto" id="preview-container">
+      <div ref={previewRef} className="flex-1 bg-white overflow-y-auto -mt-0.5" id="preview-container">
         <div className="min-h-full flex flex-col lg:flex-col md:flex-col">
           {/* Dynamic Navbar */}
-          <DynamicNavbar />
-          {allSections.map((section) => {
+          <DynamicNavbar
+            isPreviewMode={true}
+            onEdit={() => {
+              dispatch(setEditingOverlay({
+                isOpen: true,
+                sectionId: 'navbar-1',
+                sectionType: 'navbar',
+                contentType: 'navbar'
+              }));
+            }}
+          />
+          {pageSections.map((section) => {
             // Only render section if it's visible
             if (!section.visible) return null;
             
@@ -907,6 +1006,20 @@ useEffect(() => {
                     contentType
                   }));
                 }} />;
+              case 'contact-hero':
+                return <DynamicContactHero key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                  console.log('Contact Hero section clicked:', { sectionId, contentType, elementId });
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionId,
+                    sectionType: 'contact',
+                    contentType
+                  }));
+                }} />;
               default:
                 return null;
             }
@@ -917,9 +1030,7 @@ useEffect(() => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Add New Section</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
               <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'hero', name: 'Hero Section' }));
-                }}
+                onClick={() => handleAddSection('hero', 'Hero Section')}
                 className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
               >
                 <div className="font-medium text-gray-900">Text and Image</div>
@@ -935,9 +1046,7 @@ useEffect(() => {
               </button>
               
               <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'features', name: 'Features Section' }));
-                }}
+                onClick={() => handleAddSection('features', 'Features Section')}
                 className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
               >
                 <div className="font-medium text-gray-900">Features</div>
@@ -945,9 +1054,7 @@ useEffect(() => {
               </button>
               
               <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'fifth', name: 'Admin Panel Section' }));
-                }}
+                onClick={() => handleAddSection('fifth', 'Admin Panel Section')}
                 className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
               >
                 <div className="font-medium text-gray-900">Admin Panel</div>
@@ -955,9 +1062,7 @@ useEffect(() => {
               </button>
               
               <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'benefits', name: 'Benefits Section' }));
-                }}
+                onClick={() => handleAddSection('benefits', 'Benefits Section')}
                 className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
               >
                 <div className="font-medium text-gray-900">Benefits</div>
@@ -1073,7 +1178,20 @@ useEffect(() => {
         return (
           <div className="w-full h-full flex flex-col bg-gray-50">
             <div className="bg-white border-b p-4 flex items-center justify-between -mt-1" >
-              <h2 className="text-lg font-bold text-gray-900">Sections</h2>
+              <div className="flex items-center gap-3">
+                {viewMode === 'sections' && (
+                  <button
+                    onClick={() => setViewMode('pages')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Back to Pages"
+                  >
+                    <ChevronLeft size={20} className="text-gray-600" />
+                  </button>
+                )}
+                <h2 className="text-lg font-bold text-gray-900">
+                  {viewMode === 'pages' ? 'Pages' : 'Sections'}
+                </h2>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSectionsUndo}
@@ -1092,7 +1210,7 @@ useEffect(() => {
                   <Redo size={16} className="text-gray-600" />
                 </button>
                 <button
-                  onClick={() => dispatch(toggleBuilderMode())}
+                  onClick={() => window.history.back()}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
                 >
                   <X size={20} />
@@ -1100,7 +1218,10 @@ useEffect(() => {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              <SectionList
+              {viewMode === 'pages' ? (
+                <PagesList onPageSelect={() => setViewMode('sections')} />
+              ) : (
+                <SectionList
                 sections={sections}
                 bannerSections={allBannerSections}
                 adminSections={adminSections}
@@ -1170,6 +1291,7 @@ useEffect(() => {
                   setMobileView('preview');
                 }}
               />
+              )}
             </div>
           </div>
         );
@@ -1192,7 +1314,7 @@ useEffect(() => {
                 </svg>
               </button>
               <button
-                onClick={() => dispatch(toggleBuilderMode())}
+                onClick={() => window.history.back()}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
               >
                 <X size={20} />
@@ -1208,92 +1330,113 @@ useEffect(() => {
     return (
       <>
         {/* Section List Panel - Reduced width on md screens */}
-        <div className="w-full md:w-70  xl:w-96 bg-white  flex flex-col">
-          <div className="flex items-center justify-between p-4 xl:px-6  xl:py-[13px] border-b border-r ">
-            <h2 className="text-xl font-bold text-gray-900">Components</h2>
+        <div className="w-full md:w-70 -mt-0.5  xl:w-96 bg-white  flex flex-col">
+          <div className="flex items-center justify-between p-3 xl:px-4 xl:py-2.5 border-b border-r ">
             <div className="flex items-center gap-2">
+              {viewMode === 'sections' && (
+                <button
+                  onClick={() => setViewMode('pages')}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Back to Pages"
+                >
+                  <ChevronLeft size={14} className="text-gray-600" />
+                </button>
+              )}
+              <h2 className="text-base lg:text-lg font-bold text-gray-900 truncate">
+                {viewMode === 'pages' ? 'Pages' : 'Components'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-1">
+              {viewMode === 'sections' && (
+                <>
+                  <button
+                    onClick={handleSectionsUndo}
+                    disabled={!sectionsCanUndo}
+                    className="p-1.5 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+                    title="Undo"
+                  >
+                    <Undo size={14} className="text-gray-600" />
+                  </button>
+                  <button
+                    onClick={handleSectionsRedo}
+                    disabled={!sectionsCanRedo}
+                    className="p-1.5 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
+                    title="Redo"
+                  >
+                    <Redo size={14} className="text-gray-600" />
+                  </button>
+                </>
+              )}
               <button
-                onClick={handleSectionsUndo}
-                disabled={!sectionsCanUndo}
-                className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
-                title="Undo"
+                onClick={() => window.history.back()}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
               >
-                <Undo size={16} className="text-gray-600" />
-              </button>
-              <button
-                onClick={handleSectionsRedo}
-                disabled={!sectionsCanRedo}
-                className="p-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-gray-300"
-                title="Redo"
-              >
-                <Redo size={16} className="text-gray-600" />
-              </button>
-              <button
-                onClick={() => dispatch(toggleBuilderMode())}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 cursor-pointer"
-              >
-                <X size={20} />
+                <X size={16} />
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 xl:p-6 hide-scrollbar border-r border-gray-300">
-              <SectionList
-              sections={sections}
-              bannerSections={allBannerSections}
-              adminSections={adminSections}
-              activeSection={activeSection}
-              activeBannerSection={activeBannerSection}
-              activeAdminSection={activeAdminSection}
-              onDragStart={handleDragStart}
-              onDragEnter={handleDragEnter}
-              onDragEnd={handleDragEnd}
-              onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
-              onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
-              onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
-              onSetActive={(id) => {
-                console.log('*** onSetActive called with id:', id);
-                dispatch(setActiveSection(id));
-                dispatch(setActiveBannerSection(null));
-                dispatch(setActiveAdminSection(null));
-                console.log('activeSection set to:', id, 'activeBannerSection cleared');
-                // Manual scroll to ensure it works
-                setTimeout(() => {
-                  scrollToSection(id);
-                }, 200);
-              }}
-              onSetActiveBanner={(id) => {
-                console.log('=== onSetActiveBanner called ===', id);
-                dispatch(setActiveSection(null)); // Clear hero
-                dispatch(setActiveAdminSection(null)); // Clear admin
-                dispatch(setActiveBannerSection(id));
-                console.log('activeBannerSection set to:', id, 'activeSection cleared to null');
-                // Manual scroll to ensure it works
-                setTimeout(() => {
-                  scrollToSection(id);
-                }, 200);
-              }}
-              onSetActiveAdmin={(id) => {
-                console.log('=== onSetActiveAdmin called ===', id);
-                dispatch(setActiveSection(null)); // Clear hero
-                dispatch(setActiveBannerSection(null)); // Clear banner
-                dispatch(setActiveAdminSection(id));
-                console.log('activeAdminSection set to:', id, 'other sections cleared');
-                // Manual scroll to ensure it works
-                setTimeout(() => {
-                  scrollToSection(id);
-                }, 200);
-              }}
-              onSetActiveNavbar={handleSetActiveNavbar}
-              onSetActiveFooter={handleSetActiveFooter}
-              onDelete={(id) => dispatch(deleteSection(id))}
-              onDeleteBanner={handleDeleteBannerSection}
-              onDeleteAdmin={handleDeleteAdminSection}
-              onUndo={handleSectionsUndo}
-              onRedo={handleSectionsRedo}
-              canUndo={sectionsCanUndo}
-              canRedo={sectionsCanRedo}
-              dragOverItem={dragOverItem}
-            />
+          <div className="flex-1 overflow-y-auto p-4 xl:p-6 hide-scrollbar border-r  border-gray-300">
+              {viewMode === 'pages' ? (
+                <PagesList onPageSelect={() => setViewMode('sections')} />
+              ) : (
+                <SectionList
+                sections={pageSections}
+                bannerSections={pageSections.filter((s: {source: string}) => s.source === 'banner')}
+                adminSections={adminSections}
+                activeSection={activeSection}
+                activeBannerSection={activeBannerSection}
+                activeAdminSection={activeAdminSection}
+                onDragStart={handleDragStart}
+                onDragEnter={handleDragEnter}
+                onDragEnd={handleDragEnd}
+                onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
+                onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
+                onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
+                onSetActive={(id) => {
+                  console.log('*** onSetActive called with id:', id);
+                  dispatch(setActiveSection(id));
+                  dispatch(setActiveBannerSection(null));
+                  dispatch(setActiveAdminSection(null));
+                  console.log('activeSection set to:', id, 'activeBannerSection cleared');
+                  // Manual scroll to ensure it works
+                  setTimeout(() => {
+                    scrollToSection(id);
+                  }, 200);
+                }}
+                onSetActiveBanner={(id) => {
+                  console.log('=== onSetActiveBanner called ===', id);
+                  dispatch(setActiveSection(null)); // Clear hero
+                  dispatch(setActiveAdminSection(null)); // Clear admin
+                  dispatch(setActiveBannerSection(id));
+                  console.log('activeBannerSection set to:', id, 'activeSection cleared to null');
+                  // Manual scroll to ensure it works
+                  setTimeout(() => {
+                    scrollToSection(id);
+                  }, 200);
+                }}
+                onSetActiveAdmin={(id) => {
+                  console.log('=== onSetActiveAdmin called ===', id);
+                  dispatch(setActiveSection(null)); // Clear hero
+                  dispatch(setActiveBannerSection(null)); // Clear banner
+                  dispatch(setActiveAdminSection(id));
+                  console.log('activeAdminSection set to:', id, 'other sections cleared');
+                  // Manual scroll to ensure it works
+                  setTimeout(() => {
+                    scrollToSection(id);
+                  }, 200);
+                }}
+                onSetActiveNavbar={handleSetActiveNavbar}
+                onSetActiveFooter={handleSetActiveFooter}
+                onDelete={(id) => dispatch(deleteSection(id))}
+                onDeleteBanner={handleDeleteBannerSection}
+                onDeleteAdmin={handleDeleteAdminSection}
+                onUndo={handleSectionsUndo}
+                onRedo={handleSectionsRedo}
+                canUndo={sectionsCanUndo}
+                canRedo={sectionsCanRedo}
+                dragOverItem={dragOverItem}
+              />
+            )}
           </div>
         </div>
 
@@ -1306,9 +1449,10 @@ useEffect(() => {
     <div className="fixed top-[70px] left-0 right-0 bottom-0 z-50 bg-black/50 flex">
       {renderContent()}
       {renderEditingOverlay()}
+      <AddPageModal />
       {/* Backdrop to close overlay */}
       {editingOverlay.isOpen && (
-        <div 
+        <div
           className="absolute inset-0 bg-black/20 z-40"
           onClick={() => dispatch(setEditingOverlay({
             isOpen: false,

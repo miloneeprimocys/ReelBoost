@@ -128,7 +128,7 @@ const BuilderNavbar: React.FC<BuilderNavbarProps> = ({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between relative z-10">
+    <div className="bg-white px-4 py-[11.5px] flex items-center justify-between relative z-10">
       {/* Left side - WebsiteBuilder text */}
       <div className="flex items-center">
         <h1 className="text-xl font-bold text-gray-900">WebsiteBuilder</h1>
