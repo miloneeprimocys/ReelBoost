@@ -3,7 +3,7 @@ import { useAppDispatch } from '../../../hooks/reduxHooks';
 import { addSectionAndSetActive } from '../../../store/builderSlice';
 import { Plus } from 'lucide-react';
 
-type SectionType = 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+type SectionType = 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'testimonials' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
 
 interface AddSectionBoxProps {
   onSectionAdded?: () => void;
@@ -20,6 +20,7 @@ const AddSectionBox: React.FC<AddSectionBoxProps> = ({ onSectionAdded }) => {
     { type: 'third', name: 'PK Battle', description: 'Competition battle section' },
     { type: 'fifth', name: 'Admin Panel', description: 'Admin dashboard with tabs' },
     { type: 'sixth', name: 'Benefits', description: 'Benefits grid with icons' },
+    { type: 'testimonials', name: 'Testimonials', description: 'Customer testimonials with ratings' },
   ];
 
   const handleAddSection = (type: SectionType, name: string) => {

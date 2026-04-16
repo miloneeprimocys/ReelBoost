@@ -25,7 +25,7 @@ interface HeroContent {
 
 interface SectionConfig {
   id: string;
-  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'testimonials';
   name: string;
   visible: boolean;
   content: any;
@@ -342,6 +342,63 @@ const initialSections: SectionConfig[] = [
         benefitDescriptionColor: '#6B7280',
         borderColor: '#D1D5DB',
         backgroundColor: '#FFFFFF'
+      }
+    },
+    {
+      id: 'testimonials-1',
+      type: 'testimonials',
+      name: 'Testimonials Section',
+      visible: true,
+      order: 7,
+      content: {
+        title: 'Reviews from real people',
+        subtitle: 'What our customers are saying',
+        backgroundColor: '#f3f4f6',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#1f2937',
+        testimonials: [
+          {
+            id: '1',
+            name: 'Sarah Johnson',
+            role: 'CEO',
+            company: 'TechCorp',
+            content: 'ReelBoost has completely transformed how we engage with our audience. The live streaming features are incredible, and our engagement metrics have skyrocketed since we started using the platform. The PK battles are especially popular with our younger demographic.',
+            rating: 5
+          },
+          {
+            id: '2',
+            name: 'Michael Chen',
+            role: 'Marketing Director',
+            company: 'Digital Agency',
+            content: 'As a marketing agency, we\'re always looking for innovative ways to help our clients stand out. ReelBoost provides everything we need - from short video creation to live streaming. The analytics dashboard gives us valuable insights into performance.',
+            rating: 5
+          },
+          {
+            id: '3',
+            name: 'Emily Rodriguez',
+            role: 'Content Creator',
+            company: 'Media House',
+            content: 'The video editing tools are incredibly intuitive and powerful. I can create professional-looking content in minutes, not hours. The built-in music library and effects save me so much time. Best platform I\'ve used for short-form content.',
+            rating: 5
+          },
+          {
+            id: '4',
+            name: 'David Kim',
+            role: 'Product Manager',
+            company: 'StartupHub',
+            content: 'We integrated ReelBoost into our app ecosystem and the results have been phenomenal. The API is well-documented and the support team is amazing. Our users love the social features and engagement is up 300%.',
+            rating: 5
+          },
+          {
+            id: '5',
+            name: 'Lisa Thompson',
+            role: 'Social Media Manager',
+            company: 'BrandCo',
+            content: 'The scheduling and analytics features have made my job so much easier. I can plan content weeks in advance and track performance in real-time. The multi-platform support is exactly what we needed for our brand.',
+            rating: 4
+          }
+        ]
       }
     }
   ];
@@ -963,19 +1020,53 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         title: 'Many Benefits You Get',
         highlightedTitle: 'Using Product',
         benefits: [
-          { id: 'benefit-1', iconName: 'Star', title: 'Demo Data 1', description: 'This is demo data for the first benefit. You can customize this text to match your specific product or service features.', order: 1 },
-          { id: 'benefit-2', iconName: 'CheckCircle', title: 'Demo Data 2', description: 'This is demo data for the second benefit. Replace this with actual benefits that your customers will receive.', order: 2 },
-          { id: 'benefit-3', iconName: 'Zap', title: 'Demo Data 3', description: 'This is demo data for the third benefit. Make sure to highlight the unique value propositions of your offering.', order: 3 }
+          { id: 'benefit-1', iconName: 'Star', title: 'Demo Data 1', description: 'This is demo data for first benefit. You can customize this text to match your specific product or service features.', order: 1 },
+          { id: 'benefit-2', iconName: 'CheckCircle', title: 'Demo Data 2', description: 'This is demo data for second benefit. Replace this with actual benefits that your customers will receive.', order: 2 },
+          { id: 'benefit-3', iconName: 'Zap', title: 'Demo Data 3', description: 'This is demo data for third benefit. Make sure to highlight the unique value propositions of your offering.', order: 3 }
         ],
-        dotColor: '#4A6CF7',
-        dotTextColor: '#000000',
-        titleColor: '#111827',
-        highlightedTitleColor: '#111827',
-        benefitIconColor: '#2563EB',
-        benefitTitleColor: '#111827',
-        benefitDescriptionColor: '#6B7280',
-        borderColor: '#D1D5DB',
-        backgroundColor: '#FFFFFF'
+        backgroundColor: '#000000',
+        textColor: '#ffffff'
+      };
+    case 'testimonials':
+      return {
+        title: 'Reviews from real people',
+        subtitle: 'What our customers are saying',
+        backgroundColor: '#f9fafb',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#1f2937',
+        starColor: '#10b981',
+        quoteIconColor: '#9ca3af',
+        carouselPosition: 'right',
+        testimonials: [
+          {
+            id: '1',
+            name: 'Ryan Almeida',
+            role: 'CEO',
+            company: 'TechCorp',
+            content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.',
+            avatar: '',
+            rating: 5
+          },
+          {
+            id: '2',
+            name: 'Blossom Menezes',
+            role: 'Marketing Director',
+            company: 'Growth Inc',
+            content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+            avatar: '',
+            rating: 5
+          },
+          {
+            id: '3',
+            name: 'Jason Wong',
+            role: 'Product Manager',
+            company: 'StartupHub',
+            content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.',
+            avatar: '',
+            rating: 5
+          }
+        ]
       };
     case 'second':
       return {

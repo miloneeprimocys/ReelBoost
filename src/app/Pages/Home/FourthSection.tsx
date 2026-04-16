@@ -36,6 +36,9 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
     const [userVisible, setUserVisible] = useState(false);
     const progressRef = useRef(null);
     const [progressVisible, setProgressVisible] = useState(false);
+    
+    // Check if we're in preview mode
+    const isPreviewMode = useAppSelector(state => state.builder.isPreviewMode);
 
     // Get this specific section's content from Redux store using the passed sectionId
     const section = useAppSelector(state => 
@@ -175,17 +178,17 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
 
                 {/* 2. Secondary Features (Carousel for all screens) */}
                 <div
-                    className={`mb-20 transition-all duration-1000 ease-out delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                    className={`mb-20 transition-all px-2 duration-1000 ease-out delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
                         }`}
                 >
                     {/* Outer Container: Hidden overflow for smooth animation */}
                     <div className="w-full overflow-hidden">
-                        {/* Outer Wrapper - Handles centering on desktop */}
+                        {/* Outer Wrapper - Handles centering and visibility */}
                         <div className="flex xl:justify-center">
                             
                             {/* Inner Track - Animated carousel for all screens */}
                             <div 
-                                className="flex flex-row animate-scroll gap-3 md:gap-3"
+                                className="flex flex-row animate-scroll gap-3 md:gap-3 lg:gap-2"
                                 style={{ 
                                     animationDuration: '40s', 
                                     animationIterationCount: 'infinite',
@@ -193,12 +196,17 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                                     minWidth: 'fit-content'
                                 }}
                             >
-                                {[...mainFeatures, ...mainFeatures, ...mainFeatures, ...mainFeatures].map((item, idx) => (
+                                {[
+  ...mainFeatures,
+  ...mainFeatures,
+  ...mainFeatures,
+  ...mainFeatures
+].map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className={`shrink-0 w-40 md:w-44 lg:w-48 flex flex-col items-center group cursor-pointer ${idx >= mainFeatures.length ? '2xl:hidden' : ''}`}
+                                        className="shrink-0 w-40 md:w-44 lg:w-48 flex flex-col items-center group cursor-pointer"
                                     >
-                                        <div className="w-full aspect-square bg-[#ad8fe5] rounded-[24px] flex items-center justify-center mb-4 relative overflow-hidden">
+                                        <div className="w-full h-36 md:h-40 lg:h-44 bg-[#ad8fe5] rounded-[24px] flex items-center justify-center mb-4 relative overflow-hidden">
                                             <div className="absolute inset-0 opacity-40">
                                                 {item.backgroundImage && (
                                                     <Image
@@ -234,129 +242,140 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                     </div>
                 </div>
 
-              {/* 3. Top Bento Grid - Fixed spacing for all screen sizes */}
-<div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 mb-6">
-    
-    {/* Wallet Card - Side by side on md, 3-cols on lg */}
-    {(content?.cards?.[0] || true) && (
-        <div 
-            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')} 
-            className="transition-all duration-300 hover:-translate-y-2 md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col justify-between min-h-[480px] md:min-h-[520px] overflow-hidden"
-            style={{ backgroundColor: content.cards[0]?.backgroundColor || '#F1F3EE' }}
-        >
-            <div className="mt-auto h-[220px] 2xl:h-[380px] relative flex justify-center items-start mb-4 overflow-hidden">
-                {(content.cards[0]?.image) && (
-                    <div 
-                        className="w-full h-full bg-contain bg-no-repeat bg-top"
-                        style={{ 
-                            backgroundImage: `url(${content.cards[0].image})`,
-                            backgroundSize: '100% auto',
-                            backgroundPosition: 'top center'
-                        }}
-                    />
-                )}
-            </div>
-            <div className="text-center">
-                <h3 className="text-[26px] xl:text-[28px] font-medium tracking-tight" style={{ color: content.cardTitleColor || '#111827' }}>
-                    {content.cards[0]?.title || 'Wallet'}
-                </h3>
-                <p className="text-[13px] md:text-[14px] mt-2" style={{ color: content.cardDescriptionColor || '#4B5563' }}>
-                    {content.cards[0]?.description || 'The wallet allows users to securely manage their balance.'}
-                </p>
-            </div>
-        </div>
-    )}
+                {/* 3. Top Bento Grid - Fixed spacing for all screen sizes */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 mb-6">
+                    
+                    {/* Wallet Card - Side by side on md, 3-cols on lg */}
+                    {(content?.cards?.[0] || true) && (
+                        <div 
+                            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')} 
+                            className="transition-all duration-300 hover:-translate-y-2 md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col justify-between overflow-hidden"
+                            style={{ backgroundColor: content.cards[0]?.backgroundColor || '#F1F3EE' }}
+                        >
+                            <div className="flex flex-col h-full">
+                                <div className="flex-1 flex items-center justify-center min-h-[200px] mb-4">
+                                    {(content.cards[0]?.image) && (
+                                        <div 
+                                            className="w-full h-full bg-contain bg-no-repeat bg-center"
+                                            style={{ 
+                                                backgroundImage: `url(${content.cards[0].image})`,
+                                                backgroundSize: 'contain',
+                                                backgroundPosition: 'center'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-[26px] xl:text-[28px] font-medium tracking-tight" style={{ color: content.cardTitleColor || '#111827' }}>
+                                        {content.cards[0]?.title || 'Wallet'}
+                                    </h3>
+                                    <p className="text-[13px] md:text-[14px] mt-2" style={{ color: content.cardDescriptionColor || '#4B5563' }}>
+                                        {content.cards[0]?.description || 'The wallet allows users to securely manage their balance.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-    {/* Live Streaming Card - Side by side on md, 3-cols on lg */}
-    {/* Moved this UP in the DOM so it sits next to Wallet on md screens */}
-    {(content?.cards?.[1] || true) && (
-        <div 
-            className="md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col transition-all duration-300 hover:-translate-y-2 overflow-hidden md:order-2 lg:order-3" 
-            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
-            style={{ backgroundColor: content.cards[1]?.backgroundColor || '#F1F3EE' }}
-        >
-            <div className="text-center mb-4">
-                <h3 
-                    className="text-[26px] xl:text-[28px] font-medium tracking-tight"
-                    style={{ color: content.cardTitleColor || '#111827' }}
-                >
-                    {content.cards[1]?.title || 'Live Streaming'}
-                </h3>
-                <p 
-                    className="text-[13px] md:text-[14px] mt-2"
-                    style={{ color: content.cardDescriptionColor || '#4B5563' }}
-                >
-                    {content.cards[1]?.description || 'Live streaming supports up to four participants.'}
-                </p>
-            </div>
-             <div className="mt-auto h-[300px] md:h-[350px] lg:h-[400px] bg-white rounded-t-2xl shadow-inner relative overflow-hidden">
-                         {content.cards[1]?.image && (
-                           <Image src={content.cards[1].image} alt="Image" width={400} height={400} className="w-full h-auto object-contain" />
-                         )}
-                       </div>
-        </div>
-    )}
+                    {/* Live Streaming Card - Side by side on md, 3-cols on lg */}
+                    {(content?.cards?.[1] || true) && (
+                        <div 
+                            className="md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col transition-all duration-300 hover:-translate-y-2 overflow-hidden md:order-2 lg:order-3" 
+                            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
+                            style={{ backgroundColor: content.cards[1]?.backgroundColor || '#F1F3EE' }}
+                        >
+                            <div className="flex flex-col h-full">
+                                <div className="text-center mb-4">
+                                    <h3 
+                                        className="text-[26px] xl:text-[28px] font-medium tracking-tight"
+                                        style={{ color: content.cardTitleColor || '#111827' }}
+                                    >
+                                        {content.cards[1]?.title || 'Live Streaming'}
+                                    </h3>
+                                    <p 
+                                        className="text-[13px] md:text-[14px] mt-2"
+                                        style={{ color: content.cardDescriptionColor || '#4B5563' }}
+                                    >
+                                        {content.cards[1]?.description || 'Live streaming supports up to four participants.'}
+                                    </p>
+                                </div>
+                                <div className="flex-1 flex items-center justify-center min-h-[200px]">
+                                    {content.cards[1]?.image && (
+                                        <Image 
+                                            src={content.cards[1].image} 
+                                            alt="Image" 
+                                            width={400} 
+                                            height={400} 
+                                            className="object-contain w-full h-auto max-h-[250px]" 
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-    {/* Middle Column Group - Full width on md, center on lg */}
-    <div className="md:col-span-12 lg:col-span-6 flex flex-col gap-4 md:gap-6 md:order-3 lg:order-2">
-        {/* Payment History Card */}
-        <div 
-            className="text-black rounded-[32px] transition-all duration-300 hover:-translate-y-2 p-6 2xl:p-8 flex flex-row justify-between items-center relative overflow-hidden min-h-[180px] md:min-h-[220px]" 
-            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
-            style={{ backgroundColor: content.cards[2]?.backgroundColor || '#F1F3EE' }}
-        >
-            <div className="relative z-10 flex-1">
-                <h3 
-                    className="text-[22px] md:text-[28px] font-medium tracking-tight mb-2"
-                    style={{ color: content.cardTitleColor || '#111827' }}
-                >
-                    {content.cards[2]?.title || 'Payment History'}
-                </h3>
-                <p 
-                    className="text-[13px] md:text-[14px]"
-                    style={{ color: content.cardDescriptionColor || '#4B5563' }}
-                >
-                    {content.cards[2]?.description || 'View your complete payment history.'}
-                </p>
-            </div>
-            {/* Payment History Card Image - Right Side */}
-            {content.cards[2]?.image && (
-                <div className="w-20 h-20 md:w-24 md:h-24 xl:w-40 xl:h-40 flex-shrink-0 -mr-6 md:-mr-8 ml-4 relative">
-                    <Image 
-                        src={content.cards[2].image} 
-                        alt="Payment History" 
-                        width={160} 
-                        height={160} 
-                        className="w-full h-full object-contain"
-                    />
+                    {/* Middle Column Group - Full width on md, center on lg */}
+                    <div className="md:col-span-12 lg:col-span-6 flex flex-col gap-4 md:gap-6 md:order-3 lg:order-2">
+                        {/* Payment History Card */}
+                        <div 
+                            className="text-black rounded-[32px] transition-all duration-300 hover:-translate-y-2 p-6 2xl:p-8 flex flex-row justify-between items-center relative overflow-hidden min-h-[180px] md:min-h-[220px]" 
+                            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
+                            style={{ backgroundColor: content.cards[2]?.backgroundColor || '#F1F3EE' }}
+                        >
+                            <div className="relative z-10 flex-1">
+                                <h3 
+                                    className="text-[22px] md:text-[28px] font-medium tracking-tight mb-2"
+                                    style={{ color: content.cardTitleColor || '#111827' }}
+                                >
+                                    {content.cards[2]?.title || 'Payment History'}
+                                </h3>
+                                <p 
+                                    className="text-[13px] md:text-[14px]"
+                                    style={{ color: content.cardDescriptionColor || '#4B5563' }}
+                                >
+                                    {content.cards[2]?.description || 'View your complete payment history.'}
+                                </p>
+                            </div>
+                            {/* Payment History Card Image - Right Side */}
+                            {content.cards[2]?.image && (
+                                <div className="w-20 h-20 md:w-24 md:h-24 xl:w-40 xl:h-40 flex-shrink-0 -mr-6 md:-mr-8 ml-4 relative">
+                                    <Image 
+                                        src={content.cards[2].image} 
+                                        alt="Payment History" 
+                                        width={160} 
+                                        height={160} 
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Reelboost Card - Responsive aspect ratio for consistent height */}
+                        <div
+                            className="rounded-[32px] overflow-hidden relative group transition-all duration-300 hover:-translate-y-2"
+                            onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
+                            style={{ backgroundColor: content.cards[3]?.backgroundColor || '#F1F3EE' }}
+                        >
+                            <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[24/9] min-h-[200px]">
+                                {content.cards[3]?.image && (
+                                    <Image
+                                        src={content.cards[3].image}
+                                        alt="Team working"
+                                        fill
+                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                    />
+                                )}
+                                <div className="absolute inset-0 bg-indigo-600/40 flex items-center justify-center">
+                                    <div className="relative px-4">
+                                        <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-medium tracking-tighter text-center">
+                                            {content.cards[3]?.title || 'Reelboost'}
+                                        </h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            )}
-        </div>
-
-       {/* Reelboost Card - Dynamic height to match other cards */}
-<div 
-    className="rounded-[32px] overflow-hidden relative flex-1 group transition-all duration-300 hover:-translate-y-2" 
-    onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
-    style={{ backgroundColor: content.cards[3]?.backgroundColor || '#F1F3EE' }}
->
-    {content.cards[3]?.image && (
-        <Image
-            src={content.cards[3].image}
-            alt="Team working"
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-    )}
-    <div className="absolute inset-0 bg-indigo-600/40 flex items-center justify-center">
-        <div className="relative px-4">
-            <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-medium tracking-tighter text-center">
-                {content.cards[3]?.title || 'Reelboost'}
-            </h1>
-        </div>
-    </div>
-</div>
-    </div>
-</div>
 
                 {/* 4. Bottom Grid - 4 cards with consistent spacing */}
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-6">
@@ -366,7 +385,7 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
                         style={{ backgroundColor: content.cards[4]?.backgroundColor || '#F1F3EE' }}
                     >
-                        <div className="w-full mb-4 overflow-hidden ">
+                        <div className="w-full mb-4 overflow-hidden">
                             {content.cards[4]?.image && (
                                 <Image 
                                     src={content.cards[4].image} 
@@ -398,7 +417,7 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
                         style={{ backgroundColor: content.cards[5]?.backgroundColor || '#F1F3EE' }}
                     >
-                        <div className="w-full mb-4 overflow-hidden ">
+                        <div className="w-full mb-4 overflow-hidden">
                             {content.cards[5]?.image && (
                                 <Image 
                                     src={content.cards[5].image} 
@@ -430,7 +449,7 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
                         style={{ backgroundColor: content.cards[6]?.backgroundColor || '#F1F3EE' }}
                     >
-                        <div className="w-full mb-4 overflow-hidden ">
+                        <div className="w-full mb-4 overflow-hidden">
                             {content.cards[6]?.image && (
                                 <Image 
                                     src={content.cards[6].image} 
@@ -463,7 +482,7 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
             <style jsx>{`
                 @keyframes scroll {
                     0% { transform: translateX(0); }
-                    100% { transform: translateX(calc(-25%)); }
+                    100% { transform: translateX(-25%); }
                 }
                 .animate-scroll {
                     animation: scroll 40s linear infinite;
@@ -472,10 +491,17 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                     animation-play-state: paused;
                 }
                 
-                /* Stop animation on 2xl screens and above */
+                /* Stop animation only on 2XL screens and above */
                 @media (min-width: 1536px) {
                     .animate-scroll {
                         animation: none;
+                    }
+                }
+                
+                /* Ensure carousel works on all screens smaller than 2XL */
+                @media (max-width: 1535px) {
+                    .animate-scroll {
+                        animation: scroll 40s linear infinite;
                     }
                 }
             `}</style>

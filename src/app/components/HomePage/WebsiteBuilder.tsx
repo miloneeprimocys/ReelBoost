@@ -54,6 +54,7 @@ import AdminEditor from "./WebsiteBuilder/AdminEditor";
 import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
 import NavbarEditor from "./WebsiteBuilder/NavbarEditor";
 import FooterEditor from "./WebsiteBuilder/FooterEditor";
+import TestimonialsEditor from "./WebsiteBuilder/TestimonialsEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 
 // Import homepage section components for preview
@@ -66,6 +67,7 @@ import SixthSection from "../../Pages/Home/SixthSection";
 import DynamicBanner from "../../sections/Home/DynamicBanner";
 import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 import DynamicFeatures from "../../sections/Home/DynamicFeatures";
+import DynamicTestimonials from "../../sections/Home/DynamicTestimonials";
 import DynamicFooter from "../../sections/Home/DynamicFooter";
 import DynamicNavbar from "../../sections/Home/DynamicNavbar";
 
@@ -606,7 +608,8 @@ const scrollToSection = (sectionId: string) => {
           el.id.includes('fourth') || 
           el.id.includes('fifth') || 
           el.id.includes('sixth') ||
-          el.id.includes('banner')
+          el.id.includes('banner') ||
+          el.id.includes('testimonials')
         );
         
         console.log('All section elements found:', sectionElements.map(el => ({
@@ -907,6 +910,19 @@ useEffect(() => {
                     contentType
                   }));
                 }} />;
+              case 'testimonials':
+                return <DynamicTestimonials key={section.id} section={section} onEdit={(sectionId, contentType, elementId) => {
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'testimonials',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
               default:
                 return null;
             }
@@ -962,6 +978,16 @@ useEffect(() => {
               >
                 <div className="font-medium text-gray-900">Benefits</div>
                 <div className="text-sm text-gray-500">Highlight advantages</div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  dispatch(addSectionAndSetActive({ type: 'testimonials', name: 'Testimonials Section' }));
+                }}
+                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
+              >
+                <div className="font-medium text-gray-900">Testimonials</div>
+                <div className="text-sm text-gray-500">Customer reviews</div>
               </button>
             </div>
           </div>
@@ -1025,6 +1051,7 @@ useEffect(() => {
            editingOverlay.sectionType === 'features' ? <FeaturesEditor /> : 
            editingOverlay.sectionType === 'benefits' ? <BenefitsEditor /> :
            editingOverlay.sectionType === 'footer' ? <FooterEditor /> :
+           editingOverlay.sectionType === 'testimonials' ? <TestimonialsEditor /> :
            editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth') ? <BenefitsEditor /> : 
            editingOverlay.sectionType === 'admin' ? <AdminEditor /> : null}
         </div>
@@ -1303,7 +1330,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="fixed top-[70px] left-0 right-0 bottom-0 z-50 bg-black/50 flex">
+    <div className="fixed top-0 left-0 right-0 bottom-0 z-50 bg-black/50 flex">
       {renderContent()}
       {renderEditingOverlay()}
       {/* Backdrop to close overlay */}

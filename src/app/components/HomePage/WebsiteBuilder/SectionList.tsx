@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { GripVertical, Edit3, Eye, EyeOff, Trash2, Layout, Plus, Undo, Redo } from "lucide-react";
 
-type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'testimonials' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
 
 interface SectionListProps {
   sections: any[];
