@@ -25,7 +25,7 @@ interface HeroContent {
 
 interface SectionConfig {
   id: string;
-  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'testimonials';
+  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'testimonials' | 'faq' | 'subscription-plan';
   name: string;
   visible: boolean;
   content: any;
@@ -363,7 +363,7 @@ const initialSections: SectionConfig[] = [
             name: 'Sarah Johnson',
             role: 'CEO',
             company: 'TechCorp',
-            content: 'ReelBoost has completely transformed how we engage with our audience. The live streaming features are incredible, and our engagement metrics have skyrocketed since we started using the platform. The PK battles are especially popular with our younger demographic.',
+            content: 'ReelBoost has completely transformed how we engage with our audience. The live streaming features are incredible, and our engagement metrics have skyrocketed since we started using the platform.',
             rating: 5
           },
           {
@@ -371,7 +371,7 @@ const initialSections: SectionConfig[] = [
             name: 'Michael Chen',
             role: 'Marketing Director',
             company: 'Digital Agency',
-            content: 'As a marketing agency, we\'re always looking for innovative ways to help our clients stand out. ReelBoost provides everything we need - from short video creation to live streaming. The analytics dashboard gives us valuable insights into performance.',
+            content: 'As a marketing agency, we\'re always looking for innovative ways to help our clients stand out. ReelBoost provides everything we need - from short video creation to live streaming. ',
             rating: 5
           },
           {
@@ -379,7 +379,7 @@ const initialSections: SectionConfig[] = [
             name: 'Emily Rodriguez',
             role: 'Content Creator',
             company: 'Media House',
-            content: 'The video editing tools are incredibly intuitive and powerful. I can create professional-looking content in minutes, not hours. The built-in music library and effects save me so much time. Best platform I\'ve used for short-form content.',
+            content: 'The video editing tools are incredibly intuitive and powerful. I can create professional-looking content in minutes, not hours. The built-in music library and effects save me so much time. ',
             rating: 5
           },
           {
@@ -387,7 +387,7 @@ const initialSections: SectionConfig[] = [
             name: 'David Kim',
             role: 'Product Manager',
             company: 'StartupHub',
-            content: 'We integrated ReelBoost into our app ecosystem and the results have been phenomenal. The API is well-documented and the support team is amazing. Our users love the social features and engagement is up 300%.',
+            content: 'We integrated ReelBoost into our app ecosystem and the results have been phenomenal. The API is well-documented and the support team is amazing. ',
             rating: 5
           },
           {
@@ -395,8 +395,171 @@ const initialSections: SectionConfig[] = [
             name: 'Lisa Thompson',
             role: 'Social Media Manager',
             company: 'BrandCo',
-            content: 'The scheduling and analytics features have made my job so much easier. I can plan content weeks in advance and track performance in real-time. The multi-platform support is exactly what we needed for our brand.',
+            content: 'The scheduling and analytics features have made my job so much easier. I can plan content weeks in advance and track performance in real-time. ',
             rating: 4
+          }
+        ]
+      }
+    },
+    {
+      id: 'faq-1',
+      type: 'faq',
+      name: 'FAQ Section',
+      visible: true,
+      order: 8,
+      content: {
+        title: 'Frequently asked questions',
+        subtitle: "Everything you need to know about ReelBoost. Can't find what you're looking for? Contact our support team!",
+        backgroundColor: '#ffffff',
+        textColor: '#101828',
+        accentColor: '#667085',
+        borderColor: '#EAECF0',
+        dotText: 'FAQ',
+        dotTextColor: '#101828',
+        showDotText: true,
+        categories: ['General', 'Live Streaming', 'Monetization', 'Account'],
+        activeCategory: 'General',
+        faqs: [
+          {
+            id: '1',
+            question: 'What is ReelBoost and how does it work?',
+            answer: 'ReelBoost is a comprehensive live streaming and short video platform that empowers creators to broadcast content, engage with audiences in real-time, and monetize through gifts and subscriptions. Simply sign up, set up your profile, and start streaming or uploading short videos instantly.',
+            category: 'General'
+          },
+          {
+            id: '2',
+            question: 'How many viewers can join my live stream?',
+            answer: 'ReelBoost supports unlimited viewers for your live streams. Our infrastructure scales automatically to handle thousands of concurrent viewers with HD quality streaming and minimal latency.',
+            category: 'Live Streaming'
+          },
+          {
+            id: '3',
+            question: 'How do I earn money through the platform?',
+            answer: 'You can earn through multiple channels: receiving virtual gifts from viewers during live streams, subscription-based fan clubs, brand partnerships, and our creator fund program. Earnings are deposited directly to your connected wallet.',
+            category: 'Monetization'
+          },
+          {
+            id: '4',
+            question: 'Can I go live with multiple people at once?',
+            answer: 'Yes! ReelBoost supports multi-guest live streaming with up to 4 participants in a single stream. You can invite guests, manage their audio/video, and even host PK battles for interactive competitions.',
+            category: 'Live Streaming'
+          },
+          {
+            id: '5',
+            question: 'How do I withdraw my earnings?',
+            answer: 'Withdrawals are simple and secure. Go to your wallet section, link your bank account or payment method, and request a withdrawal. Funds are typically processed within 1-3 business days with a minimum withdrawal amount of $10.',
+            category: 'Monetization'
+          },
+          {
+            id: '6',
+            question: 'Can I stream from my mobile device?',
+            answer: 'Absolutely! ReelBoost is fully optimized for mobile streaming. Download our iOS or Android app, and you can start streaming directly from your phone with professional-grade features and controls.',
+            category: 'Live Streaming'
+          },
+          {
+            id: '7',
+            question: 'How do I grow my audience on ReelBoost?',
+            answer: 'Use our built-in analytics to understand your audience, collaborate with other creators, participate in trending challenges, and leverage our recommendation algorithm by posting consistently and engaging with your community.',
+            category: 'General'
+          },
+          {
+            id: '8',
+            question: 'Is there a subscription model for my fans?',
+            answer: 'Yes! You can set up tiered subscription plans for your fans with exclusive perks like special badges, subscriber-only content, private streams, and direct messaging access. You control the pricing and benefits.',
+            category: 'Monetization'
+          },
+          {
+            id: '9',
+            question: 'How do I report inappropriate content?',
+            answer: 'We have robust moderation tools. Click the three-dot menu on any content and select "Report" to flag violations. Our team reviews reports within 24 hours. You can also block users and set content filters.',
+            category: 'Account'
+          },
+          {
+            id: '10',
+            question: 'Can I schedule my live streams in advance?',
+            answer: 'Yes! Use our scheduling feature to announce upcoming streams, set reminders for your followers, and create anticipation posts. Scheduled streams get priority placement in the discover section.',
+            category: 'Account'
+          }
+        ]
+      }
+    },
+    {
+      id: 'subscription-plan-1',
+      type: 'subscription-plan',
+      name: 'Subscription Plan Section',
+      visible: true,
+      order: 9,
+      content: {
+        title: 'Choose Your Plan',
+        subtitle: 'Flexible pricing options for every stage of your journey',
+        backgroundColor: '#ffffff',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#374151',
+        cardBorderColor: '#e5e7eb',
+        popularCardBackgroundColor: '#f0f9ff',
+        popularCardBorderColor: '#3b82f6',
+        buttonBackgroundColor: '#111827',
+        buttonTextColor: '#ffffff',
+        popularButtonBackgroundColor: '#3b82f6',
+        popularButtonTextColor: '#ffffff',
+        dotText: 'Pricing',
+        dotTextColor: '#111827',
+        showDotText: true,
+        tickColor: '#10b981',
+        plans: [
+          {
+            id: '1',
+            name: 'Basic',
+            price: '$9',
+            period: '/month',
+            description: 'Perfect for individuals getting started',
+            features: [
+              '5 Projects',
+              '10GB Storage',
+              'Basic Analytics',
+              'Email Support',
+              'API Access'
+            ],
+            buttonText: 'Get Started',
+            isPopular: false
+          },
+          {
+            id: '2',
+            name: 'Pro',
+            price: '$29',
+            period: '/month',
+            description: 'Best for growing businesses',
+            features: [
+              'Unlimited Projects',
+              '100GB Storage',
+              'Advanced Analytics',
+              'Priority Support',
+              'API Access',
+              'Custom Integrations',
+              'Team Collaboration'
+            ],
+            buttonText: 'Start Pro Trial',
+            isPopular: true,
+            badgeText: 'Most Popular'
+          },
+          {
+            id: '3',
+            name: 'Enterprise',
+            price: '$99',
+            period: '/month',
+            description: 'For large scale operations',
+            features: [
+              'Unlimited Everything',
+              '1TB Storage',
+              'Custom Analytics',
+              '24/7 Phone Support',
+              'Dedicated Manager',
+              'SLA Guarantee',
+              'White Label Option'
+            ],
+            buttonText: 'Contact Sales',
+            isPopular: false
           }
         ]
       }
@@ -456,6 +619,12 @@ const builderSlice = createSlice({
       const { id, content } = action.payload;
       const section = state.sections.find(s => s.id === id);
       if (section) {
+        console.log('=== builderSlice updateSectionContent ===');
+        console.log('Section ID:', id);
+        console.log('Section Type:', section.type);
+        console.log('Is Banner Section (second/third):', id.startsWith('second-') || id.startsWith('third-'));
+        console.log('Updating fields:', Object.keys(content));
+        console.log('New values:', content);
         // Initialize section history if it doesn't exist
         if (!state.sectionHistory[id]) {
           state.sectionHistory[id] = {
@@ -470,20 +639,42 @@ const builderSlice = createSlice({
         state.sectionHistory[id].future = [];
         
         // Update the section content with deep merge for nested objects and arrays
-        if (content.features && Array.isArray(content.features)) {
-          // If updating features array, replace it entirely
-          section.content = { ...section.content, features: content.features };
+        // Always create a new content object to trigger re-renders
+        const newContent = content.features && Array.isArray(content.features)
+          ? { ...section.content, features: content.features }
+          : { ...section.content, ...content };
+        
+        // Special handling for subscription-plan sections to preserve backgroundColor
+        if (section.type === 'subscription-plan') {
+          // Always preserve backgroundColor from original section if not being updated
+          if (!content.hasOwnProperty('backgroundColor') && section.content.backgroundColor) {
+            newContent.backgroundColor = section.content.backgroundColor;
+          }
+          // Ensure we never set backgroundColor to undefined/null/empty
+          if (!newContent.backgroundColor || 
+              newContent.backgroundColor === 'undefined' || 
+              newContent.backgroundColor === 'null' || 
+              newContent.backgroundColor === '' ||
+              typeof newContent.backgroundColor !== 'string') {
+            newContent.backgroundColor = section.content.backgroundColor || '#ffffff';
+          }
         } else {
-          // For other fields, use shallow merge
-          section.content = { ...section.content, ...content };
+          // Ensure critical style properties are preserved if not explicitly set in update
+          // This prevents background from becoming dark/undefined
+          if (!content.hasOwnProperty('backgroundColor') && section.content.backgroundColor) {
+            newContent.backgroundColor = section.content.backgroundColor;
+          }
+          // Ensure we never set backgroundColor to undefined/null
+          if (newContent.backgroundColor === undefined || newContent.backgroundColor === null) {
+            newContent.backgroundColor = section.content.backgroundColor || '#ffffff';
+          }
         }
         
+        // Assign the new content object
+        section.content = newContent;
+        
         // Update present state with the same logic
-        if (content.features && Array.isArray(content.features)) {
-          state.sectionHistory[id].present = { ...section.content, features: content.features };
-        } else {
-          state.sectionHistory[id].present = { ...section.content, ...content };
-        }
+        state.sectionHistory[id].present = newContent;
       }
     },
     toggleSectionVisibility: (state, action: PayloadAction<string>) => {
@@ -518,10 +709,46 @@ const builderSlice = createSlice({
     addSection: (state, action: PayloadAction<{ type: SectionConfig['type']; name?: string }>) => {
       const { type, name } = action.payload;
       const isNewFifth = type === 'fifth';
+
+      // Generate semantic IDs for special sections based on type and name
+      let sectionId: string;
+      let sectionName: string;
+
+      // Check if this is a Live Streaming section (from name or type)
+      if (name?.toLowerCase().includes('live streaming') || type === 'live-streaming' || type === 'second') {
+        sectionId = `banner-${Date.now()}`;
+        sectionName = name || 'Live Streaming Section';
+      }
+      // Check if this is a PK Battle section (from name or type)
+      else if (name?.toLowerCase().includes('pk battle') || type === 'pk-battle' || type === 'third') {
+        sectionId = `banner-${Date.now()}`;
+        sectionName = name || 'PK Battle Section';
+      }
+      // Check if this is a Features section (from name or type)
+      else if (name?.toLowerCase().includes('features') || type === 'features' || type === 'fourth') {
+        sectionId = `fourth-${Date.now()}`;
+        sectionName = name || 'Features Section';
+      }
+      // Check if this is a Benefits section
+      else if (name?.toLowerCase().includes('benefits') || type === 'benefits' || type === 'sixth') {
+        sectionId = `sixth-${Date.now()}`;
+        sectionName = name || 'Benefits Section';
+      }
+      // Check if this is an Admin Panel section
+      else if (name?.toLowerCase().includes('admin') || type === 'admin-panel' || type === 'fifth') {
+        sectionId = `fifth-${Date.now()}`;
+        sectionName = name || 'Admin Panel Section';
+      }
+      // Default case: use type-based ID
+      else {
+        sectionId = `${type}-${Date.now()}`;
+        sectionName = name || `${type.charAt(0).toUpperCase() + type.slice(1)} Section`;
+      }
+
       const newSection: SectionConfig = {
-        id: `${type}-${Date.now()}`,
-        type,
-        name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} Section`,
+        id: sectionId,
+        type: type === 'live-streaming' ? 'banner' : type === 'pk-battle' ? 'banner' : type === 'features' ? 'fourth' : type,
+        name: sectionName,
         visible: true,
         order: state.sections.length + 1,
         content: getDefaultContent(type, isNewFifth)
@@ -540,12 +767,48 @@ const builderSlice = createSlice({
     addSectionAndSetActive: (state, action: PayloadAction<{ type: SectionConfig['type']; name?: string }>) => {
       const { type, name } = action.payload;
       console.log('Redux addSectionAndSetActive called with:', { type, name });
-      
+
       const isNewFifth = type === 'fifth';
+
+      // Generate semantic IDs for special sections based on type and name
+      let sectionId: string;
+      let sectionName: string;
+
+      // Check if this is a Live Streaming section (from name or type)
+      if (name?.toLowerCase().includes('live streaming') || type === 'live-streaming' || type === 'second') {
+        sectionId = `banner-${Date.now()}`;
+        sectionName = name || 'Live Streaming Section';
+      }
+      // Check if this is a PK Battle section (from name or type)
+      else if (name?.toLowerCase().includes('pk battle') || type === 'pk-battle' || type === 'third') {
+        sectionId = `banner-${Date.now()}`;
+        sectionName = name || 'PK Battle Section';
+      }
+      // Check if this is a Features section (from name or type)
+      else if (name?.toLowerCase().includes('features') || type === 'features' || type === 'fourth') {
+        sectionId = `fourth-${Date.now()}`;
+        sectionName = name || 'Features Section';
+      }
+      // Check if this is a Benefits section
+      else if (name?.toLowerCase().includes('benefits') || type === 'benefits' || type === 'sixth') {
+        sectionId = `sixth-${Date.now()}`;
+        sectionName = name || 'Benefits Section';
+      }
+      // Check if this is an Admin Panel section
+      else if (name?.toLowerCase().includes('admin') || type === 'admin-panel' || type === 'fifth') {
+        sectionId = `fifth-${Date.now()}`;
+        sectionName = name || 'Admin Panel Section';
+      }
+      // Default case: use type-based ID
+      else {
+        sectionId = `${type}-${Date.now()}`;
+        sectionName = name || (type === 'hero' ? 'Text and Image' : `${type.charAt(0).toUpperCase() + type.slice(1)} Section`);
+      }
+
       const newSection: SectionConfig = {
-        id: `${type}-${Date.now()}`,
-        type,
-        name: name || (type === 'hero' ? 'Text and Image' : `${type.charAt(0).toUpperCase() + type.slice(1)} Section`),
+        id: sectionId,
+        type: type === 'live-streaming' ? 'banner' : type === 'pk-battle' ? 'banner' : type === 'features' ? 'fourth' : type,
+        name: sectionName,
         visible: true,
         order: state.sections.length + 1,
         content: getDefaultContent(type, isNewFifth)
@@ -737,6 +1000,150 @@ const builderSlice = createSlice({
 // isNew parameter determines if this is a new section (2 tabs) vs default (4 tabs)
 const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) => {
   switch (type) {
+    case 'banner':
+      return {
+        dotText: 'Live Streaming',
+        title: 'Start video, interact with your user.',
+        description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like, stream, and send virtual gifts to show their support.',
+        features: [
+          {
+            title: 'List of Live Streamers',
+            description: 'You can check the list of live streamers, and can view likes and audience connected to the stream',
+            icon: '/list.svg'
+          },
+          {
+            title: 'Live Streaming Interaction',
+            description: 'Viewers can comment, send virtual gifts, like the stream, and follow the streamer to stay connected.',
+            icon: '/livestream.svg'
+          }
+        ],
+        backgroundImage: '/second.svg',
+        backgroundColor: '#4A72FF',
+        layout: 'left',
+        animation: 'fade',
+        dotTextColor: '#3B82F6',
+        dotColor: '#3B82F6',
+        titleColor: '#111827',
+        descriptionColor: '#4B5563',
+        featureTitleColor: '#111827',
+        featureDescriptionColor: '#4B5563'
+      };
+case 'live-streaming':
+  return {
+    dotText: 'Demo Data ',
+    title: 'Demo Title ',
+    description: 'This is a demo description for live streaming feature. This is sample content for demonstration purposes only.',
+    features: [
+      {
+        title: 'Demo Feature 1',
+        description: 'This is a demo feature description for testing purposes.',
+        icon: '/list.svg'
+      },
+      {
+        title: 'Demo Feature 2',
+        description: 'This is another demo feature description for testing purposes.',
+        icon: '/livestream.svg'
+      }
+    ],
+    backgroundImage: '/second.svg',
+    backgroundColor: '#4A72FF',
+    layout: 'left',
+    animation: 'fade',
+    dotTextColor: '#3B82F6',
+    dotColor: '#3B82F6',
+    titleColor: '#111827',
+    descriptionColor: '#4B5563',
+    featureTitleColor: '#111827',
+    featureDescriptionColor: '#4B5563'
+  };
+case 'pk-battle':
+  return {
+    dotText: 'Demo Data ',
+    title: 'Demo Title ',
+    description: 'This is a demo description for PK battle feature. This is sample content for demonstration purposes only.',
+    features: [
+      {
+        title: 'Demo Feature 1',
+        description: 'This is a demo feature description for testing purposes.',
+        icon: '/sword.svg'
+      },
+      {
+        title: 'Demo Feature 2',
+        description: 'This is another demo feature description for testing purposes.',
+        icon: '/gift.svg'
+      }
+    ],
+    backgroundImage: '/third.svg',
+    backgroundColor: '#FF6B4A',
+    layout: 'right',
+    animation: 'slide',
+    dotTextColor: '#FF6B4A',
+    dotColor: '#FF6B4A',
+    titleColor: '#111827',
+    descriptionColor: '#4B5563',
+    featureTitleColor: '#111827',
+    featureDescriptionColor: '#4B5563'
+  };
+      return {
+        dotText: 'PK Battle',
+        title: 'Live battles to win audience support',
+        description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
+        features: [
+          {
+            title: 'Loss and Win Battle',
+            description: 'In a PK battle, the streamer with the higher score wins the match, while the one with the lower score loses the battle.',
+            icon: '/sword.svg'
+          },
+          {
+            title: 'Send Gifts during Battle',
+            description: 'The winner and loser are determined based on the number of gifts received during the battle.',
+            icon: '/gift.svg'
+          },
+          {
+            title: 'Audience Engagement',
+            description: 'Audience gets interaction through likes, comments, and virtual gift sending.',
+            icon: '/audience.svg'
+          }
+        ],
+        backgroundImage: '/third.svg',
+        backgroundColor: '#FFB800',
+        layout: 'right',
+        animation: 'fade',
+        dotTextColor: '#FFB800',
+        dotColor: '#FFB800',
+        titleColor: '#111827',
+        descriptionColor: '#4B5563',
+        featureTitleColor: '#111827',
+        featureDescriptionColor: '#4B5563'
+      };
+    case 'second':
+      return {
+        dotText: 'Live Streaming',
+        title: 'Start video, interact with your user.',
+        description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like, stream, and send virtual gifts to show their support.',
+        features: [
+          {
+            title: 'List of Live Streamers',
+            description: 'You can check the list of live streamers, and can view likes and audience connected to the stream',
+            icon: '/list.svg'
+          },
+          {
+            title: 'Live Streaming Interaction',
+            description: 'Viewers can comment, send virtual gifts, like the stream, and follow the streamer to stay connected.',
+            icon: '/livestream.svg'
+          }
+        ],
+        backgroundImage: '/second.svg',
+        backgroundColor: '#4A72FF',
+        layout: 'left',
+        animation: 'fade',
+        dotTextColor: '#3B82F6',
+        dotColor: '#3B82F6',
+        titleColor: '#111827',
+        descriptionColor: '#4B5563',
+        featureTitleColor: '#111827',
+        featureDescriptionColor: '#4B5563'
+      };
     case 'hero':
       return {
         title: 'New Section',
@@ -757,7 +1164,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         topAccentColor: '#2B59FF',
         bottomAccentColor: '#FFB800'
       };
-    case 'banner':
+    case 'second':
       return {
         dotText: 'Live Streaming Platform',
         title: 'Connect with Your Audience',
@@ -774,7 +1181,7 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
             icon: 'MessageCircle'
           }
         ],
-        backgroundImage: '/api/placeholder/600/400', // Default image for new banners
+        backgroundImage: '/second.svg', // Default image for new banners
         backgroundColor: '#ffffff',
         layout: 'left',
         animation: 'fade',
@@ -784,71 +1191,68 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       };
-    case 'features':
+    case 'third':
       return {
         dotText: 'Main Features',
         title: 'Achieving More Through Digital Excellence',
-                description: '',
+        description: '',
         features: [
-          { id: 'feature-1', title: 'New Demo Feature 1', icon: '/video.svg', backgroundImage: '/laptop.svg' },
-          { id: 'feature-2', title: 'New Demo Feature 2', icon: '/notification.svg', backgroundImage: '/laptop.svg' }
+          { id: 'feature-1', title: 'Short Videos', icon: '/video.svg', backgroundImage: '/laptop.svg' },
+          { id: 'feature-2', title: 'Notification', icon: '/notification.svg', backgroundImage: '/laptop.svg' },
+          { id: 'feature-3', title: 'Real-time chat', icon: '/message.svg', backgroundImage: '/laptop.svg' },
+          { id: 'feature-4', title: 'Explore Users & Hashtags', icon: '/user.svg', backgroundImage: '/laptop.svg' },
+          { id: 'feature-5', title: 'Live Streaming', icon: '/liveB.svg', backgroundImage: '/laptop.svg' },
+          { id: 'feature-6', title: 'PK Battle', icon: '/Battle.svg', backgroundImage: '/laptop.svg' },
         ],
         cards: [
           {
             id: 'card-1',
-            title: 'New Demo Card 1',
-            description: 'Demo description for card 1 with sample content text.',
+            title: 'Wallet',
+            description: 'The wallet allows users to securely manage their balance, add funds, receive gifts, and withdraw payments from coin balance.',
             image: '/wallet.svg',
-            backgroundColor: '#F1F3EE',
-            layout: 'default'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-2',
-            title: 'New Demo Card 2',
-            description: 'Demo description for card 2 with sample content text.',
+            title: 'Live Streaming',
+            description: 'Live streaming supports up to four participants at a time, enabling real-time interaction, collaboration, and audience engagement.',
             image: '/hero.png',
-            backgroundColor: '#F1F3EE',
-            layout: 'centered'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-3',
             title: 'Payment History',
             description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
             image: '/third.svg',
-            backgroundColor: '#F1F3EE',
-            layout: 'default'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-4',
-            title: 'New Demo Card 4',
-            description: 'Demo description for card 4 with sample content text.',
+            title: 'Reelboost',
+            description: '',
             image: '/laptop.svg',
-            backgroundColor: '#F1F3EE',
-            layout: 'full-image'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-5',
-            title: 'New Demo Card 5',
-            description: 'Demo description for card 5 with sample content text.',
+            title: 'Video Trimming',
+            description: 'Videos can be trimmed from beginning or end, with a maximum length limit of 30 seconds.',
             image: '/trim.svg',
-            backgroundColor: '#F1F3EE',
-            layout: 'default'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-6',
-            title: 'New Demo Card 6',
-            description: 'Demo description for card 6 with sample content text.',
+            title: 'Add Music for Reels',
+            description: 'Add Music to Reels allows users to enhance their short videos by selecting background music from an audio library.',
             image: '/music.svg',
-            backgroundColor: '#F1F3EE',
-            layout: 'default'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-7',
-            title: 'New Demo Card 7',
-            description: 'Demo description for card 7 with sample content text.',
+            title: 'Gift Lists',
+            description: 'The gift list includes multiple categories of gift icons that users can send and receive to earn coins.',
             image: '/giftlist.svg',
-            backgroundColor: '#F1F3EE',
-            layout: 'default'
+            backgroundColor: '#F1F3EE'
           }
         ],
         backgroundColor: '#000000',
@@ -1068,58 +1472,116 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
           }
         ]
       };
-    case 'second':
+    case 'faq':
       return {
-        dotText: 'Live Streaming',
-        title: 'Broadcast Your Content',
-        subtitle: 'Connect with Audience',
-        description: 'Engage your audience with real-time streaming features.',
-        features: [
-          {
-            title: 'HD Quality',
-            description: 'Crystal clear video streaming',
-            icon: 'Video'
-          },
-          {
-            title: 'Real-time Chat',
-            description: 'Interactive audience engagement',
-            icon: 'MessageCircle'
-          }
-        ],
-        backgroundImage: '/second.svg',
-        backgroundColor: '#4A72FF',
-        layout: 'left',
-        animation: 'fade',
-        titleColor: '#111827',
-                descriptionColor: '#4B5563',
-        featureTitleColor: '#111827',
-        featureDescriptionColor: '#4B5563'
-      };
-    case 'third':
-      return {
-        dotText: 'PK Battle',
-        title: 'Compete with Creators',
-                description: 'Challenge other creators in real-time battles.',
-        features: [
-          {
-            title: 'Live Competition',
-            description: 'Real-time creator battles',
-            icon: 'Sword'
-          },
-          {
-            title: 'Audience Voting',
-            description: 'Let your audience decide the winner',
-            icon: 'Star'
-          }
-        ],
-        backgroundImage: '/third.svg',
+        title: 'Frequently asked questions',
+        subtitle: "Everything you need to know about ReelBoost. Can't find what you're looking for? Contact our support team!",
         backgroundColor: '#ffffff',
-        layout: 'right',
-        animation: 'fade',
-        titleColor: '#111827',
-                descriptionColor: '#4B5563',
-        featureTitleColor: '#111827',
-        featureDescriptionColor: '#4B5563'
+        textColor: '#101828',
+        accentColor: '#667085',
+        borderColor: '#EAECF0',
+        dotText: 'FAQ',
+        dotTextColor: '#101828',
+        showDotText: true,
+        categories: ['General', 'Live Streaming', 'Monetization', 'Account'],
+        activeCategory: 'General',
+        faqs: [
+          {
+            id: '1',
+            question: 'What is ReelBoost and how does it work?',
+            answer: 'ReelBoost is a comprehensive live streaming and short video platform that empowers creators to broadcast content, engage with audiences in real-time, and monetize through gifts and subscriptions.',
+            category: 'General'
+          },
+          {
+            id: '2',
+            question: 'How many viewers can join my live stream?',
+            answer: 'ReelBoost supports unlimited viewers for your live streams. Our infrastructure scales automatically to handle thousands of concurrent viewers with HD quality streaming.',
+            category: 'Live Streaming'
+          },
+          {
+            id: '3',
+            question: 'How do I earn money through the platform?',
+            answer: 'You can earn through virtual gifts from viewers, subscription-based fan clubs, brand partnerships, and our creator fund program.',
+            category: 'Monetization'
+          }
+        ]
+      };
+    case 'subscription-plan':
+      return {
+        title: 'Choose Your Plan',
+        subtitle: 'Flexible pricing options for every stage of your journey',
+        backgroundColor: '#ffffff',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#374151',
+        cardBorderColor: '#e5e7eb',
+        popularCardBackgroundColor: '#f0f9ff',
+        popularCardBorderColor: '#3b82f6',
+        buttonBackgroundColor: '#111827',
+        buttonTextColor: '#ffffff',
+        popularButtonBackgroundColor: '#3b82f6',
+        popularButtonTextColor: '#ffffff',
+        badgeTextColor: '#ffffff',
+        badgeBackgroundColor: '#3b82f6',
+        dotText: 'Pricing',
+        dotTextColor: '#111827',
+        showDotText: true,
+        tickColor: '#10b981',
+        plans: [
+          {
+            id: '1',
+            name: 'Basic',
+            price: '$9',
+            period: '/month',
+            description: 'Perfect for individuals getting started',
+            features: [
+              '5 Projects',
+              '10GB Storage',
+              'Basic Analytics',
+              'Email Support',
+              'API Access'
+            ],
+            buttonText: 'Get Started',
+            isPopular: false
+          },
+          {
+            id: '2',
+            name: 'Pro',
+            price: '$29',
+            period: '/month',
+            description: 'Best for growing businesses',
+            features: [
+              'Unlimited Projects',
+              '100GB Storage',
+              'Advanced Analytics',
+              'Priority Support',
+              'API Access',
+              'Custom Integrations',
+              'Team Collaboration'
+            ],
+            buttonText: 'Start Pro Trial',
+            isPopular: true,
+            badgeText: 'Most Popular'
+          },
+          {
+            id: '3',
+            name: 'Enterprise',
+            price: '$99',
+            period: '/month',
+            description: 'For large scale operations',
+            features: [
+              'Unlimited Everything',
+              '1TB Storage',
+              'Custom Analytics',
+              '24/7 Phone Support',
+              'Dedicated Manager',
+              'SLA Guarantee',
+              'White Label Option'
+            ],
+            buttonText: 'Contact Sales',
+            isPopular: false
+          }
+        ]
       };
     default:
       return {};

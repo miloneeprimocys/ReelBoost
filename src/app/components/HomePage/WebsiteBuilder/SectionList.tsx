@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { GripVertical, Edit3, Eye, EyeOff, Trash2, Layout, Plus, Undo, Redo } from "lucide-react";
 
-type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'testimonials' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'testimonials' | 'faq' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
 
 interface SectionListProps {
   sections: any[];
@@ -21,6 +21,7 @@ interface SectionListProps {
   onSetActive: (id: string) => void;
   onSetActiveBanner: (id: string) => void;
   onSetActiveAdmin: (id: string) => void;
+  onScrollToSection: (id: string) => void;
   onSetActiveNavbar: () => void;
   onSetActiveFooter: () => void;
   onDelete: (id: string) => void;
@@ -50,6 +51,7 @@ const SectionList: React.FC<SectionListProps> = ({
   onSetActive,
   onSetActiveBanner,
   onSetActiveAdmin,
+  onScrollToSection,
   onSetActiveNavbar,
   onSetActiveFooter,
   onDelete,
@@ -65,6 +67,7 @@ const SectionList: React.FC<SectionListProps> = ({
   // Touch event handling for mobile drag and drop
   const [touchItem, setTouchItem] = useState<number | null>(null);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
     setTouchItem(index);
@@ -93,6 +96,17 @@ const SectionList: React.FC<SectionListProps> = ({
       setTouchItem(null);
     }
   };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    const section = allSections[index];
+    // Set drag data for the preview to handle
+    e.dataTransfer.setData('text/plain', JSON.stringify(section));
+    e.dataTransfer.effectAllowed = 'copy';
+    
+    setTouchItem(index);
+    setTouchPosition({ x: e.clientX, y: e.clientY });
+    onDragStart(index);
+  };
   // Create a Map to ensure unique sections by id
   const sectionsMap = new Map();
   
@@ -113,6 +127,8 @@ const SectionList: React.FC<SectionListProps> = ({
   
   // Convert Map to array and sort by order
   const allSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
+  
+  console.log('SectionList - allSections:', allSections.map(s => ({ id: s.id, name: s.name, type: s.type, source: s.source })));
   
   return (
     <div className="mb-6 ">
@@ -148,8 +164,6 @@ const SectionList: React.FC<SectionListProps> = ({
           
           // Get display name for different section types
           const getDisplayName = () => {
-            if (section.id === 'second-1') return 'Live Streaming';
-            if (section.id === 'third-1') return 'PK Battle';
             if (section.type === 'banner' && section.name) return section.name;
             if (isAdminSection && section.label) return section.label;
             return section.name || section.label;
@@ -157,8 +171,6 @@ const SectionList: React.FC<SectionListProps> = ({
           
           // Get display type for different section types
           const getDisplayType = () => {
-            if (section.id === 'second-1') return 'Live Streaming';
-            if (section.id === 'third-1') return 'PK Battle';
             if (section.type === 'banner') return 'Banner';
             if (isAdminSection) return 'Admin Panel';
             return section.type;
@@ -168,7 +180,7 @@ const SectionList: React.FC<SectionListProps> = ({
             <div
               key={section.id}
               draggable
-              onDragStart={() => onDragStart(index)}
+              onDragStart={(e) => handleDragStart(e, index)}
               onDragEnter={() => onDragEnter(index)}
               onDragEnd={onDragEnd}
               onTouchStart={(e) => handleTouchStart(e, index)}
@@ -177,31 +189,18 @@ const SectionList: React.FC<SectionListProps> = ({
               data-draggable
               data-index={index}
               onClick={() => {
-                console.log('=== SectionList Click START ===');
-                console.log('SectionList - Clicked section:', {
-                  id: section.id,
-                  name: section.name,
-                  type: section.type,
-                  source: section.source,
-                  isBannerSection
-                });
-                
-                // List all available elements in the document for debugging
-                const allElements = document.querySelectorAll('[id]');
-                console.log('Available elements with IDs:', Array.from(allElements).map(el => el.id));
-                
+                // Scroll to section in preview but don't open editor
+                setSelectedSectionId(section.id);
                 if (isBannerSection) {
-                  console.log('SectionList - Calling onSetActiveBanner with:', section.id);
-                  onSetActiveBanner(section.id);
+                  onScrollToSection(section.id);
                 } else {
-                  console.log('SectionList - Calling onSetActive with:', section.id);
-                  onSetActive(section.id);
+                  onScrollToSection(section.id);
                 }
-                console.log('=== SectionList Click END ===');
+                console.log('Section clicked in list:', section.id, '- scrolling to preview only');
               }}
               className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 ${
-                isActive ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white'
-              } ${touchItem === index ? 'opacity-50 scale-105 shadow-lg' : ''} ${
+                (isActive || selectedSectionId === section.id) ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white'
+              } ${touchItem === index ? ' scale-105 shadow-lg' : ''} ${
                 dragOverItem === index ? 'border-blue-400 bg-blue-50 scale-102' : ''
               }`}
             >

@@ -34,7 +34,7 @@ const InlineBuilder: React.FC = () => {
       case 'hero':
         return (
           <InlineEditableSection key={section.id} section={section}>
-            <Hero />
+            <Hero sectionId={section.id} />
           </InlineEditableSection>
         );
       
@@ -43,20 +43,6 @@ const InlineBuilder: React.FC = () => {
         return (
           <InlineEditableSection key={section.id} section={section}>
             <DynamicFeatures section={section} />
-          </InlineEditableSection>
-        );
-      
-      case 'second':
-        return (
-          <InlineEditableSection key={section.id} section={section}>
-            <SecondSection sectionId={section.id} />
-          </InlineEditableSection>
-        );
-      
-      case 'third':
-        return (
-          <InlineEditableSection key={section.id} section={section}>
-            <ThirdSection sectionId={section.id} />
           </InlineEditableSection>
         );
       

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../../../hooks/reduxHooks";
 import { 
   updateBannerContent, 
@@ -29,6 +29,7 @@ import Gift from "../../../../../public/gift.svg";
 import Sword from "../../../../../public/sword.svg";
 import list from "../../../../../public/list.svg";
 import live from "../../../../../public/livestream.svg";
+import second from "../../../public/second.svg";
 import Image from "next/image";
 
 // Helper function to get the correct icon for Second and Third sections
@@ -75,11 +76,56 @@ interface BannerContent {
 const BannerEditor: React.FC = () => {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<'text' | 'style' | 'image'>('text');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isUpdatingFromRedux = useRef(false);
   
   // Get editor state and section data directly
   const { editingOverlay } = useAppSelector(state => state.editor);
   const bannerSections = useAppSelector(state => state.banner?.sections || []);
   const builderSections = useAppSelector(state => state.builder?.sections || []);
+  
+  // Helper function to get default layout based on section name
+  const getDefaultLayout = (sectionName?: string) => {
+    if (!sectionName) return 'left';
+    const name = sectionName.toLowerCase();
+    if (name.includes('live streaming')) {
+      return 'left';
+    }
+    if (name.includes('pk battle')) {
+      return 'right';
+    }
+    return 'left';
+  };
+  
+  // Default content for fallback
+  const defaultContent: BannerContent = {
+    dotText: 'Live Streaming',
+    title: 'Start video, interact with your user.',
+    description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like, stream, and send virtual gifts to show their support.',
+    features: [
+      {
+        title: 'List of Live Streamers',
+        description: 'You can check the list of live streamers, and can view likes and audience connected to the stream',
+        icon: '/list.svg'
+      },
+      {
+        title: 'Live Streaming Interaction',
+        description: 'Viewers can comment, send virtual gifts, like the stream, and follow the streamer to stay connected.',
+        icon: '/livestream.svg'
+      }
+    ],
+    backgroundImage: '/second.svg',
+    backgroundColor: '#ffffff',
+    layout: 'left' as const,
+    animation: 'fade',
+    titleColor: '#111827',
+    subtitleColor: '#4B5563',
+    descriptionColor: '#4B5563',
+    featureTitleColor: '#111827',
+    featureDescriptionColor: '#4B5563'
+  };
+  
+  const [localContent, setLocalContent] = useState<BannerContent>(defaultContent);
   
   // Get section directly from Redux store using editingOverlay.sectionId
   const section = useMemo(() => {
@@ -92,9 +138,9 @@ const BannerEditor: React.FC = () => {
       availableBuilderSections: builderSections.map(s => ({ id: s.id, type: s.type }))
     });
     
-    // Find section in Redux store
-    const foundSection = bannerSections.find(s => s.id === editingOverlay.sectionId) || 
-                         builderSections.find(s => s.id === editingOverlay.sectionId);
+    // Find section in Redux store - prioritize builderSections
+    const foundSection = builderSections.find(s => s.id === editingOverlay.sectionId) || 
+                         bannerSections.find(s => s.id === editingOverlay.sectionId);
     
     console.log('BannerEditor - Found section:', foundSection ? { id: foundSection.id, type: foundSection.type, hasContent: !!foundSection.content } : null);
     
@@ -113,15 +159,14 @@ const BannerEditor: React.FC = () => {
   const canUndo = useAppSelector(selectCanUndo);
   const canRedo = useAppSelector(selectCanRedo);
   
-  // Set editing section ID when component mounts (only for builderSlice sections that support undo/redo)
+  // Set editing section ID when component mounts (all banner sections are now in builderSlice)
   React.useEffect(() => {
     console.log('BannerEditor setEditingSection useEffect:', {
       sectionId: section?.id,
-      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
-      shouldSetSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
+      hasSection: !!section
     });
     
-    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+    if (section) {
       console.log('BannerEditor - setting editing section:', section.id);
       dispatch(setEditingSection({ sectionId: section.id, field: null }));
     }
@@ -130,36 +175,34 @@ const BannerEditor: React.FC = () => {
   const handleUndo = React.useCallback(() => {
     console.log('BannerEditor handleUndo called:', {
       sectionId: section?.id,
-      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
-      willDispatch: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
+      hasSection: !!section
     });
-    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+    if (section) {
       console.log('BannerEditor - dispatching undoSection for:', section.id);
       dispatch(undoSection(section.id));
     } else {
-      console.log('BannerEditor - handleUndo: section not eligible for undo');
+      console.log('BannerEditor - handleUndo: no section found');
     }
   }, [section, dispatch]);
   
   const handleRedo = React.useCallback(() => {
     console.log('BannerEditor handleRedo called:', {
       sectionId: section?.id,
-      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
-      willDispatch: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
+      hasSection: !!section
     });
-    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+    if (section) {
       console.log('BannerEditor - dispatching redoSection for:', section.id);
       dispatch(redoSection(section.id));
     } else {
-      console.log('BannerEditor - handleRedo: section not eligible for redo');
+      console.log('BannerEditor - handleRedo: no section found');
     }
   }, [section, dispatch]);
 
   // Keyboard shortcuts for undo/redo
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle keyboard events when BannerEditor is active
-      if (!section || !(section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+      // Only handle keyboard events when BannerEditor is active and has a section
+      if (!section) {
         return;
       }
 
@@ -212,98 +255,59 @@ const BannerEditor: React.FC = () => {
     };
   }, [canUndo, canRedo, handleUndo, handleRedo, section?.id]);
   
-  // Ensure content is properly initialized with default values
- const getDefaultLayout = () => {
-  const sectionType = section?.type;
-  // Second section (live streaming): Image on LEFT, Content on RIGHT
-  if (sectionType === 'second' || sectionType === 'live-streaming') return 'right'; // Image Left, Content Right
-  // Third section (pk battle): Image on RIGHT, Content on LEFT
-  if (sectionType === 'third' || sectionType === 'pk-battle') return 'left'; // Image Right, Content Left
-  return 'left'; // Default for banner
-};
-
-  const defaultContent: BannerContent = {
-    dotText: '',
-    dotColor: '#a8aff5',
-    dotTextColor: '#2b49c5',
-    title: '',
-    subtitle: '',
-    description: '',
-    features: [],
-    backgroundImage: '',
-    backgroundColor: '#ffffff',
-    layout: getDefaultLayout(),
-    animation: 'fade',
-    titleColor: '#111827',
-    subtitleColor: '#4B5563',
-    descriptionColor: '#4B5563',
-    featureTitleColor: '#111827',
-    featureDescriptionColor: '#4B5563'
-  };
-  
-  const [content, setContent] = useState<BannerContent>(() => {
+  // Sync local state with Redux when section ID changes (not content changes)
+  useEffect(() => {
     if (section?.content && Object.keys(section.content).length > 0) {
-      console.log('BannerEditor - Using existing section content directly:', section.content);
-      return JSON.parse(JSON.stringify({ ...defaultContent, ...section.content })) as BannerContent;
+      console.log('BannerEditor - Syncing local state with Redux (section ID change):', section.content);
+      // Use section name to determine layout
+      const layout = getDefaultLayout(section.name);
+      setLocalContent({ ...defaultContent, ...section.content, layout });
+    } else if (section) {
+      // Section exists but has no content, use defaults with section-based layout
+      const layout = getDefaultLayout(section.name);
+      setLocalContent({ ...defaultContent, layout });
     }
-    console.log('BannerEditor - Using default content for section type:', section?.type);
-    return JSON.parse(JSON.stringify(defaultContent));
-  });
+  }, [section?.id]); // Only depend on section ID, not content
   
-  // Update content when section changes
-  React.useEffect(() => {
-    if (section) {
-      console.log('BannerEditor - Section changed:', section.id, section.type, section.content);
-      
-      // If section has existing content, use that directly (no defaults)
-      if (section?.content && Object.keys(section.content).length > 0) {
-        const newContent = { ...defaultContent, ...section.content };
-        // Ensure layout is set correctly based on section type
-        if (!newContent.layout) {
-          newContent.layout = getDefaultLayout();
-        }
-        console.log('BannerEditor - Using existing section content directly:', newContent);
-        setContent(JSON.parse(JSON.stringify(newContent)) as BannerContent);
-      } else {
-        // Use default content based on section type
-        console.log('BannerEditor - Using default content for section type:', section.type);
-        const newContent = { ...defaultContent, layout: getDefaultLayout() };
-        setContent(JSON.parse(JSON.stringify(newContent)) as BannerContent);
-      }
-    }
-  }, [section?.id, section?.content, section?.type]); // Include section type for layout
-
-  // Sync local content with Redux state changes (for undo/redo and real-time updates)
-  React.useEffect(() => {
-    if (section && section.content) {
-      console.log('BannerEditor - Syncing content with Redux state:', section.content);
-      const newContent = { ...defaultContent, ...section.content };
-      if (!newContent.layout) {
-        newContent.layout = getDefaultLayout();
-      }
-      setContent(JSON.parse(JSON.stringify(newContent)) as BannerContent);
-    }
-  }, [section?.content]); // Sync when section content changes in Redux
+  // Use local state for inputs
+  const content = localContent;
 
   const updateField = (field: keyof BannerContent, value: any) => {
-    console.log('BannerEditor - updateField called:', field, value);
-    const updatedContent = { ...content, [field]: value };
-    console.log('BannerEditor - updatedContent:', updatedContent);
+    console.log('=== BannerEditor updateField START ===');
+    console.log('Field:', field, 'Value:', value);
     
-    // Use section-specific content from editorSection, not global bannerContent
-    if (section) {
-      console.log('BannerEditor - updating section:', section.id);
-      // Check if this is a builderSlice section (starts with 'second-' or 'third-')
-      if (section.id.startsWith('second-') || section.id.startsWith('third-')) {
-        console.log('BannerEditor - updating builderSlice section');
-        dispatch(updateSectionContent({ id: section.id, content: updatedContent }));
-      } else {
-        console.log('BannerEditor - updating bannerSlice section');
-        dispatch(updateBannerContent({ id: section.id, content: updatedContent }));
-      }
+    // Update local state immediately for responsive UI
+    const updatedContent = { ...localContent, [field]: value };
+    setLocalContent(updatedContent);
+    
+    // Clear existing debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
-    setContent(updatedContent);
+    
+    // Debounce Redux dispatch - only send the changed field
+    debounceTimerRef.current = setTimeout(() => {
+      console.log('DISPATCHING to Redux after debounce');
+      if (section) {
+        console.log('Section ID:', section.id, 'Type:', section.type, 'Field:', field);
+        // Only dispatch the changed field, not the entire content object
+        const updatePayload = { [field]: value };
+        console.log('DISPATCHING to builderSlice - updateSectionContent with payload:', updatePayload);
+        dispatch(updateSectionContent({ id: section.id, content: updatePayload }));
+      }
+    }, 300);
+    
+    console.log('=== BannerEditor updateField END ===');
   };
+  
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleImageUpload = (sectionId: string, field: string) => {
     const input = document.createElement('input');

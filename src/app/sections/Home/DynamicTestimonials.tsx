@@ -7,8 +7,6 @@ import { Edit3, ChevronLeft, ChevronRight, Quote, Star, ArrowLeft, ArrowRight } 
 interface Testimonial {
   id: string;
   name: string;
-  role: string;
-  company: string;
   content: string;
   avatar?: string;
   rating?: number;
@@ -40,14 +38,11 @@ const DynamicTestimonials = ({ section, onEdit }: DynamicTestimonialsProps) => {
   
   // Use section content if available, otherwise fallback to testimonialsContent
   let content = section?.content || testimonialsContent;
-  
-  // ABSOLUTE override - force light gray on homepage no matter what
-  if (!isPreviewMode) {
-    content = {
-      ...content,
-      backgroundColor: '#f3f4f6',
-      textColor: '#111827'
-    };
+
+  // Ensure backgroundColor is always set to prevent dark background issues
+  // If backgroundColor is missing, undefined, or empty, use default light color
+  if (!content.backgroundColor || content.backgroundColor === 'undefined' || content.backgroundColor === 'null') {
+    content = { ...content, backgroundColor: '#f9fafb' };
   }
 
   const testimonials = content.testimonials || [];
@@ -137,13 +132,15 @@ const baseIndex = testimonials.length;
     
     return (
       <div className="flex flex-col h-full">
-        {/* Card - Only quote, content, stars - Fixed height, bigger for 2XL */}
+        {/* Card - Only quote, content, stars - Fixed height with overflow handling */}
         <div
           className="rounded-2xl p-5 sm:p-6 2xl:p-8 relative group cursor-pointer flex flex-col"
           style={{ 
             backgroundColor: cardBg,
             boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
-            minHeight: '200px'
+            minHeight: '200px',
+            height: '280px',
+            maxHeight: '280px'
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -166,9 +163,9 @@ const baseIndex = testimonials.length;
             />
           </div>
 
-          {/* Content - flex grow to fill space, bigger text for 2XL */}
+          {/* Content - fixed max height, no vertical scroll, text breaks */}
           <p 
-            className="text-sm 2xl:text-base leading-relaxed mb-4 flex-grow"
+            className="text-sm 2xl:text-base leading-relaxed mb-4 grow break-all line-clamp-5 "
             style={{ color: content.cardTextColor || '#374151' }}
           >
             {testimonial.content}
@@ -258,7 +255,7 @@ const baseIndex = testimonials.length;
             e.stopPropagation();
             goToPrevious();
           }}
-          className="p-2.5 rounded-full border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
+          className="p-2.5 rounded-full border-2 cursor-pointer border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
           aria-label="Previous testimonial"
         >
           <ArrowLeft size={18} className="text-gray-600" />
@@ -268,7 +265,7 @@ const baseIndex = testimonials.length;
             e.stopPropagation();
             goToNext();
           }}
-          className="p-2.5 rounded-full border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
+          className="p-2.5 rounded-full border-2 cursor-pointer border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
           aria-label="Next testimonial"
         >
           <ArrowRight size={18} className="text-gray-600" />
@@ -285,12 +282,25 @@ const baseIndex = testimonials.length;
 
   // Carousel Component - Infinite loop with seamless scrolling
   const Carousel = () => {
+    // Check screen size for 2XL detection
+    const [is2XL, setIs2XL] = useState(false);
+    
+    useEffect(() => {
+      const checkScreen = () => {
+        setIs2XL(window.innerWidth >= 1536); // 2XL screens (1536px+)
+      };
+      
+      checkScreen();
+      window.addEventListener('resize', checkScreen);
+      return () => window.removeEventListener('resize', checkScreen);
+    }, []);
+    
     // PREVIEW MODE (builder): 1 card until 2XL (1536px+)
-    // HOMEPAGE: 2 cards on LG+ (1024px+)
+    // HOMEPAGE: 2 cards on LG+ (1024px+), 2 cards on 2XL+
     let visibleCount: number;
     
     if (isPreviewMode) {
-      visibleCount = isMobile || isTablet ? 1 : 2;
+      visibleCount = isMobile || isTablet ? 1 : (is2XL ? 2 : 1);
     } else {
       visibleCount = isMobile ? 1 : 2;
     }
@@ -304,19 +314,21 @@ const baseIndex = testimonials.length;
         {/* Cards Container */}
         <div className="overflow-hidden">
           <div 
-            className="flex transition-transform duration-700 ease-in-out gap-4 lg:gap-6 my-4"
-       style={{
-  transform: `translateX(-${(currentIndex + baseIndex) * (100 / visibleCount)}%)`,
-  transition: 'transform 0.8s ease-in-out'
-}}
+            className="flex gap-6 my-4"
+            style={{
+              transform: `translateX(-${(currentIndex + offset) * (100 / visibleCount)}%)`,
+              transition: 'transform 1s cubic-bezier(0.4, 0.0, 0.2, 1)', // Smooth gliding animation
+              paddingLeft: '12px',
+              paddingRight: '12px'
+            }}
           >
             {infiniteTestimonials.map((testimonial: Testimonial, index: number) => (
               <div
                 key={`${testimonial.id}-${index}`}
-                className={`shrink-0 px-1 ${
+                className={`shrink-0 ${
                   visibleCount === 1 
                     ? 'w-full' 
-                    : 'w-1/2'
+                    : 'w-[calc(50%-12px)]'
                 }`}
               >
                 <TestimonialItem testimonial={testimonial} index={index % testimonials.length} />
@@ -375,7 +387,7 @@ const baseIndex = testimonials.length;
               e.stopPropagation();
               goToPrevious();
             }}
-            className="p-2 rounded-full border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all"
+            className="p-2 rounded-full border-2 cursor-pointer border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all"
           >
             <ArrowLeft size={16} className="text-gray-600" />
           </button>
@@ -384,7 +396,7 @@ const baseIndex = testimonials.length;
               e.stopPropagation();
               goToNext();
             }}
-            className="p-2 rounded-full border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all"
+            className="p-2 rounded-full border-2 cursor-pointer border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all"
           >
             <ArrowRight size={16} className="text-gray-600" />
           </button>
@@ -421,9 +433,9 @@ const baseIndex = testimonials.length;
     <section 
       ref={sectionRef}
       id={section?.id || "testimonials"}
-      className="w-full py-12 lg:py-18 px-4 sm:px-6 lg:px-8 xl:px-12 relative transition-colors duration-300"
+      className="w-full py-12 lg:py-18 px-4 sm:px-6 lg:px-8 xl:px-12 relative transition-colors duration-300 bg-white"
       style={{ 
-        backgroundColor: !isPreviewMode ? '#f3f4f6' : (content.backgroundColor || '#f9fafb'),
+        backgroundColor: content.backgroundColor || '#f9fafb',
         scrollMarginTop: '100px'
       }}
       onClick={() => onEdit && onEdit(section?.id || "testimonials", 'text', 'testimonials-header')}
@@ -449,6 +461,19 @@ const baseIndex = testimonials.length;
       >
         {/* Header - Rating and Title */}
         <div className="text-center mb-10 lg:mb-14">
+          {/* Dot Text Above Title */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div 
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: content.dotTextColor || '#111827' }}
+            />
+            <span 
+              className="text-sm font-semibold uppercase tracking-wider"
+              style={{ color: content.dotTextColor || '#111827' }}
+            >
+              {content.dotText || 'TESTIMONIALS'}
+            </span>
+          </div>
           <h2 
             className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-4 break-words px-4"
             style={{ color: content.textColor || '#111827' }}

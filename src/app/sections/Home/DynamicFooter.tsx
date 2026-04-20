@@ -209,7 +209,7 @@ const DynamicFooter: React.FC<DynamicFooterProps> = ({ sectionId, onEdit }) => {
                             {content.socialLinks.filter((link: any) => link.enabled).map((link: any) => (
                                 <div
                                     key={link.id}
-                                    className="group/icon w-12 h-12 rounded-full flex items-center justify-center cursor-pointer overflow-hidden transition-colors flex-shrink-0"
+                                    className="group/icon w-12 h-12 rounded-full flex items-center justify-center cursor-pointer overflow-hidden transition-colors flex-shrink-0 relative"
                                     style={{ 
                                         backgroundColor: content.styles.socialIconBackground,
                                         color: content.styles.socialIconColor 
@@ -222,6 +222,10 @@ const DynamicFooter: React.FC<DynamicFooterProps> = ({ sectionId, onEdit }) => {
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
+                                    {/* Shining effect overlay */}
+                                    <div className="absolute inset-0 opacity-0 group-hover/icon:opacity-100 transition-opacity duration-200">
+                                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent transform -translate-x-full group-hover/icon:translate-x-full transition-transform duration-500 ease-out"></div>
+                                    </div>
                                     <div className="relative w-6 h-6 overflow-hidden" style={{ color: content.styles.socialIconColor }}>
                                         {renderSocialIcon(link)}
                                     </div>

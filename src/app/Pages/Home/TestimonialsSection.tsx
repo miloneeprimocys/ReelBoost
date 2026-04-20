@@ -6,8 +6,6 @@ import { Edit3, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 interface Testimonial {
   id: string;
   name: string;
-  role: string;
-  company: string;
   content: string;
   avatar?: string;
   rating?: number;
@@ -84,14 +82,15 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
   // Calculate visible testimonials based on screen size
   const getVisibleTestimonials = () => {
     if (typeof window !== 'undefined') {
-      if (window.innerWidth >= 1024) return 3;
-      if (window.innerWidth >= 768) return 2;
-      return 1;
+      if (window.innerWidth >= 1536) return 2; // 2XL screens - show 2 cards
+      if (window.innerWidth >= 1024) return 3; // LG/XL screens - show 3 cards
+      if (window.innerWidth >= 768) return 2; // MD screens - show 2 cards
+      return 1; // SM screens - show 1 card
     }
-    return 3;
+    return 2; // Default to 2 for larger screens
   };
 
-  const [visibleCount, setVisibleCount] = useState(3);
+  const [visibleCount, setVisibleCount] = useState(2);
 
   useEffect(() => {
     const handleResize = () => {
@@ -106,9 +105,9 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
   return (
     <section 
       ref={sectionRef}
-      className="w-full py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 relative"
+      className="w-full py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 relative bg-white"
       style={{ 
-        backgroundColor: content.backgroundColor || '#f3f4f6',
+        backgroundColor: content.backgroundColor || '#f9fafb',
         scrollMarginTop: '100px'
       }}
       onClick={() => onEdit && onEdit(section?.id || "testimonials", 'text', 'testimonials-header')}
@@ -130,8 +129,24 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
       <div className={`max-w-6xl mx-auto transition-all duration-1000 ease-out delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
         {/* Header Section */}
         <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            Reviews from real people
+          {/* Dot Text Above Title */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div 
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: content.dotTextColor || '#111827' }}
+            />
+            <span 
+              className="text-sm font-semibold uppercase tracking-wider"
+              style={{ color: content.dotTextColor || '#111827' }}
+            >
+              {content.dotText || 'TESTIMONIALS'}
+            </span>
+          </div>
+          <h2 
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4"
+            style={{ color: content.textColor || '#111827' }}
+          >
+            {content.title || 'Reviews from real people'}
           </h2>
           
           {/* Trustpilot Rating */}
@@ -157,8 +172,11 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <Quote size={32} className="text-blue-600" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">
-              What our customers are saying
+            <h3 
+              className="text-xl sm:text-2xl font-semibold"
+              style={{ color: content.textColor || '#111827' }}
+            >
+              {content.subtitle || 'What our customers are saying'}
             </h3>
           </div>
         </div>
@@ -173,7 +191,7 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
                   e.stopPropagation();
                   goToPrevious();
                 }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+                className="absolute left-0 top-1/2 -translate-y-1/2 cursor-pointer -translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
                 aria-label="Previous testimonials"
               >
                 <ChevronLeft size={20} className="text-gray-700" />
@@ -183,7 +201,7 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
                   e.stopPropagation();
                   goToNext();
                 }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4  cursor-pointer z-10 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
                 aria-label="Next testimonials"
               >
                 <ChevronRight size={20} className="text-gray-700" />
@@ -194,9 +212,10 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
           {/* Testimonials Carousel */}
           <div className="overflow-hidden">
             <div 
-              className="flex transition-transform duration-300 ease-in-out gap-4 sm:gap-6 lg:gap-8"
+              className="flex transition-transform duration-500 ease-in-out gap-4 sm:gap-6 lg:gap-8"
               style={{
-                transform: `translateX(-${(currentIndex * 100) / visibleCount}%)`
+                transform: `translateX(-${(currentIndex * 100) / visibleCount}%)`,
+                width: `${(testimonials.length * 100) / visibleCount}%`
               }}
             >
               {testimonials.map((testimonial: Testimonial, index: number) => (
@@ -204,7 +223,7 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
                   key={testimonial.id}
                   className={`shrink-0 w-full ${
                     visibleCount === 3 ? 'lg:w-1/3' : 
-                    visibleCount === 2 ? 'md:w-1/2' : 
+                    visibleCount === 2 ? 'md:w-1/2 2xl:w-1/2' : 
                     'w-full'
                   } px-2`}
                 >
@@ -232,8 +251,8 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
                       {renderStars(testimonial.rating || 5)}
                     </div>
 
-                    {/* Content */}
-                    <p className="text-gray-700 mb-6 text-sm sm:text-base leading-relaxed">
+                    {/* Content - with text wrapping */}
+                    <p className="text-gray-700 mb-6 text-sm sm:text-base leading-relaxed break-all line-clamp-5">
                       {testimonial.content}
                     </p>
 
@@ -247,9 +266,6 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ section, onEd
                           <h4 className="font-semibold text-gray-900 text-sm sm:text-base">
                             {testimonial.name}
                           </h4>
-                          <p className="text-xs sm:text-sm text-gray-500">
-                            {testimonial.role} {testimonial.company && `@ ${testimonial.company}`}
-                          </p>
                         </div>
                       </div>
                       <span className="text-xs text-gray-400">

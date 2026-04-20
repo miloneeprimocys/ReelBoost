@@ -79,6 +79,16 @@ const SecondSection: React.FC<SecondSectionProps> = ({ sectionId }) => {
       featureDescriptionColor: '#4B5563'
     };
 
+    console.log('=== SecondSection Content Debug ===');
+    console.log('sectionId:', sectionId);
+    console.log('section:', section);
+    console.log('content.title:', content.title);
+    console.log('content.description:', content.description);
+    console.log('content.features:', content.features);
+    console.log('content.backgroundColor:', content.backgroundColor);
+    console.log('content.backgroundImage:', content.backgroundImage);
+    console.log('==============================');
+
     useEffect(() => {
         setIsMounted(true);
         const observer = new IntersectionObserver(

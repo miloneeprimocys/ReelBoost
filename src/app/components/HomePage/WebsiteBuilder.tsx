@@ -55,6 +55,8 @@ import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
 import NavbarEditor from "./WebsiteBuilder/NavbarEditor";
 import FooterEditor from "./WebsiteBuilder/FooterEditor";
 import TestimonialsEditor from "./WebsiteBuilder/TestimonialsEditor";
+import FaqEditor from "./WebsiteBuilder/FaqEditor";
+import SubscriptionPlanEditor from "./WebsiteBuilder/SubscriptionPlanEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 
 // Import homepage section components for preview
@@ -68,6 +70,8 @@ import DynamicBanner from "../../sections/Home/DynamicBanner";
 import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 import DynamicFeatures from "../../sections/Home/DynamicFeatures";
 import DynamicTestimonials from "../../sections/Home/DynamicTestimonials";
+import DynamicFaq from "../../sections/Home/DynamicFaq";
+import DynamicSubscriptionPlan from "../../sections/Home/DynamicSubscriptionPlan";
 import DynamicFooter from "../../sections/Home/DynamicFooter";
 import DynamicNavbar from "../../sections/Home/DynamicNavbar";
 
@@ -87,6 +91,12 @@ const WebsiteBuilder: React.FC = () => {
   
   // Create a ref for the preview container
   const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to track if banner section selection came from sidebar (not preview click)
+  const bannerSelectionFromSidebar = useRef(false);
+  
+  // Ref to track if regular section selection came from sidebar (not preview click)
+  const sectionSelectionFromSidebar = useRef(false);
   
   // Sections-level undo/redo handlers for SectionList
   const handleSectionsUndo = () => {
@@ -228,31 +238,105 @@ const WebsiteBuilder: React.FC = () => {
     };
   }, [handleSectionsUndo, handleSectionsRedo]);
 
+  // Track if this is the initial render to prevent auto-opening editors
+  const isInitialRender = useRef(true);
+  
+  useEffect(() => {
+    isInitialRender.current = false;
+  }, []);
+
   // Update editorSection when activeSection changes
   useEffect(() => {
-    console.log('WebsiteBuilder useEffect:', { activeSection, activeBannerSection });
+    // Skip on initial render to prevent auto-opening editors
+    if (isInitialRender.current) {
+      return;
+    }
+    
+    // Only update if editingOverlay is not already set
+    // This prevents overriding when user clicks on a section
+    if (editingOverlay?.isOpen && editingOverlay?.sectionId) {
+      return;
+    }
     
     if (activeSection) {
+      // Skip opening editor if section was selected from sidebar (not preview click)
+      if (sectionSelectionFromSidebar.current) {
+        sectionSelectionFromSidebar.current = false; // Reset flag
+        return;
+      }
+      
       const section = sections.find(s => s.id === activeSection);
-      console.log('Found section:', section);
       
       if (section) {
-        if (section.type === 'features') {
-          // Don't auto-open features editor - only open on manual click
-          console.log('Features section activated:', section.id);
-        } else if (section.type === 'benefits') {
-          // Don't auto-open benefits editor - only open on manual click
-          console.log('Benefits section activated:', section.id);
+        // Only open editor for specific existing sections
+        if ((section.id === 'fourth-1' && section.type === 'fourth') || section.type === 'features') {
+          dispatch(setEditingOverlay({
+            isOpen: true,
+            sectionId: section.id,
+            sectionType: 'features',
+            contentType: 'text'
+          }));
+        } else if (section.id === 'faq-1' && section.type === 'faq') {
+          dispatch(setEditingOverlay({
+            isOpen: true,
+            sectionId: section.id,
+            sectionType: 'faq',
+            contentType: 'text'
+          }));
+        } else if (section.type === 'hero') {
+          dispatch(setEditingOverlay({
+            isOpen: true,
+            sectionId: section.id,
+            sectionType: 'hero',
+            contentType: 'text'
+          }));
+        } else if (section.type === 'fifth') {
+          dispatch(setEditingOverlay({
+            isOpen: true,
+            sectionId: section.id,
+            sectionType: 'admin',
+            contentType: 'admin'
+          }));
+        } else if (section.type === 'sixth') {
+          dispatch(setEditingOverlay({
+            isOpen: true,
+            sectionId: section.id,
+            sectionType: 'benefits',
+            contentType: 'text'
+          }));
         } 
+        else if (section.type === 'testimonials') {
+          dispatch(setEditingOverlay({
+            isOpen: true,
+            sectionId: section.id,
+            sectionType: 'testimonials',
+            contentType: 'text'
+          }));
+        }
       }
     } else if (activeBannerSection) {
-      // Look for banner section in both builder and banner slices
-      const section = bannerSections.find(s => s.id === activeBannerSection) || 
-                   sections.find(s => s.id === activeBannerSection && s.type === 'banner');
+      // Skip opening editor if section was selected from sidebar (not preview click)
+      if (bannerSelectionFromSidebar.current) {
+        bannerSelectionFromSidebar.current = false; // Reset flag
+        return;
+      }
+      // Open BannerEditor for all banner sections (second-1, third-1, and new banner sections)
+      const section = bannerSections.find(s => s.id === activeBannerSection) ||
+                   sections.find(s => s.id === activeBannerSection);
       if (section) {
         dispatch(openEditor({ section }));
+        // Use the actual section type instead of always 'banner'
+        // This ensures second-1 gets type 'second', third-1 gets type 'third', etc.
+        const sectionType = section.type || 'banner';
+        dispatch(setEditingOverlay({
+          isOpen: true,
+          sectionId: section.id,
+          sectionType: sectionType,
+          contentType: 'text'
+        }));
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection, activeBannerSection, sections, bannerSections, dispatch]);
 
   // Handle hash scroll on page load
@@ -326,6 +410,10 @@ const WebsiteBuilder: React.FC = () => {
   // Mobile navigation state
   const [mobileView, setMobileView] = useState<'list' | 'preview'>('list');
   
+  // Drag and drop state for preview
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [draggedSectionType, setDraggedSectionType] = useState<string | null>(null);
+  
 
 
   // Handle active banner section change
@@ -368,19 +456,6 @@ const WebsiteBuilder: React.FC = () => {
     console.log('bannerSections:', bannerSections);
     console.log('isBuilderMode:', isBuilderMode);
   }, [activeBannerSection, showEditorOnMobile, isMobile, bannerSections, isBuilderMode]);
-useEffect(() => {
-  // Only set default hero if we're in builder mode, no sections are active,
-  // AND we haven't recently worked with banner sections
-  if (isBuilderMode && !activeSection && !activeBannerSection && !activeAdminSection) {
-    const defaultHeroSection = sections.find(s => s.id === 'hero-1');
-    if (defaultHeroSection) {
-      console.log('Setting default hero section:', defaultHeroSection.id);
-      dispatch(setActiveSection(defaultHeroSection.id));
-    }
-  } else {
-    console.log('NOT setting default hero - isBuilderMode:', isBuilderMode, 'activeSection:', activeSection, 'activeBannerSection:', activeBannerSection);
-  }
-}, [isBuilderMode, activeSection, activeBannerSection, activeAdminSection, sections, dispatch]);
 
 
 
@@ -454,17 +529,46 @@ useEffect(() => {
   // Case 1: Both are builder sections (not banners)
   if (!isDraggedBanner && !isTargetBanner) {
     console.log('Reordering builder sections');
-    // Use the indices directly from dragSections since that's what's displayed
-    // Create a filtered array of builder sections from dragSections to get correct indices
-    const builderSectionsInDragSections = dragSections.filter(s => s.source === 'builder');
-    const builderDragIndex = builderSectionsInDragSections.findIndex(s => s.id === draggedSection.id);
-    const builderTargetIndex = builderSectionsInDragSections.findIndex(s => s.id === targetSection.id);
     
-    console.log('builderDragIndex:', builderDragIndex, 'builderTargetIndex:', builderTargetIndex);
-    console.log('Builder sections in dragSections:', builderSectionsInDragSections.map(s => s.id));
+    // Check if dragged section is live streaming or pk battle that should be converted to banner
+    const isLiveStreamingSection = draggedSection.id === 'second-1' || draggedSection.name?.includes('Live Streaming');
+    const isPKBattleSection = draggedSection.id === 'third-1' || draggedSection.name?.includes('PK Battle');
     
-    if (builderDragIndex !== -1 && builderTargetIndex !== -1) {
-      dispatch(reorderSections({ fromIndex: builderDragIndex, toIndex: builderTargetIndex }));
+    if (isLiveStreamingSection || isPKBattleSection) {
+      console.log('Converting live streaming or pk battle section to banner section');
+      
+      // Add a new banner section with appropriate content
+      const allOrders = [
+        ...sections.map(s => s.order || 0),
+        ...bannerSections.map(s => s.order || 0),
+        ...adminSections.map(s => s.order || 0)
+      ];
+      const maxOrder = Math.max(...allOrders, 0);
+      
+      // Save current state to history before adding
+      dispatch(updateSectionsHistory({ bannerSections }));
+      
+      // Add the appropriate banner section type
+      if (isLiveStreamingSection) {
+        dispatch(addBannerSection({ type: 'live-streaming', maxOrder }));
+      } else if (isPKBattleSection) {
+        dispatch(addBannerSection({ type: 'pk-battle', maxOrder }));
+      }
+      
+      console.log(`${isLiveStreamingSection ? 'Live Streaming' : 'PK Battle'} section converted to banner`);
+    } else {
+      // Regular builder section reordering
+      // Create a filtered array of builder sections from dragSections to get correct indices
+      const builderSectionsInDragSections = dragSections.filter(s => s.source === 'builder');
+      const builderDragIndex = builderSectionsInDragSections.findIndex(s => s.id === draggedSection.id);
+      const builderTargetIndex = builderSectionsInDragSections.findIndex(s => s.id === targetSection.id);
+      
+      console.log('builderDragIndex:', builderDragIndex, 'builderTargetIndex:', builderTargetIndex);
+      console.log('Builder sections in dragSections:', builderSectionsInDragSections.map(s => s.id));
+      
+      if (builderDragIndex !== -1 && builderTargetIndex !== -1) {
+        dispatch(reorderSections({ fromIndex: builderDragIndex, toIndex: builderTargetIndex }));
+      }
     }
   } 
   // Case 2: Both are banner sections
@@ -780,12 +884,129 @@ useEffect(() => {
     // Convert Map to array and sort by order (same as SectionList)
     const allSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
     
-        
+    console.log('Rendering sections in preview:', allSections.map(s => ({ id: s.id, name: s.name, type: s.type, source: s.source })));
+    
+    const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(true);
+    };
+    
+    const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+    };
+    
+    const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      
+      const sectionData = e.dataTransfer.getData('text/plain');
+      if (sectionData) {
+        try {
+          const section = JSON.parse(sectionData);
+          console.log('Dropped section:', section);
+          console.log('Section ID:', section.id, 'Section name:', section.name, 'Section type:', section.type);
+          
+          // Check if it's a banner section (Live Streaming or PK Battle should both create new banner)
+          const isBannerTypeSection = section.id === 'second-1' || section.id === 'third-1' || 
+                                     section.name?.includes('Live Streaming') || 
+                                     section.name?.includes('PK Battle') ||
+                                     section.type === 'banner';
+          
+          console.log('Is Banner Section:', isBannerTypeSection, 'Section:', section.id, section.name);
+          
+          // Calculate the max order for new section
+          const allOrders = [
+            ...sections.map(s => s.order || 0),
+            ...bannerSections.map(s => s.order || 0),
+            ...adminSections.map(s => s.order || 0)
+          ];
+          const maxOrder = Math.max(...allOrders, 0);
+          
+          // Map section types to their add section equivalents (like the tab buttons)
+          let sectionTypeToAdd: string;
+          let sectionName: string;
+          
+          if (isBannerTypeSection) {
+            console.log(`🎯 Detected Banner section - creating NEW banner section in builderSlice`);
+            console.log(`   Original: ${section.id} (${section.name})`);
+            
+            // Determine if it's Live Streaming or PK Battle based on name
+            const isLiveStreaming = section.name?.includes('Live Streaming') || section.id === 'second-1';
+            const isPKBattle = section.name?.includes('PK Battle') || section.id === 'third-1';
+            const bannerType = isLiveStreaming ? 'live-streaming' : isPKBattle ? 'pk-battle' : 'banner';
+            const bannerName = isLiveStreaming ? 'Live Streaming Section' : isPKBattle ? 'PK Battle Section' : 'Banner Section';
+            
+            // Add new banner section to builderSlice (not bannerSlice) for consistency
+            dispatch(addSectionAndSetActive({ 
+              type: bannerType as any, 
+              name: bannerName
+            }));
+            
+            console.log(`✅ New banner section dispatched to builderSlice with type: ${bannerType}`);
+          } else {
+            // Map other section types
+            switch (section.type) {
+              case 'hero':
+                sectionTypeToAdd = 'hero';
+                sectionName = 'Text and Image';
+                break;
+              case 'fifth':
+                sectionTypeToAdd = 'fifth';
+                sectionName = 'Admin Panel';
+                break;
+              case 'sixth':
+              case 'benefits':
+                sectionTypeToAdd = 'benefits';
+                sectionName = 'Benefits';
+                break;
+              case 'testimonials':
+                sectionTypeToAdd = 'testimonials';
+                sectionName = 'Testimonials';
+                break;
+              case 'faq':
+                sectionTypeToAdd = 'faq';
+                sectionName = 'FAQ';
+                break;
+              case 'features':
+              case 'fourth':
+                sectionTypeToAdd = 'features';
+                sectionName = 'Features';
+                console.log('📋 Features section will use getDefaultContent - checking backgroundColor...');
+                break;
+              default:
+                sectionTypeToAdd = section.type;
+                sectionName = section.name || `${section.type} Section`;
+            }
+            
+            console.log(`🎯 Creating NEW ${sectionName} section (${sectionTypeToAdd}) from drag`);
+            console.log(`   Original: ${section.id} (${section.type})`);
+            console.log(`   Will create: NEW ${sectionTypeToAdd} with fresh demo content via getDefaultContent()`);
+            
+            // Add new section WITHOUT passing content - forces use of getDefaultContent()
+            dispatch(addSectionAndSetActive({ 
+              type: sectionTypeToAdd as any, 
+              name: sectionName
+              // Intentionally NOT passing content - this ensures getDefaultContent() is called
+            }));
+            
+            console.log(`✅ New ${sectionName} section dispatched`);
+          }
+        } catch (error) {
+          console.error('Error parsing dropped section data:', error);
+        }
+      }
+      
+      setDraggedSectionType(null);
+    };
+    
     return (
       <div ref={previewRef} className="flex-1 bg-white overflow-y-auto" id="preview-container">
         <div className="min-h-full flex flex-col lg:flex-col md:flex-col">
           {/* Dynamic Navbar */}
           <DynamicNavbar />
+          
+          {/* Render existing sections */}
           {allSections.map((section) => {
             // Only render section if it's visible
             if (!section.visible) return null;
@@ -805,26 +1026,8 @@ useEffect(() => {
                     contentType
                   }));
                 }} />;
-              case 'second':
-                return <SecondSection key={section.id} sectionId={section.id} />;
-              case 'third':
-                return <ThirdSection key={section.id} sectionId={section.id} />;
-              case 'fourth':
-                return <FourthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  console.log('Fourth section clicked:', { sectionId, contentType, elementId });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionId,
-                    sectionType: 'features',
-                    contentType
-                  }));
-                }} />;
               case 'banner':
-                return <DynamicBanner key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
+                return <DynamicBanner key={section.id} sectionId={section.id} onEdit={(sectionId, contentType: 'text' | 'style' | 'image', elementId) => {
                   // On mobile, switch to preview view first, then open editor
                   if (isMobile) {
                     setMobileView('preview');
@@ -852,6 +1055,7 @@ useEffect(() => {
                   }));
                 }} />;
               case 'features':
+              case 'fourth':
                 return <DynamicFeatures 
                   key={section.id} 
                   section={section} 
@@ -923,72 +1127,54 @@ useEffect(() => {
                     contentType
                   }));
                 }} />;
+              case 'faq':
+                return <DynamicFaq key={section.id} section={section} onEdit={(sectionId, contentType, elementId) => {
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'faq',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
+              case 'subscription-plan':
+                return <DynamicSubscriptionPlan key={section.id} section={section} onEdit={(sectionId, contentType, elementId) => {
+                  // On mobile, switch to preview view first, then open editor
+                  if (isMobile) {
+                    setMobileView('preview');
+                  }
+                  dispatch(setEditingOverlay({
+                    isOpen: true,
+                    sectionType: 'subscription-plan',
+                    sectionId,
+                    contentType
+                  }));
+                }} />;
               default:
                 return null;
             }
           })}
           
-          {/* Add New Section Options */}
-          <div className="border-t-2 border-dashed border-gray-300 p-8 bg-gray-50" data-add-section-options>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Add New Section</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
-              <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'hero', name: 'Hero Section' }));
-                }}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Text and Image</div>
-                <div className="text-sm text-gray-500">Hero section</div>
-              </button>
-              
-              <button
-                onClick={handleAddBannerSection}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Banner</div>
-                <div className="text-sm text-gray-500">Promotional</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'features', name: 'Features Section' }));
-                }}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Features</div>
-                <div className="text-sm text-gray-500">Showcase</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'fifth', name: 'Admin Panel Section' }));
-                }}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Admin Panel</div>
-                <div className="text-sm text-gray-500">Dashboard</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'benefits', name: 'Benefits Section' }));
-                }}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Benefits</div>
-                <div className="text-sm text-gray-500">Highlight advantages</div>
-              </button>
-              
-              <button
-                onClick={() => {
-                  dispatch(addSectionAndSetActive({ type: 'testimonials', name: 'Testimonials Section' }));
-                }}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Testimonials</div>
-                <div className="text-sm text-gray-500">Customer reviews</div>
-              </button>
+          {/* Add New Section Drop Zone - Drag from section list to add */}
+          <div 
+            className={`border-t-2 border-dashed p-12 bg-gray-50 transition-colors min-h-50 flex items-center justify-center ${
+              isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+            }`} 
+            data-add-section-options
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {isDragOver ? 'Drop section here' : 'Add New Section'}
+              </h3>
+              <p className="text-gray-500">
+                {isDragOver ? 'Release to add this section' : 'Drag a section from the left panel(Section List) and drop it here'}
+              </p>
             </div>
           </div>
           
@@ -1045,15 +1231,50 @@ useEffect(() => {
         </div>
         
         <div className="flex-1 h-full overflow-hidden">
-          {editingOverlay.sectionType === 'navbar' ? <NavbarEditor /> :
-           editingOverlay.sectionType === 'banner' ? <BannerEditor /> : 
-           editingOverlay.sectionType === 'hero' ? <HeroEditor /> : 
-           editingOverlay.sectionType === 'features' ? <FeaturesEditor /> : 
-           editingOverlay.sectionType === 'benefits' ? <BenefitsEditor /> :
-           editingOverlay.sectionType === 'footer' ? <FooterEditor /> :
-           editingOverlay.sectionType === 'testimonials' ? <TestimonialsEditor /> :
-           editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth') ? <BenefitsEditor /> : 
-           editingOverlay.sectionType === 'admin' ? <AdminEditor /> : null}
+          {(() => {
+            console.log('=== Editor Conditional Rendering ===');
+            console.log('editingOverlay:', editingOverlay);
+            console.log('sectionType:', editingOverlay.sectionType);
+            console.log('sectionId:', editingOverlay.sectionId);
+            
+            if (editingOverlay.sectionType === 'navbar') {
+              console.log('Rendering NavbarEditor');
+              return <NavbarEditor />;
+            } else if (editingOverlay.sectionType === 'banner' || editingOverlay.sectionType === 'second' || editingOverlay.sectionType === 'third') {
+              console.log('Rendering BannerEditor for type:', editingOverlay.sectionType);
+              return <BannerEditor />;
+            } else if (editingOverlay.sectionType === 'hero') {
+              console.log('Rendering HeroEditor');
+              return <HeroEditor />;
+            } else if (editingOverlay.sectionType === 'features') {
+              console.log('Rendering FeaturesEditor');
+              return <FeaturesEditor />;
+            } else if (editingOverlay.sectionType === 'benefits') {
+              console.log('Rendering BenefitsEditor');
+              return <BenefitsEditor />;
+            } else if (editingOverlay.sectionType === 'footer') {
+              console.log('Rendering FooterEditor');
+              return <FooterEditor />;
+            } else if (editingOverlay.sectionType === 'testimonials') {
+              console.log('Rendering TestimonialsEditor');
+              return <TestimonialsEditor />;
+            } else if (editingOverlay.sectionType === 'faq') {
+              console.log('Rendering FaqEditor');
+              return <FaqEditor />;
+            } else if (editingOverlay.sectionType === 'subscription-plan') {
+              console.log('Rendering SubscriptionPlanEditor');
+              return <SubscriptionPlanEditor />;
+            } else if (editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth')) {
+              console.log('Rendering BenefitsEditor (for sixth section)');
+              return <BenefitsEditor />;
+            } else if (editingOverlay.sectionType === 'admin') {
+              console.log('Rendering AdminEditor');
+              return <AdminEditor />;
+            } else {
+              console.log('No editor matched, returning null');
+              return null;
+            }
+          })()}
         </div>
         
         {/* Action Buttons */}
@@ -1140,8 +1361,11 @@ useEffect(() => {
                 onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
                 onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
                 onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
+                onScrollToSection={scrollToSection}
                 onSetActive={(id) => {
                   console.log('*** onSetActive called with id:', id);
+                  // Mark that selection came from sidebar (not preview click)
+                  sectionSelectionFromSidebar.current = true;
                   dispatch(setActiveSection(id));
                   dispatch(setActiveBannerSection(null));
                   dispatch(setActiveAdminSection(null));
@@ -1156,6 +1380,8 @@ useEffect(() => {
                 }}
                 onSetActiveBanner={(id) => {
                   console.log('*** onSetActiveBanner called with id:', id);
+                  // Mark that selection came from sidebar (not preview click)
+                  bannerSelectionFromSidebar.current = true;
                   dispatch(setActiveBannerSection(id));
                   dispatch(setActiveSection(null));
                   dispatch(setActiveAdminSection(null));
@@ -1277,6 +1503,7 @@ useEffect(() => {
               onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
               onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
               onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
+              onScrollToSection={scrollToSection}
               onSetActive={(id) => {
                 console.log('*** onSetActive called with id:', id);
                 dispatch(setActiveSection(id));

@@ -63,8 +63,6 @@ const TestimonialsEditor: React.FC = () => {
   // Local state for new testimonial form
   const [newTestimonial, setNewTestimonial] = useState<Partial<Testimonial>>({
     name: '',
-    role: '',
-    company: '',
     content: '',
     rating: 5
   });
@@ -73,10 +71,12 @@ const TestimonialsEditor: React.FC = () => {
   const updateContent = useCallback((updates: Partial<TestimonialsContent>) => {
     const updatedContent = { ...content, ...updates };
     
-    // Always force light gray when saving to section (homepage will override anyway)
-    updatedContent.backgroundColor = '#f3f4f6';
-    updatedContent.textColor = '#111827';
+    // Ensure backgroundColor is always set to prevent dark background issues
+    if (!updatedContent.backgroundColor) {
+      updatedContent.backgroundColor = content.backgroundColor || '#f9fafb';
+    }
     
+    // Save all user changes without any overrides - let DynamicTestimonials handle homepage protection
     if (section) {
       dispatch(updateSectionContent({ id: section.id, content: updatedContent }));
     }
@@ -94,6 +94,34 @@ const TestimonialsEditor: React.FC = () => {
       dispatch(setEditingSection({ sectionId: section.id, field: null }));
     }
   }, [section?.id, dispatch]);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + Z (Undo) or Ctrl/Cmd + Y (Redo)
+      const isModifier = e.ctrlKey || e.metaKey;
+      
+      if (isModifier) {
+        if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Ctrl/Cmd + Shift + Z = Redo
+            handleRedo();
+          } else {
+            // Ctrl/Cmd + Z = Undo
+            handleUndo();
+          }
+        } else if (e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          // Ctrl/Cmd + Y = Redo
+          handleRedo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [section, canUndo, canRedo]);
 
   const handleClose = () => {
     dispatch(closeEditor());
@@ -121,8 +149,6 @@ const TestimonialsEditor: React.FC = () => {
     const testimonial: Testimonial = {
       id: Date.now().toString(),
       name: newTestimonial.name || 'New Testimonial',
-      role: newTestimonial.role || '',
-      company: newTestimonial.company || '',
       content: newTestimonial.content || '',
       rating: newTestimonial.rating || 5,
       avatar: newTestimonial.avatar || ''
@@ -133,8 +159,6 @@ const TestimonialsEditor: React.FC = () => {
     
     setNewTestimonial({
       name: '',
-      role: '',
-      company: '',
       content: '',
       rating: 5,
       avatar: ''
@@ -293,6 +317,35 @@ const TestimonialsEditor: React.FC = () => {
                 />
               </div>
               
+              {/* Dot Text Settings */}
+              <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                <label className="block text-sm font-semibold text-gray-800 mb-3">Dot Text (Above Title)</label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="showDotText"
+                      checked={content.showDotText !== false}
+                      onChange={(e) => updateContent({ showDotText: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="showDotText" className="text-sm font-medium text-gray-700">
+                      Show dot text above title (Currently always visible for testing)
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Dot Text Content</label>
+                    <input
+                      type="text"
+                      value={content.dotText || ''}
+                      onChange={(e) => updateContent({ dotText: e.target.value })}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 text-sm"
+                      placeholder="TESTIMONIALS"
+                    />
+                  </div>
+                </div>
+              </div>
+              
               {/* Auto-calculated info */}
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                 <p className="text-sm text-blue-700">
@@ -309,19 +362,24 @@ const TestimonialsEditor: React.FC = () => {
                 <label className="block text-sm font-semibold text-gray-800 mb-3">Colors</label>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Background Color</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Background Color <span className="text-red-500">*</span>
+                    </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
-                        value={content.backgroundColor || '#f9fafb'}
+                        value={content.backgroundColor ?? '#f9fafb'}
                         onChange={(e) => updateContent({ backgroundColor: e.target.value })}
                         className="w-8 h-8 rounded cursor-pointer border-0"
+                        required
                       />
                       <input
                         type="text"
-                        value={content.backgroundColor || '#f9fafb'}
+                        value={content.backgroundColor ?? '#f9fafb'}
                         onChange={(e) => updateContent({ backgroundColor: e.target.value })}
                         className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                        placeholder="#f9fafb"
+                        required
                       />
                     </div>
                   </div>
@@ -410,6 +468,23 @@ const TestimonialsEditor: React.FC = () => {
                       />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Dot Text Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={content.dotTextColor || '#111827'}
+                        onChange={(e) => updateContent({ dotTextColor: e.target.value })}
+                        className="w-8 h-8 rounded cursor-pointer border-0"
+                      />
+                      <input
+                        type="text"
+                        value={content.dotTextColor || '#111827'}
+                        onChange={(e) => updateContent({ dotTextColor: e.target.value })}
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -481,28 +556,6 @@ const TestimonialsEditor: React.FC = () => {
                         placeholder="John Doe"
                       />
                     </div>
-                    <div className="flex gap-3">
-                      <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-                        <input
-                          type="text"
-                          value={newTestimonial.role || ''}
-                          onChange={(e) => setNewTestimonial({ ...newTestimonial, role: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm"
-                          placeholder="CEO"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Company</label>
-                        <input
-                          type="text"
-                          value={newTestimonial.company || ''}
-                          onChange={(e) => setNewTestimonial({ ...newTestimonial, company: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm"
-                          placeholder="Company Inc"
-                        />
-                      </div>
-                    </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Rating</label>
                       <div className="flex gap-1">
@@ -521,13 +574,22 @@ const TestimonialsEditor: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Testimonial Content *</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Testimonial Content * 
+                        <span className={`ml-1 text-xs ${(newTestimonial.content?.length || 0) > 100 ? 'text-red-500' : 'text-gray-400'}`}>
+                          ({newTestimonial.content?.length || 0}/100)
+                        </span>
+                      </label>
                       <textarea
                         value={newTestimonial.content || ''}
-                        onChange={(e) => setNewTestimonial({ ...newTestimonial, content: e.target.value })}
+                        onChange={(e) => {
+                          const text = e.target.value.slice(0, 100);
+                          setNewTestimonial({ ...newTestimonial, content: text });
+                        }}
                         rows={3}
+                        maxLength={100}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm resize-none"
-                        placeholder="Write the testimonial content here..."
+                        placeholder="Enter testimonial content (max 100 characters)..."
                       />
                     </div>
                     <div className="flex gap-2">
@@ -544,8 +606,6 @@ const TestimonialsEditor: React.FC = () => {
                           setIsAddingNew(false);
                           setNewTestimonial({
                             name: '',
-                            role: '',
-                            company: '',
                             content: '',
                             rating: 5,
                             avatar: ''
@@ -611,7 +671,6 @@ const TestimonialsEditor: React.FC = () => {
                         {/* Name */}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 text-sm truncate">{testimonial.name || 'Unnamed'}</p>
-                          <p className="text-xs text-gray-500 truncate">{testimonial.role}{testimonial.company ? ` @ ${testimonial.company}` : ''}</p>
                         </div>
                         
                         {/* Star Rating Display */}
@@ -685,30 +744,6 @@ const TestimonialsEditor: React.FC = () => {
                             />
                           </div>
                           
-                          {/* Role & Company */}
-                          <div className="flex gap-3">
-                            <div className="flex-1">
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-                              <input
-                                type="text"
-                                value={testimonial.role}
-                                onChange={(e) => handleUpdateTestimonial(testimonial.id, { role: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm"
-                                placeholder="Role"
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Company</label>
-                              <input
-                                type="text"
-                                value={testimonial.company}
-                                onChange={(e) => handleUpdateTestimonial(testimonial.id, { company: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm"
-                                placeholder="Company"
-                              />
-                            </div>
-                          </div>
-                          
                           {/* Star Rating */}
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Rating</label>
@@ -730,13 +765,22 @@ const TestimonialsEditor: React.FC = () => {
                           
                           {/* Content */}
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Testimonial Content</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Testimonial Content
+                              <span className={`ml-1 text-xs ${(testimonial.content?.length || 0) > 100 ? 'text-red-500' : 'text-gray-400'}`}>
+                                ({testimonial.content?.length || 0}/100)
+                              </span>
+                            </label>
                             <textarea
                               value={testimonial.content}
-                              onChange={(e) => handleUpdateTestimonial(testimonial.id, { content: e.target.value })}
+                              onChange={(e) => {
+                                const text = e.target.value.slice(0, 100);
+                                handleUpdateTestimonial(testimonial.id, { content: text });
+                              }}
                               rows={3}
+                              maxLength={100}
                               className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm resize-none"
-                              placeholder="Testimonial content..."
+                              placeholder="Testimonial content (max 100 characters)..."
                             />
                           </div>
                           

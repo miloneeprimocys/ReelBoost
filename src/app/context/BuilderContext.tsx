@@ -162,7 +162,7 @@ const getDefaultContent = (type: SectionConfig['type']) => {
         title: 'Banner Title',
         description: 'Banner description.',
         buttonText: 'Click Here',
-        backgroundColor: '#f3f4f6',
+        backgroundColor: '#f9fafb',
         textColor: '#111827',
         layout: 'center' as const
       };

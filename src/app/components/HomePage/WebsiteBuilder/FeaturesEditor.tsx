@@ -181,6 +181,7 @@ const FeaturesEditor: React.FC = () => {
   }));
   
   // Use section content if available, otherwise use features content
+  // Only runs when section ID changes to avoid race conditions with local edits
   React.useEffect(() => {
     if (section && section.content) {
       const newContent = { ...featuresContent, ...section.content };
@@ -190,14 +191,6 @@ const FeaturesEditor: React.FC = () => {
       setLocalContent(featuresContent);
     }
   }, [section?.id]);
-
-  // Listen to section content changes for undo/redo
-  React.useEffect(() => {
-    if (section && section.content) {
-      const newContent = { ...featuresContent, ...section.content };
-      setLocalContent(newContent);
-    }
-  }, [section?.content, JSON.stringify(section?.content)]);
 
   // Set first feature as expanded when features change or component loads
   React.useEffect(() => {

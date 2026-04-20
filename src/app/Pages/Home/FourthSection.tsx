@@ -250,15 +250,15 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         <div 
                             onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')} 
                             className="transition-all duration-300 hover:-translate-y-2 md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col justify-between overflow-hidden"
-                            style={{ backgroundColor: content.cards[0]?.backgroundColor || '#F1F3EE' }}
+                            style={{ backgroundColor: content?.cards?.[0]?.backgroundColor || '#F1F3EE' }}
                         >
                             <div className="flex flex-col h-full">
                                 <div className="flex-1 flex items-center justify-center min-h-[200px] mb-4">
-                                    {(content.cards[0]?.image) && (
+                                    {(content?.cards[0]?.image) && (
                                         <div 
                                             className="w-full h-full bg-contain bg-no-repeat bg-center"
                                             style={{ 
-                                                backgroundImage: `url(${content.cards[0].image})`,
+                                                backgroundImage: `url(${content?.cards[0].image})`,
                                                 backgroundSize: 'contain',
                                                 backgroundPosition: 'center'
                                             }}
@@ -266,11 +266,11 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                                     )}
                                 </div>
                                 <div className="text-center">
-                                    <h3 className="text-[26px] xl:text-[28px] font-medium tracking-tight" style={{ color: content.cardTitleColor || '#111827' }}>
-                                        {content.cards[0]?.title || 'Wallet'}
+                                    <h3 className="text-[26px] xl:text-[28px] font-medium tracking-tight" style={{ color: content?.cardTitleColor || '#111827' }}>
+                                        {content?.cards[0]?.title || 'Wallet'}
                                     </h3>
-                                    <p className="text-[13px] md:text-[14px] mt-2" style={{ color: content.cardDescriptionColor || '#4B5563' }}>
-                                        {content.cards[0]?.description || 'The wallet allows users to securely manage their balance.'}
+                                    <p className="text-[13px] md:text-[14px] mt-2" style={{ color: content?.cardDescriptionColor || '#4B5563' }}>
+                                        {content?.cards[0]?.description || 'The wallet allows users to securely manage their balance.'}
                                     </p>
                                 </div>
                             </div>
@@ -282,27 +282,27 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         <div 
                             className="md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col transition-all duration-300 hover:-translate-y-2 overflow-hidden md:order-2 lg:order-3" 
                             onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
-                            style={{ backgroundColor: content.cards[1]?.backgroundColor || '#F1F3EE' }}
+                            style={{ backgroundColor: content?.cards[1]?.backgroundColor || '#F1F3EE' }}
                         >
                             <div className="flex flex-col h-full">
                                 <div className="text-center mb-4">
                                     <h3 
                                         className="text-[26px] xl:text-[28px] font-medium tracking-tight"
-                                        style={{ color: content.cardTitleColor || '#111827' }}
+                                        style={{ color: content?.cardTitleColor || '#111827' }}
                                     >
-                                        {content.cards[1]?.title || 'Live Streaming'}
+                                        {content?.cards[1]?.title || 'Live Streaming'}
                                     </h3>
                                     <p 
                                         className="text-[13px] md:text-[14px] mt-2"
-                                        style={{ color: content.cardDescriptionColor || '#4B5563' }}
+                                        style={{ color: content?.cardDescriptionColor || '#4B5563' }}
                                     >
-                                        {content.cards[1]?.description || 'Live streaming supports up to four participants.'}
+                                        {content?.cards[1]?.description || 'Live streaming supports up to four participants.'}
                                     </p>
                                 </div>
                                 <div className="flex-1 flex items-center justify-center min-h-[200px]">
-                                    {content.cards[1]?.image && (
+                                    {content?.cards[1]?.image && (
                                         <Image 
-                                            src={content.cards[1].image} 
+                                            src={content?.cards[1].image} 
                                             alt="Image" 
                                             width={400} 
                                             height={400} 
@@ -320,27 +320,27 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         <div 
                             className="text-black rounded-[32px] transition-all duration-300 hover:-translate-y-2 p-6 2xl:p-8 flex flex-row justify-between items-center relative overflow-hidden min-h-[180px] md:min-h-[220px]" 
                             onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
-                            style={{ backgroundColor: content.cards[2]?.backgroundColor || '#F1F3EE' }}
+                            style={{ backgroundColor: content?.cards[2]?.backgroundColor || '#F1F3EE' }}
                         >
                             <div className="relative z-10 flex-1">
                                 <h3 
                                     className="text-[22px] md:text-[28px] font-medium tracking-tight mb-2"
-                                    style={{ color: content.cardTitleColor || '#111827' }}
+                                    style={{ color: content?.cardTitleColor || '#111827' }}
                                 >
-                                    {content.cards[2]?.title || 'Payment History'}
+                                    {content?.cards[2]?.title || 'Payment History'}
                                 </h3>
                                 <p 
                                     className="text-[13px] md:text-[14px]"
-                                    style={{ color: content.cardDescriptionColor || '#4B5563' }}
+                                    style={{ color: content?.cardDescriptionColor || '#4B5563' }}
                                 >
-                                    {content.cards[2]?.description || 'View your complete payment history.'}
+                                    {content?.cards[2]?.description || 'View your complete payment history.'}
                                 </p>
                             </div>
                             {/* Payment History Card Image - Right Side */}
-                            {content.cards[2]?.image && (
+                            {content?.cards[2]?.image && (
                                 <div className="w-20 h-20 md:w-24 md:h-24 xl:w-40 xl:h-40 flex-shrink-0 -mr-6 md:-mr-8 ml-4 relative">
                                     <Image 
-                                        src={content.cards[2].image} 
+                                        src={content?.cards[2].image} 
                                         alt="Payment History" 
                                         width={160} 
                                         height={160} 
@@ -354,12 +354,12 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                         <div
                             className="rounded-[32px] overflow-hidden relative group transition-all duration-300 hover:-translate-y-2"
                             onClick={(e) => e.currentTarget.classList.toggle('-translate-y-2')}
-                            style={{ backgroundColor: content.cards[3]?.backgroundColor || '#F1F3EE' }}
+                            style={{ backgroundColor: content?.cards[3]?.backgroundColor || '#F1F3EE' }}
                         >
                             <div className="relative w-full aspect-[16/9] md:aspect-[21/9] lg:aspect-[24/9] min-h-[200px]">
-                                {content.cards[3]?.image && (
+                                {content?.cards[3]?.image && (
                                     <Image
-                                        src={content.cards[3].image}
+                                        src={content?.cards[3].image}
                                         alt="Team working"
                                         fill
                                         className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -368,7 +368,7 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                                 <div className="absolute inset-0 bg-indigo-600/40 flex items-center justify-center">
                                     <div className="relative px-4">
                                         <h1 className="text-white text-3xl md:text-5xl lg:text-6xl font-medium tracking-tighter text-center">
-                                            {content.cards[3]?.title || 'Reelboost'}
+                                            {content?.cards[3]?.title || 'Reelboost'}
                                         </h1>
                                     </div>
                                 </div>
@@ -377,106 +377,106 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
                     </div>
                 </div>
 
-                {/* 4. Bottom Grid - 4 cards with consistent spacing */}
-                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-6">
-                    
-                    {/* Video Trimming Card */}
-                    <div 
-                        className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
-                        style={{ backgroundColor: content.cards[4]?.backgroundColor || '#F1F3EE' }}
-                    >
-                        <div className="w-full mb-4 overflow-hidden">
-                            {content.cards[4]?.image && (
-                                <Image 
-                                    src={content.cards[4].image} 
-                                    alt="Video Trimming" 
-                                    width={250}
-                                    height={180}
-                                    className="w-full h-auto object-contain" 
-                                />
-                            )}
-                        </div>
-                        <div className="text-center w-full">
-                            <h3 
-                                className="text-[22px] md:text-[26px] font-medium tracking-tight"
-                                style={{ color: content.cardTitleColor || '#111827' }}
-                            >
-                                {content.cards[4]?.title || 'Video Trimming'}
-                            </h3>
-                            <p 
-                                className="text-[13px] md:text-[14px] mt-2 leading-relaxed"
-                                style={{ color: content.cardDescriptionColor || '#4B5563' }}
-                            >
-                                {content.cards[4]?.description || 'Videos can be trimmed from beginning or end.'}
-                            </p>
-                        </div>
-                    </div>
+             {/* 4. Bottom Grid - 3 cards stacked on md, side by side on lg */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-6">
+    
+    {/* Video Trimming Card */}
+    <div 
+        className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
+        style={{ backgroundColor: content?.cards[4]?.backgroundColor || '#F1F3EE' }}
+    >
+        <div className="w-full mb-4 overflow-hidden">
+            {content?.cards[4]?.image && (
+                <Image 
+                    src={content?.cards[4].image} 
+                    alt="Video Trimming" 
+                    width={250}
+                    height={180}
+                    className="w-full h-auto object-contain" 
+                />
+            )}
+        </div>
+        <div className="text-center w-full">
+            <h3 
+                className="text-[22px] md:text-[26px] font-medium tracking-tight"
+                style={{ color: content?.cardTitleColor || '#111827' }}
+            >
+                {content?.cards[4]?.title || 'Video Trimming'}
+            </h3>
+            <p 
+                className="text-[13px] md:text-[14px] mt-2 leading-relaxed"
+                style={{ color: content?.cardDescriptionColor || '#4B5563' }}
+            >
+                {content?.cards[4]?.description || 'Videos can be trimmed from beginning or end.'}
+            </p>
+        </div>
+    </div>
 
-                    {/* Add Music Card */}
-                    <div 
-                        className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
-                        style={{ backgroundColor: content.cards[5]?.backgroundColor || '#F1F3EE' }}
-                    >
-                        <div className="w-full mb-4 overflow-hidden">
-                            {content.cards[5]?.image && (
-                                <Image 
-                                    src={content.cards[5].image} 
-                                    alt="Add Music for Reels" 
-                                    width={250}
-                                    height={180}
-                                    className="w-full h-auto object-contain" 
-                                />
-                            )}
-                        </div>
-                        <div className="text-center w-full">
-                            <h3 
-                                className="text-[22px] md:text-[26px] font-medium tracking-tight"
-                                style={{ color: content.cardTitleColor || '#111827' }}
-                            >
-                                {content.cards[5]?.title || 'Add Music for Reels'}
-                            </h3>
-                            <p 
-                                className="text-[13px] md:text-[14px] mt-2 leading-relaxed"
-                                style={{ color: content.cardDescriptionColor || '#4B5563' }}
-                            >
-                                {content.cards[5]?.description || 'Add Music to Reels allows users to enhance their short videos.'}
-                            </p>
-                        </div>
-                    </div>
+    {/* Add Music Card */}
+    <div 
+        className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
+        style={{ backgroundColor: content?.cards[5]?.backgroundColor || '#F1F3EE' }}
+    >
+        <div className="w-full mb-4 overflow-hidden">
+            {content?.cards[5]?.image && (
+                <Image 
+                    src={content?.cards[5].image} 
+                    alt="Add Music for Reels" 
+                    width={250}
+                    height={180}
+                    className="w-full h-auto object-contain" 
+                />
+            )}
+        </div>
+        <div className="text-center w-full">
+            <h3 
+                className="text-[22px] md:text-[26px] font-medium tracking-tight"
+                style={{ color: content?.cardTitleColor || '#111827' }}
+            >
+                {content?.cards[5]?.title || 'Add Music for Reels'}
+            </h3>
+            <p 
+                className="text-[13px] md:text-[14px] mt-2 leading-relaxed"
+                style={{ color: content?.cardDescriptionColor || '#4B5563' }}
+            >
+                {content?.cards[5]?.description || 'Add Music to Reels allows users to enhance their short videos.'}
+            </p>
+        </div>
+    </div>
 
-                    {/* Gift Lists Card */}
-                    <div 
-                        className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
-                        style={{ backgroundColor: content.cards[6]?.backgroundColor || '#F1F3EE' }}
-                    >
-                        <div className="w-full mb-4 overflow-hidden">
-                            {content.cards[6]?.image && (
-                                <Image 
-                                    src={content.cards[6].image} 
-                                    alt="Gift Lists" 
-                                    width={250}
-                                    height={180}
-                                    className="w-full h-auto object-contain" 
-                                />
-                            )}
-                        </div>
-                        <div className="text-center w-full">
-                            <h3 
-                                className="text-[22px] md:text-[26px] font-medium tracking-tight"
-                                style={{ color: content.cardTitleColor || '#111827' }}
-                            >
-                                {content.cards[6]?.title || 'Gift Lists'}
-                            </h3>
-                            <p 
-                                className="text-[13px] md:text-[14px] mt-2 leading-relaxed"
-                                style={{ color: content.cardDescriptionColor || '#4B5563' }}
-                            >
-                                {content.cards[6]?.description || 'The gift list includes multiple categories of gift icons.'}
-                            </p>
-                        </div>
-                    </div>
+    {/* Gift Lists Card */}
+    <div 
+        className="text-black rounded-[32px] p-6 2xl:p-8 flex flex-col items-center justify-center transition-all duration-500 hover:-translate-y-3 shadow-lg group overflow-hidden"
+        style={{ backgroundColor: content?.cards[6]?.backgroundColor || '#F1F3EE' }}
+    >
+        <div className="w-full mb-4 overflow-hidden">
+            {content?.cards[6]?.image && (
+                <Image 
+                    src={content?.cards[6].image} 
+                    alt="Gift Lists" 
+                    width={250}
+                    height={180}
+                    className="w-full h-auto object-contain" 
+                />
+            )}
+        </div>
+        <div className="text-center w-full">
+            <h3 
+                className="text-[22px] md:text-[26px] font-medium tracking-tight"
+                style={{ color: content?.cardTitleColor || '#111827' }}
+            >
+                {content?.cards[6]?.title || 'Gift Lists'}
+            </h3>
+            <p 
+                className="text-[13px] md:text-[14px] mt-2 leading-relaxed"
+                style={{ color: content?.cardDescriptionColor || '#4B5563' }}
+            >
+                {content?.cards[6]?.description || 'The gift list includes multiple categories of gift icons.'}
+            </p>
+        </div>
+    </div>
 
-                </div>
+</div>
             </div>
 
             <style jsx>{`

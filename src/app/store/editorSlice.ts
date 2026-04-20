@@ -30,7 +30,7 @@ interface EditorState {
     isOpen: boolean;
     sectionId: string | null;
     sectionType: string | null;
-    contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | 'testimonial' | null;
+    contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | 'testimonial' | 'faq' | 'plan' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'benefits' | null;
   };
 }
 
@@ -71,18 +71,16 @@ const editorSlice = createSlice({
       isOpen: boolean;
       sectionId: string | null;
       sectionType: string | null;
-      contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | 'testimonial' | null;
+      contentType: 'text' | 'style' | 'image' | 'admin' | 'footer' | 'navbar' | 'testimonial' | 'faq' | 'plan' | null;
     }>) => {
       state.editingOverlay = action.payload;
       
       // Also set editorSection if we have a sectionId
       if (action.payload.sectionId) {
-        // This is a bit of a hack - we need to access the builder state
-        // For now, we'll set a minimal section object and let the editor find the full data
         state.editorSection = {
           id: action.payload.sectionId,
           type: action.payload.sectionType,
-          content: null // Will be populated by the editor component
+          content: null
         };
       } else {
         state.editorSection = null;

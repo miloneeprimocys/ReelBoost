@@ -84,6 +84,16 @@ const ThirdSection: React.FC<ThirdSectionProps> = ({ sectionId }) => {
       featureDescriptionColor: '#4B5563'
     };
 
+    console.log('=== ThirdSection Content Debug ===');
+    console.log('sectionId:', sectionId);
+    console.log('section:', section);
+    console.log('content.title:', content.title);
+    console.log('content.description:', content.description);
+    console.log('content.features:', content.features);
+    console.log('content.backgroundColor:', content.backgroundColor);
+    console.log('content.backgroundImage:', content.backgroundImage);
+    console.log('=============================');
+
     useEffect(() => {
         setIsMounted(true);
         const observer = new IntersectionObserver(

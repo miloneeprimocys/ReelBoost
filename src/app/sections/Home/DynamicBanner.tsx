@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { useAppSelector } from "../../hooks/reduxHooks";
+import { shallowEqual } from "react-redux";
 import { Video, MessageCircle, Star, Zap, Shield, Globe, Edit } from "lucide-react";
 import HeroImage from "../../../../public/sword.svg";
 import Audience from "../../../../public/audience.svg";
@@ -47,17 +48,19 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   const [isMounted, setIsMounted] = useState(false);
   const contentRef = useRef(null);
 
-  // Get this specific section's content from both builder and banner slices using sectionId
+  // Get section content directly from builderSlice (consistent with other sections)
+  const builderSectionContent = useAppSelector(state => {
+    const section = state.builder.sections.find(s => s.id === sectionId);
+    return section?.content;
+  });
+  
+  // Get section type for layout determination
   const builderSection = useAppSelector(state => 
     state.builder.sections.find(s => s.id === sectionId)
-  );
-  const bannerSection = useAppSelector(state => 
-    state.banner.sections.find(s => s.id === sectionId)
   );
   
   console.log('DynamicBanner - Looking for section:', sectionId);
   console.log('DynamicBanner - Builder section:', builderSection);
-  console.log('DynamicBanner - Banner section:', bannerSection);
   
   // Helper function to render correct icon - MOVED INSIDE COMPONENT
   const renderIcon = (iconName: string, className: string, sectionType?: string, featureIndex?: number) => {
@@ -135,37 +138,36 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   console.log('DynamicBanner - sectionId:', sectionId);
   console.log('DynamicBanner - builderSection:', builderSection);
   console.log('DynamicBanner - builderSection.type:', builderSection?.type);
+  console.log('DynamicBanner - builderSection.content?.title:', builderSection?.content?.title);
+  console.log('DynamicBanner - builderSection.content?.dotText:', builderSection?.content?.dotText);
   
   // Helper function to determine default layout based on section type
  const getDefaultLayout = () => {
-  const type = builderSection?.type || bannerSection?.type || "";
+  const type = builderSection?.type || "";
   const id = sectionId || "";
 
-  // 🔥 Live Streaming → LEFT
+  // All banner sections use consistent layout based on name/content
+  // Live Streaming → LEFT
   if (
-    type === "second" ||
-    type === "live-streaming" ||
-    id.includes("second") ||
-    id.includes("live-streaming")
+    id.includes("live-streaming") ||
+    (type === "banner" && builderSection?.name?.toLowerCase().includes("live streaming"))
   ) {
     return "left";
   }
 
-  // 🔥 PK Battle → RIGHT
+  // PK Battle → RIGHT
   if (
-    type === "third" ||
-    type === "pk-battle" ||
-    id.includes("third") ||
-    id.includes("pk-battle")
+    id.includes("pk-battle") ||
+    (type === "banner" && builderSection?.name?.toLowerCase().includes("pk battle"))
   ) {
     return "right";
   }
 
-  return "right"; // default fallback
+  return "left"; // default fallback
 };
 
-  // Merge content: prioritize builder section content, then banner section, then fallback
-  const baseContent = builderSection?.content || bannerSection?.content || sectionContent || {
+  // Merge content: use builder section content with fallback
+  const baseContent = builderSectionContent || {
     dotText: 'Demo Live Streaming',
     title: 'Demo Title',
   
@@ -182,7 +184,7 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
         icon: 'MessageCircle'
       }
     ],
-    backgroundImage: '/api/placeholder/600/400',
+    backgroundImage: '/second.svg',
     backgroundColor: '#ffffff',
     animation: 'fade',
     titleColor: '#111827',
@@ -190,6 +192,15 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
   };
+
+  console.log('=== DynamicBanner Content Debug ===');
+  console.log('sectionId:', sectionId);
+  console.log('builderSectionContent:', builderSectionContent);
+  console.log('baseContent.title:', baseContent.title);
+  console.log('baseContent.description:', baseContent.description);
+  console.log('baseContent.features:', baseContent.features);
+  console.log('baseContent.backgroundColor:', baseContent.backgroundColor);
+  console.log('============================');
 
   // Apply default layout if not set
 const bannerContent = {

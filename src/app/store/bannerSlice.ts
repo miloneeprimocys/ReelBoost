@@ -95,22 +95,30 @@ const bannerSlice = createSlice({
       
       const { type, maxOrder } = action.payload;
       let content;
+      let sectionName;
       
       if (type === 'pk-battle') {
         content = getPKBattleBannerContent();
+        sectionName = 'PK Battle';
       } else if (type === 'live-streaming') {
         content = getDefaultBannerContent();
+        sectionName = 'Live Streaming';
+      } else if (type === 'banner') {
+        // Generic banner - use demo content
+        content = getDefaultBannerContent();
+        sectionName = 'Banner Section';
       } else {
         // For new banner sections, use empty content
         content = getEmptyBannerContent();
+        sectionName = 'Banner Section';
       }
       
       const newSection: BannerSection = {
         id: `banner-${Date.now()}-${Math.random()}`,
         type: 'banner',
-        name: type === 'pk-battle' ? 'PK Battle' : type === 'live-streaming' ? 'Live Streaming' : 'Banner Section',
+        name: sectionName,
         visible: true,
-        order: maxOrder !== undefined ? maxOrder + 1 : state.sections.length + 1, // Use provided maxOrder or fallback
+        order: maxOrder !== undefined ? maxOrder + 1 : state.sections.length + 1,
         content
       };
       // Add to banner slice state
@@ -177,17 +185,29 @@ const bannerSlice = createSlice({
     // Content management
     updateBannerContent: (state, action: PayloadAction<{ id: string; content: Partial<BannerContent> }>) => {
       const { id, content } = action.payload;
+      console.log('=== bannerSlice updateBannerContent ===');
+      console.log('Section ID:', id);
+      console.log('Updating fields:', Object.keys(content));
+      console.log('New values:', content);
       const section = state.sections.find(s => s.id === id);
+      console.log('Found section:', section ? 'Yes' : 'No');
       if (section) {
+        console.log('Current content before update:', section.content);
         // Handle features array updates properly
         if (content.features && Array.isArray(content.features)) {
           // If updating features array, replace it entirely
           section.content = { ...section.content, features: content.features };
+          console.log('Updated features array');
         } else {
           // For other fields, use shallow merge
           section.content = { ...section.content, ...content };
+          console.log('Merged content for other fields');
         }
+        console.log('Content after update:', section.content);
+      } else {
+        console.log('Section not found!');
       }
+      console.log('======================================');
     },
     
     addBannerFeature: (state, action: PayloadAction<{ id: string; feature: BannerFeature }>) => {
@@ -277,18 +297,49 @@ const bannerSlice = createSlice({
   }
 });
 
-// Helper function to get default banner content
+// Helper function to get default banner content for NEW Live Streaming sections
+// Returns demo content matching builderSlice
 export function getDefaultBannerContent(): BannerContent {
   return {
     dotText: 'Live Streaming',
-    title: 'Start video, interact with the user.',
-    description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
-    dotTextColor: '#2b49c5',
-    dotColor: '#3b82f6',
+    title: 'Start video, interact with your user.',
+    description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like, stream, and send virtual gifts to show their support.',
     features: [
       {
         title: 'List of Live Streamers',
-        description: 'You can check the list of live streamers, and can view the likes and audience connected to the stream',
+        description: 'You can check the list of live streamers, and can view likes and audience connected to the stream',
+        icon: '/list.svg'
+      },
+      {
+        title: 'Live Streaming Interaction',
+        description: 'Viewers can comment, send virtual gifts, like the stream, and follow the streamer to stay connected.',
+        icon: '/livestream.svg'
+      }
+    ],
+    backgroundImage: '/second.svg',
+    backgroundColor: '#4A72FF',
+    layout: 'left',
+    animation: 'fade',
+    dotTextColor: '#3B82F6',
+    dotColor: '#3B82F6',
+    titleColor: '#111827',
+    descriptionColor: '#4B5563',
+    featureTitleColor: '#111827',
+    featureDescriptionColor: '#4B5563'
+  };
+}
+
+// Helper function to get demo banner content for new sections
+// Returns demo content matching builderSlice
+export function getEmptyBannerContent(): BannerContent {
+  return {
+    dotText: 'Live Streaming',
+    title: 'Start video, interact with your user.',
+    description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like, stream, and send virtual gifts to show their support.',
+    features: [
+      {
+        title: 'List of Live Streamers',
+        description: 'You can check the list of live streamers, and can view likes and audience connected to the stream',
         icon: '/list.svg'
       },
       {
@@ -302,51 +353,19 @@ export function getDefaultBannerContent(): BannerContent {
     layout: 'left',
     animation: 'fade',
     titleColor: '#111827',
-        descriptionColor: '#4B5563',
+    descriptionColor: '#4B5563',
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
   };
 }
 
-// Helper function to get demo banner content for new sections
-export function getEmptyBannerContent(): BannerContent {
-  return {
-    dotText: 'Demo Live Streaming',
-    title: 'Demo Title',
-    description: 'Demo Description: This is a demonstration banner section with sample content that showcases layout and styling capabilities of banner editor. You can customize all elements including text, colors, and features.',
-    dotTextColor: '#2b49c5',
-    dotColor: '#3b82f6',
-    features: [
-      {
-        title: 'Demo Feature One',
-        description: 'Demo description for the first feature that demonstrates the feature layout and styling.',
-        icon: 'Video'
-      },
-      {
-        title: 'Demo Feature Two',
-        description: 'Demo description for the second feature showing how multiple features are displayed.',
-        icon: 'MessageCircle'
-      }
-    ],
-    backgroundImage: '/second.svg', // Default image for new banners
-    backgroundColor: '#FFB800',
-    layout: 'right',
-    animation: 'fade',
-    titleColor: '#111827',
-        descriptionColor: '#4B5563',
-    featureTitleColor: '#111827',
-    featureDescriptionColor: '#4B5563'
-  };
-}
-
-// Helper function to get PK Battle banner content
+// Helper function to get PK Battle banner content for NEW sections
+// Returns demo content matching builderSlice
 export function getPKBattleBannerContent(): BannerContent {
   return {
     dotText: 'PK Battle',
     title: 'Live battles to win audience support',
     description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
-    dotTextColor: '#2b49c5',
-    dotColor: '#3b82f6',
     features: [
       {
         title: 'Loss and Win Battle',
@@ -354,7 +373,7 @@ export function getPKBattleBannerContent(): BannerContent {
         icon: '/sword.svg'
       },
       {
-        title: 'Send Gifts during the Battle',
+        title: 'Send Gifts during Battle',
         description: 'The winner and loser are determined based on the number of gifts received during the battle.',
         icon: '/gift.svg'
       },
@@ -366,10 +385,12 @@ export function getPKBattleBannerContent(): BannerContent {
     ],
     backgroundImage: '/third.svg',
     backgroundColor: '#FFB800',
-    layout: 'left',
+    layout: 'right',
     animation: 'fade',
+    dotTextColor: '#FFB800',
+    dotColor: '#FFB800',
     titleColor: '#111827',
-        descriptionColor: '#4B5563',
+    descriptionColor: '#4B5563',
     featureTitleColor: '#111827',
     featureDescriptionColor: '#4B5563'
   };

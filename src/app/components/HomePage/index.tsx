@@ -20,6 +20,8 @@ import FifthSection from "../../Pages/Home/FifthSection";
 import SixthSection from "../../Pages/Home/SixthSection";
 import DynamicBenefits from "../../sections/Home/DynamicBenefits";
 import DynamicTestimonials from "../../sections/Home/DynamicTestimonials";
+import DynamicFaq from "../../sections/Home/DynamicFaq";
+import DynamicSubscriptionPlan from "../../sections/Home/DynamicSubscriptionPlan";
 
 function HomePageContent() {
   const { sections, isBuilderMode } = useAppSelector(state => state.builder);
@@ -29,12 +31,27 @@ function HomePageContent() {
   const dispatch = useAppDispatch();
   const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   
-    
   // Combine all sections from both slices
   const allSections = [...sections, ...bannerSections];
   
   // Sort sections by order
   const sortedSections = allSections.sort((a, b) => a.order - b.order);
+
+  // Disable body scrolling when builder mode is active
+  useEffect(() => {
+    if (isBuilderMode) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isBuilderMode]);
 
   const handlePublish = () => {
     // Save all changes and redirect to home
@@ -88,6 +105,10 @@ function HomePageContent() {
             return <DynamicBenefits key={section.id} sectionId={section.id} />;
           case 'testimonials':
             return <DynamicTestimonials key={section.id} section={section} />;
+          case 'faq':
+            return <DynamicFaq key={section.id} section={section} />;
+          case 'subscription-plan':
+            return <DynamicSubscriptionPlan key={section.id} section={section} />;
           default:
             return (
               <div key={section.id} className="py-16 px-4 bg-gray-50">

@@ -10,6 +10,8 @@ import navbarReducer from './navbarSlice';
 import modalReducer from './modalSlice';
 import footerReducer, { selectFooterContent } from './footerSlice';
 import testimonialsReducer from './testimonialsSlice';
+import faqReducer from './faqSlice';
+import subscriptionPlanReducer from './subscriptionPlanSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +26,8 @@ export const store = configureStore({
     modal: modalReducer,
     footer: footerReducer,
     testimonials: testimonialsReducer,
+    faq: faqReducer,
+    subscriptionPlan: subscriptionPlanReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

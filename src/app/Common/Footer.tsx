@@ -176,7 +176,7 @@ const Footer = () => {
                             {content.socialLinks.filter((link: any) => link.enabled).map((link: any) => (
                                 <div
                                     key={link.id}
-                                    className="group/icon w-12 h-12 rounded-full bg-white/5 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:bg-blue-700 flex-shrink-0"
+                                    className="group/icon w-12 h-12 rounded-full bg-white/5 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:bg-blue-700 flex-shrink-0 relative"
                                     onClick={() => window.open(link.url, '_blank')}
                                     style={{ 
                                         backgroundColor: content.styles.socialIconBackground,
@@ -189,6 +189,10 @@ const Footer = () => {
                                         e.currentTarget.style.backgroundColor = content.styles.socialIconBackground;
                                     }}
                                 >
+                                    {/* Shining effect overlay */}
+                                    <div className="absolute inset-0 opacity-0 group-hover/icon:opacity-100 transition-opacity duration-200">
+                                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent transform -translate-x-full group-hover/icon:translate-x-full transition-transform duration-500 ease-out"></div>
+                                    </div>
                                     <div className="relative w-6 h-6 overflow-hidden" style={{ color: content.styles.socialIconColor }}>
                                         {renderSocialIcon(link)}
                                     </div>
