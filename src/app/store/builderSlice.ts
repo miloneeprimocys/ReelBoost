@@ -21,6 +21,10 @@ interface HeroContent {
   dotText: string;
   topAccentColor: string;
   bottomAccentColor: string;
+  appStoreLink: string;
+  appStoreTarget: '_self' | '_blank';
+  googlePlayLink: string;
+  googlePlayTarget: '_self' | '_blank';
 }
 
 interface SectionConfig {
@@ -79,7 +83,11 @@ const initialSections: SectionConfig[] = [
         activeTag: "Live Streaming",
         appStoreImage: '/Button1.png',
         googlePlayImage: '/Button2.png',
-        dotText: ''
+        dotText: '',
+        appStoreLink: '',
+        appStoreTarget: '_blank',
+        googlePlayLink: '',
+        googlePlayTarget: '_blank'
       } as HeroContent
     },
     {
@@ -522,7 +530,9 @@ const initialSections: SectionConfig[] = [
               'API Access'
             ],
             buttonText: 'Get Started',
-            isPopular: false
+            isPopular: false,
+            buttonLink: '',
+            buttonTarget: '_blank'
           },
           {
             id: '2',
@@ -541,7 +551,9 @@ const initialSections: SectionConfig[] = [
             ],
             buttonText: 'Start Pro Trial',
             isPopular: true,
-            badgeText: 'Most Popular'
+            badgeText: 'Most Popular',
+            buttonLink: '',
+            buttonTarget: '_blank'
           },
           {
             id: '3',
@@ -559,7 +571,9 @@ const initialSections: SectionConfig[] = [
               'White Label Option'
             ],
             buttonText: 'Contact Sales',
-            isPopular: false
+            isPopular: false,
+            buttonLink: '',
+            buttonTarget: '_blank'
           }
         ]
       }

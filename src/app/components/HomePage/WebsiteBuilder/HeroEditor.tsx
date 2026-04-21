@@ -24,6 +24,10 @@ interface HeroContent {
   googlePlayImage: string;
   topAccentColor: string;
   bottomAccentColor: string;
+  appStoreLink: string;
+  appStoreTarget: '_self' | '_blank';
+  googlePlayLink: string;
+  googlePlayTarget: '_self' | '_blank';
 }
 
 const HeroEditor: React.FC = () => {
@@ -128,7 +132,11 @@ const HeroEditor: React.FC = () => {
     appStoreImage: '/Button1.png',
     googlePlayImage: '/Button2.png',
     topAccentColor: '#2B59FF',
-    bottomAccentColor: '#FFB800'
+    bottomAccentColor: '#FFB800',
+    appStoreLink: '',
+    appStoreTarget: '_blank',
+    googlePlayLink: '',
+    googlePlayTarget: '_blank'
   };
   
   // Use section content if available, otherwise use defaults
@@ -536,9 +544,9 @@ const HeroEditor: React.FC = () => {
               </div>
               {content.appStoreImage && content.appStoreImage !== '' && (
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
-                  <img 
-                    src={content.appStoreImage} 
-                    alt="App Store button" 
+                  <img
+                    src={content.appStoreImage}
+                    alt="App Store button"
                     className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                     onClick={() => dispatch(openImageModal({ imageSrc: content.appStoreImage, alt: 'App Store Button' }))}
                   />
@@ -555,6 +563,31 @@ const HeroEditor: React.FC = () => {
                   </button>
                 </div>
               )}
+
+              {/* Link URL */}
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Link URL</label>
+                <input
+                  type="text"
+                  value={content.appStoreLink || ''}
+                  onChange={(e) => updateField('appStoreLink', e.target.value)}
+                  placeholder="https://apps.apple.com/..."
+                  className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                />
+              </div>
+
+              {/* Target */}
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Open Link In</label>
+                <select
+                  value={content.appStoreTarget || '_blank'}
+                  onChange={(e) => updateField('appStoreTarget', e.target.value as '_self' | '_blank')}
+                  className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                >
+                  <option value="_blank">New Tab (_blank)</option>
+                  <option value="_self">Same Page (_self)</option>
+                </select>
+              </div>
             </div>
 
             {/* Google Play Button */}
@@ -577,9 +610,9 @@ const HeroEditor: React.FC = () => {
               </div>
               {content.googlePlayImage && content.googlePlayImage !== '' && (
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2">
-                  <img 
-                    src={content.googlePlayImage} 
-                    alt="Google Play button" 
+                  <img
+                    src={content.googlePlayImage}
+                    alt="Google Play button"
                     className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                     onClick={() => dispatch(openImageModal({ imageSrc: content.googlePlayImage, alt: 'Google Play Button' }))}
                   />
@@ -596,6 +629,31 @@ const HeroEditor: React.FC = () => {
                   </button>
                 </div>
               )}
+
+              {/* Link URL */}
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Link URL</label>
+                <input
+                  type="text"
+                  value={content.googlePlayLink || ''}
+                  onChange={(e) => updateField('googlePlayLink', e.target.value)}
+                  placeholder="https://play.google.com/..."
+                  className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                />
+              </div>
+
+              {/* Target */}
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Open Link In</label>
+                <select
+                  value={content.googlePlayTarget || '_blank'}
+                  onChange={(e) => updateField('googlePlayTarget', e.target.value as '_self' | '_blank')}
+                  className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                >
+                  <option value="_blank">New Tab (_blank)</option>
+                  <option value="_self">Same Page (_self)</option>
+                </select>
+              </div>
             </div>
           </div>
         )}

@@ -122,32 +122,68 @@ export default function Hero({ sectionId, onEdit }: HeroProps) {
                     <div className={`mt-8 md:mt-10 lg:mt-12 flex items-center gap-4 md:gap-5 lg:gap-6 ${heroContent?.layout === 'center' ? 'justify-center' : 'justify-center lg:justify-start'
                         }`}>
                         {heroContent?.appStoreImage && heroContent?.appStoreImage !== '' && (
-                            <button
-                                onClick={() => onEdit && onEdit(sectionId, 'image', 'hero-buttons')}
-                                className={`transition-transform ${onEdit ? 'hover:scale-98 cursor-pointer' : ''}`}
-                            >
-                                <Image
-                                    src={heroContent?.appStoreImage}
-                                    alt="App Store"
-                                    width={140}
-                                    height={56}
-                                    className="h-12 md:h-14 lg:h-16 w-auto"
-                                />
-                            </button>
+                            heroContent?.appStoreLink ? (
+                                <a
+                                    href={heroContent?.appStoreLink}
+                                    target={heroContent?.appStoreTarget || '_blank'}
+                                    rel={heroContent?.appStoreTarget === '_self' ? undefined : 'noopener noreferrer'}
+                                    onClick={(e) => onEdit && (e.preventDefault(), onEdit(sectionId, 'image', 'hero-buttons'))}
+                                    className={`transition-transform ${onEdit ? 'hover:scale-98 cursor-pointer' : ''}`}
+                                >
+                                    <Image
+                                        src={heroContent?.appStoreImage}
+                                        alt="App Store"
+                                        width={140}
+                                        height={56}
+                                        className="h-12 md:h-14 lg:h-16 w-auto"
+                                    />
+                                </a>
+                            ) : (
+                                <button
+                                    onClick={() => onEdit && onEdit(sectionId, 'image', 'hero-buttons')}
+                                    className={`transition-transform ${onEdit ? 'hover:scale-98 cursor-pointer' : ''}`}
+                                >
+                                    <Image
+                                        src={heroContent?.appStoreImage}
+                                        alt="App Store"
+                                        width={140}
+                                        height={56}
+                                        className="h-12 md:h-14 lg:h-16 w-auto"
+                                    />
+                                </button>
+                            )
                         )}
                         {heroContent?.googlePlayImage && heroContent?.googlePlayImage !== '' && (
-                            <button 
-                                onClick={() => onEdit && onEdit(sectionId, 'image', 'hero-buttons')}
-                                className={`transition-transform ${onEdit ? 'hover:scale-98 cursor-pointer' : ''}`}
-                            >
-                                <Image
-                                    src={heroContent?.googlePlayImage}
-                                    alt="Google Play"
-                                    width={140}
-                                    height={56}
-                                    className="h-12 md:h-14 lg:h-16 w-auto"
-                                />
-                            </button>
+                            heroContent?.googlePlayLink ? (
+                                <a
+                                    href={heroContent?.googlePlayLink}
+                                    target={heroContent?.googlePlayTarget || '_blank'}
+                                    rel={heroContent?.googlePlayTarget === '_self' ? undefined : 'noopener noreferrer'}
+                                    onClick={(e) => onEdit && (e.preventDefault(), onEdit(sectionId, 'image', 'hero-buttons'))}
+                                    className={`transition-transform ${onEdit ? 'hover:scale-98 cursor-pointer' : ''}`}
+                                >
+                                    <Image
+                                        src={heroContent?.googlePlayImage}
+                                        alt="Google Play"
+                                        width={140}
+                                        height={56}
+                                        className="h-12 md:h-14 lg:h-16 w-auto"
+                                    />
+                                </a>
+                            ) : (
+                                <button
+                                    onClick={() => onEdit && onEdit(sectionId, 'image', 'hero-buttons')}
+                                    className={`transition-transform ${onEdit ? 'hover:scale-98 cursor-pointer' : ''}`}
+                                >
+                                    <Image
+                                        src={heroContent?.googlePlayImage}
+                                        alt="Google Play"
+                                        width={140}
+                                        height={56}
+                                        className="h-12 md:h-14 lg:h-16 w-auto"
+                                    />
+                                </button>
+                            )
                         )}
                     </div>
                 </div>

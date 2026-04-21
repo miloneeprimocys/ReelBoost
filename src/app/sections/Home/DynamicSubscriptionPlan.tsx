@@ -14,6 +14,8 @@ interface SubscriptionPlan {
   isPopular?: boolean;
   buttonText?: string;
   badgeText?: string;
+  buttonLink?: string;
+  buttonTarget?: '_self' | '_blank';
 }
 
 interface DynamicSubscriptionPlanProps {
@@ -245,15 +247,30 @@ const DynamicSubscriptionPlan = ({ section, onEdit }: DynamicSubscriptionPlanPro
               </ul>
 
               {/* CTA Button */}
-              <button
-                className="w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 cursor-pointer hover:opacity-90"
-                style={{
-                  backgroundColor: plan.isPopular ? content.popularButtonBackgroundColor : content.buttonBackgroundColor,
-                  color: plan.isPopular ? content.popularButtonTextColor : content.buttonTextColor
-                }}
-              >
-                <span className="break-words w-full">{plan.buttonText || 'Get Started'}</span>
-              </button>
+              {plan.buttonLink ? (
+                <a
+                  href={plan.buttonLink}
+                  target={plan.buttonTarget || '_blank'}
+                  rel={plan.buttonTarget === '_self' ? undefined : 'noopener noreferrer'}
+                  className="w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 cursor-pointer hover:opacity-90 text-center block"
+                  style={{
+                    backgroundColor: plan.isPopular ? content.popularButtonBackgroundColor : content.buttonBackgroundColor,
+                    color: plan.isPopular ? content.popularButtonTextColor : content.buttonTextColor
+                  }}
+                >
+                  <span className="break-words w-full">{plan.buttonText || 'Get Started'}</span>
+                </a>
+              ) : (
+                <button
+                  className="w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 cursor-pointer hover:opacity-90"
+                  style={{
+                    backgroundColor: plan.isPopular ? content.popularButtonBackgroundColor : content.buttonBackgroundColor,
+                    color: plan.isPopular ? content.popularButtonTextColor : content.buttonTextColor
+                  }}
+                >
+                  <span className="break-words w-full">{plan.buttonText || 'Get Started'}</span>
+                </button>
+              )}
             </div>
           ))}
         </div>

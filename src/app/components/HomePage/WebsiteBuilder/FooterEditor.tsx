@@ -126,7 +126,7 @@ const CustomSelect = ({ value, onChange, options, label }: { value: string; onCh
       </button>
       
       {isOpen && (
-        <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-[80] w-full mt-1 bg-white hide-scrollbar border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           <div className="py-1">
             {options.map((option) => (
               <button

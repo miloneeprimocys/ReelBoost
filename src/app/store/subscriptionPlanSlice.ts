@@ -10,6 +10,8 @@ export interface SubscriptionPlan {
   isPopular?: boolean;
   buttonText?: string;
   badgeText?: string;
+  buttonLink?: string;
+  buttonTarget?: '_self' | '_blank';
 }
 
 export interface SubscriptionPlanContent {
@@ -56,7 +58,9 @@ const defaultPlans: SubscriptionPlan[] = [
       'API Access'
     ],
     buttonText: 'Get Started',
-    isPopular: false
+    isPopular: false,
+    buttonLink: '',
+    buttonTarget: '_blank'
   },
   {
     id: '2',
@@ -75,7 +79,9 @@ const defaultPlans: SubscriptionPlan[] = [
     ],
     buttonText: 'Start Pro Trial',
     isPopular: true,
-    badgeText: 'Most Popular'
+    badgeText: 'Most Popular',
+    buttonLink: '',
+    buttonTarget: '_blank'
   },
   {
     id: '3',
@@ -93,7 +99,9 @@ const defaultPlans: SubscriptionPlan[] = [
       'White Label Option'
     ],
     buttonText: 'Contact Sales',
-    isPopular: false
+    isPopular: false,
+    buttonLink: '',
+    buttonTarget: '_blank'
   }
 ];
 

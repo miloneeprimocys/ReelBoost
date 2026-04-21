@@ -266,16 +266,7 @@ const FaqEditor: React.FC = () => {
         >
           Content
         </button>
-        <button
-          onClick={() => setActiveTab('style')}
-          className={`flex-1 py-3 px-2 text-sm font-medium transition-colors ${
-            activeTab === 'style'
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          Style
-        </button>
+      
         <button
           onClick={() => setActiveTab('faqs')}
           className={`flex-1 py-3 px-2 text-sm font-medium transition-colors ${
@@ -285,6 +276,16 @@ const FaqEditor: React.FC = () => {
           }`}
         >
           FAQs ({content.faqs?.length || 0})
+        </button>
+          <button
+          onClick={() => setActiveTab('style')}
+          className={`flex-1 py-3 px-2 text-sm font-medium transition-colors ${
+            activeTab === 'style'
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          Style
         </button>
       </div>
 

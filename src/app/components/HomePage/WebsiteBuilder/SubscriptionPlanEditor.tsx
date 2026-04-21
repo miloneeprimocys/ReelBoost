@@ -65,7 +65,9 @@ const SubscriptionPlanEditor: React.FC = () => {
     description: '',
     features: [''],
     buttonText: 'Get Started',
-    isPopular: false
+    isPopular: false,
+    buttonLink: '',
+    buttonTarget: '_blank'
   });
 
   // Helper to update section content in real-time
@@ -164,7 +166,9 @@ const SubscriptionPlanEditor: React.FC = () => {
       features: newPlan.features?.filter(f => f.trim()) || ['Feature 1'],
       buttonText: newPlan.buttonText || 'Get Started',
       isPopular: newPlan.isPopular || false,
-      badgeText: newPlan.isPopular ? (newPlan.badgeText || 'Most Popular') : undefined
+      badgeText: newPlan.isPopular ? (newPlan.badgeText || 'Most Popular') : undefined,
+      buttonLink: newPlan.buttonLink || '',
+      buttonTarget: newPlan.buttonTarget || '_blank'
     };
 
     const updatedPlans = [...plans, plan];
@@ -177,7 +181,9 @@ const SubscriptionPlanEditor: React.FC = () => {
       description: '',
       features: [''],
       buttonText: 'Get Started',
-      isPopular: false
+      isPopular: false,
+      buttonLink: '',
+      buttonTarget: '_blank'
     });
     setIsAddingNew(false);
     setExpandedId(plan.id);
@@ -310,6 +316,16 @@ const SubscriptionPlanEditor: React.FC = () => {
         >
           Content
         </button>
+         <button
+          onClick={() => setActiveTab('plans')}
+          className={`flex-1 py-3 px-2 text-sm font-medium transition-colors ${
+            activeTab === 'plans'
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          Plans ({plans.length})
+        </button>
         <button
           onClick={() => setActiveTab('style')}
           className={`flex-1 py-3 px-2 text-sm font-medium transition-colors ${
@@ -320,16 +336,7 @@ const SubscriptionPlanEditor: React.FC = () => {
         >
           Style
         </button>
-        <button
-          onClick={() => setActiveTab('plans')}
-          className={`flex-1 py-3 px-2 text-sm font-medium transition-colors ${
-            activeTab === 'plans'
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-        >
-          Plans ({plans.length})
-        </button>
+       
       </div>
 
       {/* Content */}
@@ -714,6 +721,27 @@ const SubscriptionPlanEditor: React.FC = () => {
                     <label htmlFor="isPopular" className="text-sm text-gray-700">Mark as Popular</label>
                   </div>
                   <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Button Link URL</label>
+                    <input
+                      type="text"
+                      value={newPlan.buttonLink || ''}
+                      onChange={(e) => setNewPlan({ ...newPlan, buttonLink: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full p-2 border border-gray-300 rounded-lg text-sm text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Open Link In</label>
+                    <select
+                      value={newPlan.buttonTarget || '_blank'}
+                      onChange={(e) => setNewPlan({ ...newPlan, buttonTarget: e.target.value as '_self' | '_blank' })}
+                      className="w-full p-2 border border-gray-300 rounded-lg text-sm text-black bg-white"
+                    >
+                      <option value="_blank">New Tab (_blank)</option>
+                      <option value="_self">Same Page (_self)</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="block text-xs font-medium text-gray-600 mb-2">Features</label>
                     {(newPlan.features || ['']).map((feature, index) => (
                       <div key={index} className="flex gap-2 mb-2">
@@ -878,6 +906,27 @@ const SubscriptionPlanEditor: React.FC = () => {
                         className="w-full p-2 border border-gray-300 rounded-lg text-sm text-black"
                       />
                     )}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Button Link URL</label>
+                      <input
+                        type="text"
+                        value={plan.buttonLink || ''}
+                        onChange={(e) => handleUpdatePlan(plan.id, { buttonLink: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full p-2 border border-gray-300 rounded-lg text-sm text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Open Link In</label>
+                      <select
+                        value={plan.buttonTarget || '_blank'}
+                        onChange={(e) => handleUpdatePlan(plan.id, { buttonTarget: e.target.value as '_self' | '_blank' })}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-sm text-black bg-white"
+                      >
+                        <option value="_blank">New Tab (_blank)</option>
+                        <option value="_self">Same Page (_self)</option>
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-2">Features</label>
                       {plan.features.map((feature, featureIndex) => (

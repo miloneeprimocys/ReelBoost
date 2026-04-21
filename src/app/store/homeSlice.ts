@@ -19,6 +19,10 @@ export interface HeroContent {
   dotText: string;
   topAccentColor: string;
   bottomAccentColor: string;
+  appStoreLink: string;
+  appStoreTarget: '_self' | '_blank';
+  googlePlayLink: string;
+  googlePlayTarget: '_self' | '_blank';
 }
 
 interface HomeState {
@@ -46,6 +50,10 @@ const initialState: HomeState = {
     dotText: '',
     topAccentColor: '#2B59FF',
     bottomAccentColor: '#FFB800',
+    appStoreLink: '',
+    appStoreTarget: '_blank',
+    googlePlayLink: '',
+    googlePlayTarget: '_blank',
   },
   isHeroEdited: false
 };

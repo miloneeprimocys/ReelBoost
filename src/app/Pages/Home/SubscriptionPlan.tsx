@@ -11,9 +11,11 @@ interface PlanProps {
   buttonText: string;
   isRecommended?: boolean;
   badgeText?: string;
+  buttonLink?: string;
+  buttonTarget?: '_self' | '_blank';
 }
 
-const PlanCard = ({ name, price, description, features, buttonText, isRecommended, badgeText }: PlanProps) => {
+const PlanCard = ({ name, price, description, features, buttonText, isRecommended, badgeText, buttonLink, buttonTarget }: PlanProps) => {
   return (
     <div className={`relative flex flex-col rounded-[24px] p-6 md:p-8 transition-all duration-300 w-full max-w-md ${
       isRecommended 
@@ -53,14 +55,30 @@ const PlanCard = ({ name, price, description, features, buttonText, isRecommende
         )}
       </ul>
 
-      <button className={`w-full py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
-        isRecommended 
-          ? 'bg-[#3b82f6] text-white hover:bg-[#2563eb]' 
-          : 'bg-[#3b82f6] text-white hover:bg-[#2563eb]'
-      }`}>
-        <span className="break-words">{buttonText}</span>
-        <ArrowRight className="w-4 h-4 shrink-0" />
-      </button>
+      {buttonLink ? (
+        <a
+          href={buttonLink}
+          target={buttonTarget || '_blank'}
+          rel={buttonTarget === '_self' ? undefined : 'noopener noreferrer'}
+          className={`w-full py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
+            isRecommended
+              ? 'bg-[#3b82f6] text-white hover:bg-[#2563eb]'
+              : 'bg-[#3b82f6] text-white hover:bg-[#2563eb]'
+          }`}
+        >
+          <span className="break-words">{buttonText}</span>
+          <ArrowRight className="w-4 h-4 shrink-0" />
+        </a>
+      ) : (
+        <button className={`w-full py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
+          isRecommended
+            ? 'bg-[#3b82f6] text-white hover:bg-[#2563eb]'
+            : 'bg-[#3b82f6] text-white hover:bg-[#2563eb]'
+        }`}>
+          <span className="break-words">{buttonText}</span>
+          <ArrowRight className="w-4 h-4 shrink-0" />
+        </button>
+      )}
     </div>
   );
 };

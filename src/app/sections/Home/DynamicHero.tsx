@@ -24,6 +24,10 @@ interface HeroContent {
   appStoreImage: string;
   googlePlayImage: string;
   dotText: string;
+  appStoreLink: string;
+  appStoreTarget: '_self' | '_blank';
+  googlePlayLink: string;
+  googlePlayTarget: '_self' | '_blank';
 }
 
 const DynamicHero: React.FC<{ sectionContent?: HeroContent }> = ({ sectionContent }) => {
@@ -48,7 +52,11 @@ const DynamicHero: React.FC<{ sectionContent?: HeroContent }> = ({ sectionConten
     activeTag: "Live Streaming",
     appStoreImage: '/Button1.png',
     googlePlayImage: '/Button2.png',
-    dotText: ''
+    dotText: '',
+    appStoreLink: '',
+    appStoreTarget: '_blank',
+    googlePlayLink: '',
+    googlePlayTarget: '_blank'
   };
   const isPreviewMode = useAppSelector(state => state.builder.isPreviewMode);
   
@@ -146,24 +154,58 @@ const DynamicHero: React.FC<{ sectionContent?: HeroContent }> = ({ sectionConten
                 </div>
 
                 <div className="2xl:mt-20 mt-10 flex items-center justify-center lg:justify-start gap-5">
-                    <button className="transition-transform hover:scale-98 cursor-pointer">
-                        <Image
-                            src={heroContent.appStoreImage || "/Button1.png"}
-                            alt="App Store"
-                            className="h-12 md:h-15"
-                            width={200}
-                            height={60}
-                        />
-                    </button>
-                    <button className="transition-transform hover:scale-98 cursor-pointer">
-                        <Image
-                            src={heroContent.googlePlayImage || "/Button2.png"}
-                            alt="Google Play"
-                            className="h-12 md:h-15"
-                            width={200}
-                            height={60}
-                        />
-                    </button>
+                    {heroContent.appStoreLink ? (
+                        <a
+                            href={heroContent.appStoreLink}
+                            target={heroContent.appStoreTarget || '_blank'}
+                            rel={heroContent.appStoreTarget === '_self' ? undefined : 'noopener noreferrer'}
+                            className="transition-transform hover:scale-98 cursor-pointer"
+                        >
+                            <Image
+                                src={heroContent.appStoreImage || "/Button1.png"}
+                                alt="App Store"
+                                className="h-12 md:h-15"
+                                width={200}
+                                height={60}
+                            />
+                        </a>
+                    ) : (
+                        <button className="transition-transform hover:scale-98 cursor-pointer">
+                            <Image
+                                src={heroContent.appStoreImage || "/Button1.png"}
+                                alt="App Store"
+                                className="h-12 md:h-15"
+                                width={200}
+                                height={60}
+                            />
+                        </button>
+                    )}
+                    {heroContent.googlePlayLink ? (
+                        <a
+                            href={heroContent.googlePlayLink}
+                            target={heroContent.googlePlayTarget || '_blank'}
+                            rel={heroContent.googlePlayTarget === '_self' ? undefined : 'noopener noreferrer'}
+                            className="transition-transform hover:scale-98 cursor-pointer"
+                        >
+                            <Image
+                                src={heroContent.googlePlayImage || "/Button2.png"}
+                                alt="Google Play"
+                                className="h-12 md:h-15"
+                                width={200}
+                                height={60}
+                            />
+                        </a>
+                    ) : (
+                        <button className="transition-transform hover:scale-98 cursor-pointer">
+                            <Image
+                                src={heroContent.googlePlayImage || "/Button2.png"}
+                                alt="Google Play"
+                                className="h-12 md:h-15"
+                                width={200}
+                                height={60}
+                            />
+                        </button>
+                    )}
                 </div>
             </div>
 
