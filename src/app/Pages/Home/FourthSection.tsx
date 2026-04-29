@@ -45,8 +45,8 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
     // Get features content from Redux store as fallback
     const { featuresContent } = useAppSelector(state => state.features);
 
-    // Use section content if available, otherwise use features content
-    const content = section?.content || featuresContent;
+    // Use section content only
+    const content = section?.content;
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -244,7 +244,7 @@ const FourthSection: React.FC<FourthSectionProps> = ({ sectionId, onEdit }) => {
             className="transition-all duration-300 hover:-translate-y-2 md:col-span-6 lg:col-span-3 text-black rounded-[32px] p-6 2xl:p-8 flex flex-col justify-between min-h-[480px] md:min-h-[520px] overflow-hidden"
             style={{ backgroundColor: content.cards[0]?.backgroundColor || '#F1F3EE' }}
         >
-            <div className="mt-auto h-[220px] 2xl:h-[380px] relative flex justify-center items-start mb-4 overflow-hidden">
+            <div className="mt-auto h-[220px]  2xl:h-[380px] relative flex justify-center items-start mb-4 overflow-hidden">
                 {(content.cards[0]?.image) && (
                     <div 
                         className="w-full h-full bg-contain bg-no-repeat bg-top"

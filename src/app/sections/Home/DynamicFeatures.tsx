@@ -22,8 +22,8 @@ const DynamicFeatures = ({ section, onEdit }: DynamicFeaturesProps) => {
   // Get features content from Redux store
   const { featuresContent } = useAppSelector(state => state.features);
   
-  // Use section content if available, otherwise fallback to featuresContent
-  const content = section?.content || featuresContent;
+  // Use section content only
+  const content = section?.content;
 
   useEffect(() => {
     const observer = new IntersectionObserver(

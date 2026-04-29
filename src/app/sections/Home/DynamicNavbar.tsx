@@ -215,17 +215,19 @@ const DynamicNavbar: React.FC<DynamicNavbarProps> = ({ sectionId = 'navbar-1', o
 
           {/* Live Demo Button */}
           <div className="flex items-center gap-3">
-            {/* Builder Button - Always show */}
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = '/WebsiteBuilder';
-              }}
-              className="px-3 sm:px-7 py-2 sm:py-3 text-[10px] sm:text-[14px] rounded-lg font-bold transition-all whitespace-nowrap overflow-hidden flex items-center justify-center min-w-25 sm:min-w-40 bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-600/20"
-            >
-              <Edit3 size={16} />
-              <span className="ml-2">Builder</span>
-            </button>
+            {/* Builder Button - Hide in preview mode */}
+            {!isPreviewMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = '/WebsiteBuilder';
+                }}
+                className="px-3 sm:px-7 py-2 sm:py-3 text-[10px] sm:text-[14px] rounded-lg font-bold transition-all whitespace-nowrap overflow-hidden flex items-center justify-center min-w-25 sm:min-w-40 bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-600/20"
+              >
+                <Edit3 size={16} />
+                <span className="ml-2">Builder</span>
+              </button>
+            )}
             
             <button 
               className="relative group/btn px-3 sm:px-7 py-2 sm:py-3 text-[10px] sm:text-[14px] rounded-lg font-bold transition-all whitespace-nowrap overflow-hidden flex items-center justify-center min-w-[100px] sm:min-w-[160px]"

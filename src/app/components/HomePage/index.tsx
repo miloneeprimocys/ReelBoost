@@ -20,6 +20,9 @@ import FourthSection from "../../Pages/Home/FourthSection";
 import FifthSection from "../../Pages/Home/FifthSection";
 import SixthSection from "../../Pages/Home/SixthSection";
 import DynamicBenefits from "../../sections/Home/DynamicBenefits";
+import DynamicTestimonials from "../../sections/Home/DynamicTestimonials";
+import DynamicFaq from "../../sections/Home/DynamicFaq";
+import DynamicSubscriptionPlan from "../../sections/Home/DynamicSubscriptionPlan";
 
 function HomePageContent() {
   const { sections, isBuilderMode } = useAppSelector(state => state.builder);
@@ -126,6 +129,12 @@ function HomePageContent() {
             return <SixthSection key={section.id} />;
           case 'benefits':
             return <DynamicBenefits key={section.id} sectionId={section.id} />;
+          case 'testimonials':
+            return <DynamicTestimonials key={section.id} section={section} />;
+          case 'faq':
+            return <DynamicFaq key={section.id} section={section} />;
+          case 'subscription-plan':
+            return <DynamicSubscriptionPlan key={section.id} section={section} />;
           default:
             return (
               <div key={section.id} className="py-16 px-4 bg-gray-50">

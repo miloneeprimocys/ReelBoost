@@ -3,7 +3,7 @@ import { useAppDispatch } from '../../../hooks/reduxHooks';
 import { addSectionAndSetActive } from '../../../store/builderSlice';
 import { Plus } from 'lucide-react';
 
-type SectionType = 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+type SectionType = 'hero' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'fourth' | 'fifth' | 'sixth' | 'testimonials' | 'faq' | 'subscription-plan';
 
 interface AddSectionBoxProps {
   onSectionAdded?: () => void;
@@ -13,13 +13,16 @@ const AddSectionBox: React.FC<AddSectionBoxProps> = ({ onSectionAdded }) => {
   const dispatch = useAppDispatch();
   const [showOptions, setShowOptions] = useState(false);
 
-  const sectionTypes: { type: SectionType; name: string; description: string }[] = [
+  const sectionTypes: { type: SectionType; name: string; description: string; color?: string }[] = [
     { type: 'hero', name: 'Hero', description: 'Main hero section with title and CTA' },
     { type: 'fourth', name: 'Features', description: 'Feature showcase with grid layout' },
-    { type: 'second', name: 'Live Streaming', description: 'Live streaming section with features' },
-    { type: 'third', name: 'PK Battle', description: 'Competition battle section' },
+    { type: 'live-streaming', name: 'Live Streaming', description: 'Live streaming section with video and chat features', color: '#4A72FF' },
+    { type: 'pk-battle', name: 'PK Battle', description: 'PK battle competition section with gifting', color: '#FFB800' },
     { type: 'fifth', name: 'Admin Panel', description: 'Admin dashboard with tabs' },
     { type: 'sixth', name: 'Benefits', description: 'Benefits grid with icons' },
+    { type: 'testimonials', name: 'Testimonials', description: 'Customer testimonials slider' },
+    { type: 'faq', name: 'FAQ', description: 'Frequently asked questions accordion' },
+    { type: 'subscription-plan', name: 'Subscription Plan', description: 'Pricing plans and subscriptions' },
   ];
 
   const handleAddSection = (type: SectionType, name: string) => {
@@ -48,11 +51,24 @@ const AddSectionBox: React.FC<AddSectionBoxProps> = ({ onSectionAdded }) => {
             <button
               key={sectionType.type}
               onClick={() => handleAddSection(sectionType.type, sectionType.name)}
-              className="p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-left group"
+              className="p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-left group relative overflow-hidden"
             >
+              {/* Color indicator bar for special sections */}
+              {sectionType.color && (
+                <div 
+                  className="absolute top-0 left-0 w-1 h-full"
+                  style={{ backgroundColor: sectionType.color }}
+                />
+              )}
               <div className="flex items-center mb-2">
-                <Plus className="w-5 h-5 text-blue-500 mr-2" />
-                <span className="font-medium text-gray-900 group-hover:text-blue-600">
+                <Plus 
+                  className="w-5 h-5 mr-2" 
+                  style={{ color: sectionType.color || '#3B82F6' }}
+                />
+                <span 
+                  className="font-medium group-hover:text-blue-600"
+                  style={{ color: sectionType.color || '#111827' }}
+                >
                   {sectionType.name}
                 </span>
               </div>

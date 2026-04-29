@@ -48,7 +48,7 @@ export default function Hero({ sectionId, onEdit }: HeroProps) {
     }, []);
 
     return (
-        <section id={sectionId} className="relative w-full pt-8  px-4 md:px-8 bg-white overflow-hidden pb-10 md:pb-12 lg:pb-16 group max-w-full overflow-x-hidden">
+        <section id={sectionId} className="relative w-full pt-12  px-4 md:px-8 bg-white overflow-hidden pb-10 md:pb-12 lg:pb-16 group max-w-full overflow-x-hidden">
             {/* Edit Icon - Top Right Corner - Only visible in builder mode */}
             {onEdit && (
                 <button

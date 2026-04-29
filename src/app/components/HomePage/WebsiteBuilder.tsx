@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { X, Edit3, ChevronLeft, Undo, Redo, Facebook, Twitter, Linkedin, Instagram, Phone, Mail, FileText } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/reduxHooks";
 import { store } from "../../store";
@@ -24,7 +25,7 @@ import {
   selectSectionsCanRedo,
   selectPendingBannerSections
 } from "../../store/builderSlice";
-import { addSectionToPage } from "../../store/pagesSlice";
+import { addSectionToPage, removeSectionFromPage } from "../../store/pagesSlice";
 import {
   setActiveBannerSection, 
   updateBannerContent,
@@ -56,6 +57,9 @@ import AdminEditor from "./WebsiteBuilder/AdminEditor";
 import BenefitsEditor from "./WebsiteBuilder/BenefitsEditor";
 import NavbarEditor from "./WebsiteBuilder/NavbarEditor";
 import FooterEditor from "./WebsiteBuilder/FooterEditor";
+import TestimonialsEditor from "./WebsiteBuilder/TestimonialsEditor";
+import FaqEditor from "./WebsiteBuilder/FaqEditor";
+import SubscriptionPlanEditor from "./WebsiteBuilder/SubscriptionPlanEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 import PagesList from "./WebsiteBuilder/PagesList";
 import AddPageModal from "./WebsiteBuilder/AddPageModal";
@@ -73,8 +77,21 @@ import DynamicFeatures from "../../sections/Home/DynamicFeatures";
 import DynamicFooter from "../../sections/Home/DynamicFooter";
 import DynamicNavbar from "../../sections/Home/DynamicNavbar";
 import DynamicContactHero from "../../sections/Home/ContactHero";
+import DynamicTestimonials from "../../sections/Home/DynamicTestimonials";
+import DynamicFaq from "../../sections/Home/DynamicFaq";
+import DynamicSubscriptionPlan from "../../sections/Home/DynamicSubscriptionPlan";
 
-const WebsiteBuilder: React.FC = () => {
+interface WebsiteBuilderProps {
+  currentDevice?: 'desktop' | 'tablet' | 'mobile';
+  previewZoom?: number;
+  onZoomChange?: (zoom: number) => void;
+}
+
+const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({ 
+  currentDevice = 'desktop',
+  previewZoom = 100,
+  onZoomChange
+}) => {
   const dispatch = useAppDispatch();
   const { sections, isBuilderMode, activeSection, currentPage } = useAppSelector(state => state.builder);
   const { pages: pagesFromSlice } = useAppSelector(state => state.pages);
@@ -135,7 +152,7 @@ const WebsiteBuilder: React.FC = () => {
   }, [pendingBannerSections, dispatch]);
 
   // Wrapper functions for banner operations
-  const handleAddBannerSection = () => {
+  const handleAddBannerSection = useCallback(() => {
     const allOrders = [
       ...sections.map(s => s.order || 0),
       ...bannerSections.map(s => s.order || 0),
@@ -156,7 +173,14 @@ const WebsiteBuilder: React.FC = () => {
     // THEN: Add the banner section with pre-generated ID
     dispatch(addBannerSection({ type: 'banner', id: sectionId, maxOrder }));
 
-    // Also add to current page's sections (for non-home pages)
+    // Add section to home page (for preview visibility)
+    dispatch(addSectionToPage({
+      pageId: 'home',
+      sectionId,
+      sectionName: 'Banner'
+    }));
+
+    // Also add to current page if different from home
     if (currentPage !== 'home') {
       dispatch(addSectionToPage({
         pageId: currentPage,
@@ -166,29 +190,60 @@ const WebsiteBuilder: React.FC = () => {
     }
 
     console.log('Banner section added');
-  };
+    // Auto-sync useEffect will handle syncing to iframe
+  }, [sections, bannerSections, adminSections, dispatch, currentPage, pagesFromSlice]);
 
-  // Helper function to add section to both builder and current page
-  const handleAddSection = (type: string, name: string) => {
+  // Helper function to add section to both builder and home page
+  const handleAddSection = useCallback((type: string, name: string) => {
     // Generate section ID once to use for both slices
     const sectionId = `${type}-${Date.now()}`;
+    console.log('handleAddSection called:', { type, name, sectionId });
 
-    // First add section to builder with the pre-generated ID
-    dispatch(addSectionAndSetActive({ type: type as any, name, sectionId }));
+    // For banner sections, use bannerSlice; otherwise use builderSlice
+    if (type === 'banner') {
+      console.log('Adding banner section to bannerSlice:', sectionId);
+      const allOrders = [
+        ...sections.map(s => s.order || 0),
+        ...bannerSections.map(s => s.order || 0)
+      ];
+      const maxOrder = Math.max(...allOrders, 0);
+      console.log('Banner maxOrder:', maxOrder);
+      dispatch(addBannerSection({ type: 'banner', id: sectionId, maxOrder }));
+    } else {
+      console.log('Adding section to builderSlice:', sectionId);
+      dispatch(addSectionAndSetActive({ type: type as any, name, sectionId }));
+    }
 
-    // Then add section to current page's sections array with SAME ID
+    // Add section to home page (for preview visibility)
     dispatch(addSectionToPage({
-      pageId: currentPage,
+      pageId: 'home',
       sectionId,
       sectionName: name
     }));
-  };
+
+    // Also add to current page if different from home
+    if (currentPage !== 'home') {
+      dispatch(addSectionToPage({
+        pageId: currentPage,
+        sectionId,
+        sectionName: name
+      }));
+    }
+
+    // Auto-sync useEffect will handle syncing to iframe
+  }, [dispatch, currentPage, sections, bannerSections]);
 
   const handleDeleteBannerSection = (id: string) => {
     console.log('Before deleting banner - banner sections count:', bannerSections.length);
     
-    // Delete banner section - the useEffect will automatically track the change
+    // Delete banner section from banner slice
     dispatch(deleteBannerSection(id));
+    
+    // Also remove from pages slice
+    dispatch(removeSectionFromPage({ pageId: 'home', sectionId: id }));
+    if (currentPage !== 'home') {
+      dispatch(removeSectionFromPage({ pageId: currentPage, sectionId: id }));
+    }
     
     console.log('Banner section deleted');
   };
@@ -381,6 +436,7 @@ const WebsiteBuilder: React.FC = () => {
   const [dragOverItem, setDragOverItem] = useState<number>(-1);
   const [imageUploadType, setImageUploadType] = useState<string>('');
   const [showEditorOnMobile, setShowEditorOnMobile] = useState(false);
+  const [previewKey, setPreviewKey] = useState<number>(Date.now());
   const [showSectionSelection, setShowSectionSelection] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const editingOverlay = useAppSelector(state => state.editor.editingOverlay);
@@ -390,6 +446,16 @@ const WebsiteBuilder: React.FC = () => {
   
   // View mode state: 'pages' or 'sections'
   const [viewMode, setViewMode] = useState<'pages' | 'sections'>('pages');
+  
+  // Get pathname to detect nested routes
+  const pathname = usePathname();
+  
+  // Auto-switch to sections view when on nested route (/WebsiteBuilder/[page])
+  useEffect(() => {
+    if (pathname && pathname.startsWith('/WebsiteBuilder/') && pathname !== '/WebsiteBuilder') {
+      setViewMode('sections');
+    }
+  }, [pathname]);
   
 
 
@@ -424,15 +490,73 @@ const WebsiteBuilder: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Debug: Log when activeBannerSection changes
+  // Handle postMessage from iframe preview
   useEffect(() => {
-    console.log('=== WebsiteBuilder activeBannerSection changed ===');
-    console.log('activeBannerSection:', activeBannerSection);
-    console.log('showEditorOnMobile:', showEditorOnMobile);
-    console.log('isMobile:', isMobile);
-    console.log('bannerSections:', bannerSections);
-    console.log('isBuilderMode:', isBuilderMode);
-  }, [activeBannerSection, showEditorOnMobile, isMobile, bannerSections, isBuilderMode]);
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'SECTION_CLICK') {
+        const { sectionId, sectionType, contentType, elementId } = event.data;
+        console.log('Section clicked in iframe:', { sectionId, sectionType, contentType, elementId });
+        
+        if (isMobile) {
+          setMobileView('preview');
+        }
+        
+        dispatch(setEditingOverlay({
+          isOpen: true,
+          sectionId,
+          sectionType,
+          contentType: contentType || sectionType
+        }));
+      } else if (event.data && event.data.type === 'ADD_SECTION') {
+        const { sectionType, sectionName } = event.data;
+        console.log('Add section requested from iframe:', { sectionType, sectionName });
+        
+        if (sectionType === 'banner') {
+          handleAddBannerSection();
+        } else {
+          handleAddSection(sectionType, sectionName);
+        }
+      } else if (event.data && event.data.type === 'REQUEST_STATE') {
+        // Send current state to iframe
+        console.log('Received REQUEST_STATE from iframe, sending SYNC_STATE');
+        const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          const builderState = {
+            sections,
+            adminSections,
+            activeSection,
+            currentPage
+          };
+          const bannerState = { sections: bannerSections };
+          const pagesState = { pages: pagesFromSlice };
+          
+          iframe.contentWindow.postMessage({
+            type: 'SYNC_STATE',
+            builderState,
+            bannerState,
+            pagesState
+          }, '*');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [dispatch, isMobile, handleAddSection, handleAddBannerSection, sections, bannerSections, adminSections, activeSection, currentPage, pagesFromSlice]);
+
+  // Auto-sync state to iframe whenever sections/pages change
+  useEffect(() => {
+    const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      console.log('Auto-syncing state to iframe');
+      iframe.contentWindow.postMessage({
+        type: 'SYNC_STATE',
+        builderState: { sections, adminSections },
+        bannerState: { sections: bannerSections },
+        pagesState: { pages: pagesFromSlice }
+      }, '*');
+    }
+  }, [sections, bannerSections, adminSections, pagesFromSlice]);
 useEffect(() => {
   // Only set default hero if we're in builder mode, no sections are active,
   // AND we haven't recently worked with banner sections
@@ -867,227 +991,72 @@ useEffect(() => {
     // Convert Map to array and sort by order (same as SectionList)
     const allSections = Array.from(sectionsMap.values()).sort((a, b) => a.order - b.order);
 
+    // Handle zoom change
+    const handleZoomChange = (newZoom: number) => {
+      if (onZoomChange) {
+        onZoomChange(Math.max(50, Math.min(150, newZoom)));
+      }
+    };
+
+    // Get device dimensions for iframe
+    const getDeviceDimensions = () => {
+      switch (currentDevice) {
+        case 'mobile': return { width: '375px', height: '100%' };
+        case 'tablet': return { width: '768px', height: '100%' };
+        case 'desktop': default: return { width: '100%', height: '100%' };
+      }
+    };
+
+    const deviceDims = getDeviceDimensions();
+
     return (
-      <div ref={previewRef} className="flex-1 bg-white overflow-y-auto -mt-0.5" id="preview-container">
-        <div className="min-h-full flex flex-col lg:flex-col md:flex-col">
-          {/* Dynamic Navbar */}
-          <DynamicNavbar
-            isPreviewMode={true}
-            onEdit={() => {
-              dispatch(setEditingOverlay({
-                isOpen: true,
-                sectionId: 'navbar-1',
-                sectionType: 'navbar',
-                contentType: 'navbar'
-              }));
-            }}
-          />
-          {pageSections.map((section) => {
-            // Only render section if it's visible
-            if (!section.visible) return null;
-            
-            switch (section.type) {
-              case 'hero':
-                return <Hero key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  console.log('Hero section clicked:', { sectionId, contentType, elementId });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionId,
-                    sectionType: 'hero',
-                    contentType
-                  }));
-                }} />;
-              case 'second':
-                return <SecondSection key={section.id} sectionId={section.id} />;
-              case 'third':
-                return <ThirdSection key={section.id} sectionId={section.id} />;
-              case 'fourth':
-                return <FourthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  console.log('Fourth section clicked:', { sectionId, contentType, elementId });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionId,
-                    sectionType: 'features',
-                    contentType
-                  }));
-                }} />;
-              case 'banner':
-                return <DynamicBanner key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionId,
-                    sectionType: 'banner',
-                    contentType
-                  }));
-                }} />;
-              case 'text':
-              case 'image':
-                return <Hero key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  console.log('Hero section clicked:', { sectionId, contentType, elementId });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionType: 'hero',
-                    sectionId,
-                    contentType
-                  }));
-                }} />;
-              case 'features':
-                return <DynamicFeatures 
-                  key={section.id} 
-                  section={section} 
-                  onEdit={(sectionId, contentType, elementId) => {
-                    console.log('Features section clicked:', { sectionId, contentType, elementId });
-                    // On mobile, switch to preview view first, then open editor
-                    if (isMobile) {
-                      setMobileView('preview');
-                    }
-                    dispatch(setEditingOverlay({
-                      isOpen: true,
-                      sectionType: 'features',
-                      sectionId,
-                      contentType
-                    }));
-                  }} 
-                />;
-              case 'fifth':
-                return <FifthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType) => {
-                  console.log('Fifth section clicked:', { sectionId, contentType });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    dispatch(toggleBuilderMode());
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionType: 'admin',
-                    sectionId,
-                    contentType
-                  }));
-                }} />;
-              case 'sixth':
-                return <SixthSection key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  console.log('Sixth section clicked:', { sectionId, contentType, elementId });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionType: 'admin',
-                    sectionId,
-                    contentType
-                  }));
-                }} />;
-              case 'benefits':
-                return <DynamicBenefits key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionType: 'benefits',
-                    sectionId,
-                    contentType
-                  }));
-                }} />;
-              case 'contact-hero':
-                return <DynamicContactHero key={section.id} sectionId={section.id} onEdit={(sectionId, contentType, elementId) => {
-                  console.log('Contact Hero section clicked:', { sectionId, contentType, elementId });
-                  // On mobile, switch to preview view first, then open editor
-                  if (isMobile) {
-                    setMobileView('preview');
-                  }
-                  dispatch(setEditingOverlay({
-                    isOpen: true,
-                    sectionId,
-                    sectionType: 'contact',
-                    contentType
-                  }));
-                }} />;
-              default:
-                return null;
-            }
-          })}
-          
-          {/* Add New Section Options */}
-          <div className="border-t-2 border-dashed border-gray-300 p-8 bg-gray-50" data-add-section-options>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Add New Section</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
-              <button
-                onClick={() => handleAddSection('hero', 'Hero Section')}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Text and Image</div>
-                <div className="text-sm text-gray-500">Hero section</div>
-              </button>
-              
-              <button
-                onClick={handleAddBannerSection}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Banner</div>
-                <div className="text-sm text-gray-500">Promotional</div>
-              </button>
-              
-              <button
-                onClick={() => handleAddSection('features', 'Features Section')}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Features</div>
-                <div className="text-sm text-gray-500">Showcase</div>
-              </button>
-              
-              <button
-                onClick={() => handleAddSection('fifth', 'Admin Panel Section')}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Admin Panel</div>
-                <div className="text-sm text-gray-500">Dashboard</div>
-              </button>
-              
-              <button
-                onClick={() => handleAddSection('benefits', 'Benefits Section')}
-                className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-center"
-              >
-                <div className="font-medium text-gray-900">Benefits</div>
-                <div className="text-sm text-gray-500">Highlight advantages</div>
-              </button>
-            </div>
+      <div ref={previewRef} className="flex-1 bg-gray-100 overflow-auto -mt-0.5 relative flex flex-col" id="preview-container">
+   
+
+        {/* Iframe Preview Container */}
+        <div className="flex-1 overflow-auto flex flex-col items-center p-4 relative">
+          {/* Zoom Controls - Absolute at bottom left of preview */}
+          <div className="absolute bottom-4 left-4 m-2 z-40 bg-white rounded-xl shadow-lg border border-gray-200 p-2 flex items-center gap-2">
+          <button
+            onClick={() => handleZoomChange((previewZoom || 100) - 10)}
+            disabled={(previewZoom || 100) <= 50}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Zoom out"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          </button>
+          <span className="text-sm font-medium text-gray-700 w-14 text-center">{previewZoom || 100}%</span>
+          <button
+            onClick={() => handleZoomChange((previewZoom || 100) + 10)}
+            disabled={(previewZoom || 100) >= 150}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Zoom in"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
           </div>
-          
-          {/* Footer Section */}
-          <DynamicFooter 
-            sectionId="footer-1" 
-            onEdit={(sectionId, contentType, elementId) => {
-              console.log('Footer section clicked:', { sectionId, contentType, elementId });
-              // On mobile, switch to preview view first, then open editor
-              if (isMobile) {
-                setMobileView('preview');
-              }
-              dispatch(setEditingOverlay({
-                isOpen: true,
-                sectionId,
-                sectionType: 'footer',
-                contentType: 'footer'
-              }));
-            }} 
-          />
+
+          <div 
+            className="bg-white shadow-2xl rounded-lg overflow-hidden transition-all duration-300 flex-1 w-full"
+            style={{ 
+              width: deviceDims.width,
+              maxWidth: '100%',
+              transform: `scale(${((previewZoom || 100) / 100)})`,
+              transformOrigin: 'top center'
+            }}
+          >
+            <iframe
+              key={previewKey}
+              src="/preview"
+              className="w-full h-full border-0"
+              title="Website Preview"
+              sandbox="allow-same-origin allow-scripts"
+            />
+          </div>
         </div>
       </div>
     );
@@ -1125,12 +1094,15 @@ useEffect(() => {
         
         <div className="flex-1 h-full overflow-hidden">
           {editingOverlay.sectionType === 'navbar' ? <NavbarEditor /> :
-           editingOverlay.sectionType === 'banner' ? <BannerEditor /> : 
-           editingOverlay.sectionType === 'hero' ? <HeroEditor /> : 
-           editingOverlay.sectionType === 'features' ? <FeaturesEditor /> : 
+           editingOverlay.sectionType === 'banner' ? <BannerEditor /> :
+           editingOverlay.sectionType === 'hero' ? <HeroEditor /> :
+           editingOverlay.sectionType === 'features' ? <FeaturesEditor /> :
            editingOverlay.sectionType === 'benefits' ? <BenefitsEditor /> :
            editingOverlay.sectionType === 'footer' ? <FooterEditor /> :
-           editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth') ? <BenefitsEditor /> : 
+           editingOverlay.sectionType === 'testimonials' ? <TestimonialsEditor /> :
+           editingOverlay.sectionType === 'faq' ? <FaqEditor /> :
+           editingOverlay.sectionType === 'subscription-plan' ? <SubscriptionPlanEditor /> :
+           editingOverlay.sectionType === 'admin' && editingOverlay.sectionId?.startsWith('sixth') ? <BenefitsEditor /> :
            editingOverlay.sectionType === 'admin' ? <AdminEditor /> : null}
         </div>
         
@@ -1231,10 +1203,10 @@ useEffect(() => {
                 onDragStart={handleDragStart}
                 onDragEnter={handleDragEnter}
                 onDragEnd={handleDragEnd}
-                onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
-                onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
-                onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
-                onSetActive={(id) => {
+                onToggleVisibility={(id: string) => dispatch(toggleSectionVisibility(id))}
+                onToggleBannerVisibility={(id: string) => dispatch(toggleBannerSectionVisibility(id))}
+                onToggleAdminVisibility={(id: string) => dispatch(toggleAdminSectionVisibility(id))}
+                onSetActive={(id: string | null) => {
                   console.log('*** onSetActive called with id:', id);
                   dispatch(setActiveSection(id));
                   dispatch(setActiveBannerSection(null));
@@ -1245,10 +1217,12 @@ useEffect(() => {
                   }
                   // Manual scroll to ensure it works
                   setTimeout(() => {
-                    scrollToSection(id);
+                    if (id) {
+                      scrollToSection(id);
+                    }
                   }, 200);
                 }}
-                onSetActiveBanner={(id) => {
+                onSetActiveBanner={(id: string | null) => {
                   console.log('*** onSetActiveBanner called with id:', id);
                   dispatch(setActiveBannerSection(id));
                   dispatch(setActiveSection(null));
@@ -1259,10 +1233,12 @@ useEffect(() => {
                   }
                   // Manual scroll to ensure it works
                   setTimeout(() => {
-                    scrollToSection(id);
+                    if (id) {
+                      scrollToSection(id);
+                    }
                   }, 200);
                 }}
-                onSetActiveAdmin={(id) => {
+                onSetActiveAdmin={(id: string | null) => {
                   console.log('*** onSetActiveAdmin called with id:', id);
                   dispatch(setActiveAdminSection(id));
                   dispatch(setActiveSection(null));
@@ -1273,12 +1249,14 @@ useEffect(() => {
                   }
                   // Manual scroll to ensure it works
                   setTimeout(() => {
-                    scrollToSection(id);
+                    if (id) {
+                      scrollToSection(id);
+                    }
                   }, 200);
                 }}
                 onSetActiveNavbar={handleSetActiveNavbar}
                 onSetActiveFooter={handleSetActiveFooter}
-                onDelete={(id) => dispatch(deleteSection(id))}
+                onDelete={(id: string) => dispatch(deleteSection(id))}
                 onDeleteBanner={handleDeleteBannerSection}
                 onDeleteAdmin={handleDeleteAdminSection}
                 onUndo={handleSectionsUndo}
@@ -1389,10 +1367,10 @@ useEffect(() => {
                 onDragStart={handleDragStart}
                 onDragEnter={handleDragEnter}
                 onDragEnd={handleDragEnd}
-                onToggleVisibility={(id) => dispatch(toggleSectionVisibility(id))}
-                onToggleBannerVisibility={(id) => dispatch(toggleBannerSectionVisibility(id))}
-                onToggleAdminVisibility={(id) => dispatch(toggleAdminSectionVisibility(id))}
-                onSetActive={(id) => {
+                onToggleVisibility={(id: string) => dispatch(toggleSectionVisibility(id))}
+                onToggleBannerVisibility={(id: string) => dispatch(toggleBannerSectionVisibility(id))}
+                onToggleAdminVisibility={(id: string) => dispatch(toggleAdminSectionVisibility(id))}
+                onSetActive={(id: string | null) => {
                   console.log('*** onSetActive called with id:', id);
                   dispatch(setActiveSection(id));
                   dispatch(setActiveBannerSection(null));
@@ -1400,10 +1378,12 @@ useEffect(() => {
                   console.log('activeSection set to:', id, 'activeBannerSection cleared');
                   // Manual scroll to ensure it works
                   setTimeout(() => {
-                    scrollToSection(id);
+                    if (id) {
+                      scrollToSection(id);
+                    }
                   }, 200);
                 }}
-                onSetActiveBanner={(id) => {
+                onSetActiveBanner={(id: string | null) => {
                   console.log('=== onSetActiveBanner called ===', id);
                   dispatch(setActiveSection(null)); // Clear hero
                   dispatch(setActiveAdminSection(null)); // Clear admin
@@ -1411,10 +1391,12 @@ useEffect(() => {
                   console.log('activeBannerSection set to:', id, 'activeSection cleared to null');
                   // Manual scroll to ensure it works
                   setTimeout(() => {
-                    scrollToSection(id);
+                    if (id) {
+                      scrollToSection(id);
+                    }
                   }, 200);
                 }}
-                onSetActiveAdmin={(id) => {
+                onSetActiveAdmin={(id: string | null) => {
                   console.log('=== onSetActiveAdmin called ===', id);
                   dispatch(setActiveSection(null)); // Clear hero
                   dispatch(setActiveBannerSection(null)); // Clear banner
@@ -1422,12 +1404,14 @@ useEffect(() => {
                   console.log('activeAdminSection set to:', id, 'other sections cleared');
                   // Manual scroll to ensure it works
                   setTimeout(() => {
-                    scrollToSection(id);
+                    if (id) {
+                      scrollToSection(id);
+                    }
                   }, 200);
                 }}
                 onSetActiveNavbar={handleSetActiveNavbar}
                 onSetActiveFooter={handleSetActiveFooter}
-                onDelete={(id) => dispatch(deleteSection(id))}
+                onDelete={(id: string) => dispatch(deleteSection(id))}
                 onDeleteBanner={handleDeleteBannerSection}
                 onDeleteAdmin={handleDeleteAdminSection}
                 onUndo={handleSectionsUndo}

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { GripVertical, Edit3, Eye, EyeOff, Trash2, Layout, Plus, Undo, Redo } from "lucide-react";
 
-type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth';
+type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'testimonials' | 'faq' | 'subscription-plan';
 
 interface SectionListProps {
   sections: any[];
@@ -122,6 +122,16 @@ const SectionList: React.FC<SectionListProps> = ({
           onClick={() => {
             console.log('Navbar section clicked - redirecting to navbar');
             onSetActiveNavbar();
+            
+            // Send scroll message to iframe
+            const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+            if (iframe && iframe.contentWindow) {
+              console.log('Sending SCROLL_TO_SECTION to iframe for navbar');
+              iframe.contentWindow.postMessage({
+                type: 'SCROLL_TO_SECTION',
+                sectionId: 'navbar-1'
+              }, '*');
+            }
           }}
           className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white`}
         >
@@ -161,6 +171,12 @@ const SectionList: React.FC<SectionListProps> = ({
             if (section.id === 'third-1') return 'PK Battle';
             if (section.type === 'banner') return 'Banner';
             if (isAdminSection) return 'Admin Panel';
+            if (section.type === 'testimonials') return 'Testimonials';
+            if (section.type === 'faq') return 'FAQ';
+            if (section.type === 'subscription-plan') return 'Pricing';
+            if (section.type === 'fourth' || section.type === 'features') return 'Features';
+            if (section.type === 'fifth') return 'Admin Panel';
+            if (section.type === 'sixth' || section.type === 'benefits') return 'Benefits';
             return section.type;
           };
           
@@ -186,10 +202,7 @@ const SectionList: React.FC<SectionListProps> = ({
                   isBannerSection
                 });
                 
-                // List all available elements in the document for debugging
-                const allElements = document.querySelectorAll('[id]');
-                console.log('Available elements with IDs:', Array.from(allElements).map(el => el.id));
-                
+                // Set active section
                 if (isBannerSection) {
                   console.log('SectionList - Calling onSetActiveBanner with:', section.id);
                   onSetActiveBanner(section.id);
@@ -197,6 +210,24 @@ const SectionList: React.FC<SectionListProps> = ({
                   console.log('SectionList - Calling onSetActive with:', section.id);
                   onSetActive(section.id);
                 }
+                
+                // Send scroll message to iframe preview
+                const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+                if (iframe && iframe.contentWindow) {
+                  console.log('Sending SCROLL_TO_SECTION to iframe for:', section.id);
+                  iframe.contentWindow.postMessage({
+                    type: 'SCROLL_TO_SECTION',
+                    sectionId: section.id
+                  }, '*');
+                } else {
+                  console.log('Iframe not found, trying window.parent (for mobile)');
+                  // For mobile view where we might be in a different context
+                  window.parent.postMessage({
+                    type: 'SCROLL_TO_SECTION',
+                    sectionId: section.id
+                  }, '*');
+                }
+                
                 console.log('=== SectionList Click END ===');
               }}
               className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 ${
@@ -214,37 +245,55 @@ const SectionList: React.FC<SectionListProps> = ({
               
               <div className="flex items-center gap-1">
                 
-                <button
+                <div
                   onClick={(e) => {
-                    e.stopPropagation();
-                    // Simplified logic: Always use onToggleVisibility for builder sections
-                    if (section.source === 'builder' || (!section.source && section.type !== 'banner')) {
-                      onToggleVisibility(section.id);
-                    } else if (section.source === 'banner') {
-                      onToggleBannerVisibility(section.id);
-                    } else if (isAdminSection) {
-                      onToggleAdminVisibility(section.id);
-                    } else {
-                      onToggleVisibility(section.id);
-                    }
+                    console.log('Button div clicked for section:', { id: section.id, type: section.type, source: section.source, isAdminSection, visible: section.visible });
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-gray-700 hover:text-gray-900"
                   title={section.visible ? "Hide Section" : "Show Section"}
                 >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Simplified logic: Always use onToggleVisibility for builder sections
+                      console.log('Toggle visibility clicked:', { id: section.id, type: section.type, source: section.source, isAdminSection, visible: section.visible });
+                      if (section.source === 'builder' || (!section.source && section.type !== 'banner')) {
+                        console.log('Toggling builder section visibility:', section.id);
+                        onToggleVisibility(section.id);
+                      } else if (section.source === 'banner') {
+                        console.log('Toggling banner section visibility:', section.id);
+                        onToggleBannerVisibility(section.id);
+                      } else if (isAdminSection) {
+                        console.log('Toggling admin section visibility:', section.id);
+                        onToggleAdminVisibility(section.id);
+                      } else {
+                        console.log('Toggling default section visibility:', section.id);
+                        onToggleVisibility(section.id);
+                      }
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-gray-700 hover:text-gray-900"
+                    title={section.visible ? "Hide Section" : "Show Section"}
+                  >
                   {section.visible ? <Eye size={18} className="text-gray-700" /> : <EyeOff size={18} className="text-gray-500" />}
                 </button>
+                </div>
                 
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     // Handle delete for different section types
+                    console.log('Delete clicked for section:', { id: section.id, type: section.type, source: section.source, isAdminSection });
                     if (section.type === 'banner' && section.source === 'builder') {
+                      console.log('Deleting builder banner section:', section.id);
                       onDelete(section.id);
                     } else if (section.source === 'banner') {
+                      console.log('Deleting banner slice section:', section.id);
                       onDeleteBanner(section.id);
                     } else if (isAdminSection) {
+                      console.log('Deleting admin section:', section.id);
                       onDeleteAdmin(section.id);
                     } else {
+                      console.log('Deleting builder section:', section.id);
                       onDelete(section.id);
                     }
                   }}
@@ -263,42 +312,27 @@ const SectionList: React.FC<SectionListProps> = ({
       <div className="mt-4">
         <button
           onClick={() => {
-            console.log('Add New Section button clicked - switching to preview and scrolling');
+            console.log('Add New Section button clicked - scrolling to add section in preview');
             
             // Check if mobile
             const isMobile = window.innerWidth < 768;
             
             if (isMobile && onSwitchToPreview) {
               console.log('Mobile detected - calling onSwitchToPreview');
-              // Switch to preview view (same as other sections do)
               onSwitchToPreview();
             }
             
-            // Wait for view change, then scroll to add section options
+            // Send scroll message to iframe for add new section
             setTimeout(() => {
-              const addSectionElement = document.querySelector('[data-add-section-options]');
-              const previewContainer = document.getElementById('preview-container');
-              
-              console.log('Found add section element:', addSectionElement);
-              console.log('Found preview container:', previewContainer);
-              
-              if (addSectionElement && previewContainer) {
-                // Scroll to the add section element
-                const elementRect = addSectionElement.getBoundingClientRect();
-                const containerRect = previewContainer.getBoundingClientRect();
-                const scrollTop = elementRect.top - containerRect.top + previewContainer.scrollTop - 20;
-                
-                console.log('Scrolling to position:', scrollTop);
-                previewContainer.scrollTo({ 
-                  top: scrollTop, 
-                  behavior: 'smooth' 
-                });
-              } else if (previewContainer) {
-                // Fallback: scroll to bottom
-                console.log('Element not found, scrolling to bottom');
-                previewContainer.scrollTop = previewContainer.scrollHeight;
+              const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+              if (iframe && iframe.contentWindow) {
+                console.log('Sending SCROLL_TO_SECTION to iframe for add-new-section');
+                iframe.contentWindow.postMessage({
+                  type: 'SCROLL_TO_SECTION',
+                  sectionId: 'add-new-section'
+                }, '*');
               }
-            }, isMobile ? 400 : 100); // Longer delay for mobile
+            }, isMobile ? 400 : 100);
           }}
           className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 flex items-center justify-center gap-2 cursor-pointer md:p-3 lg:p-3"
         >
@@ -320,81 +354,17 @@ const SectionList: React.FC<SectionListProps> = ({
               onSwitchToPreview();
             }
             
-            // Scroll to footer section
+            // Send scroll message to iframe for footer
             setTimeout(() => {
-              console.log('Attempting to scroll to footer...');
-              
-              // List all available elements for debugging
-              const allElements = document.querySelectorAll('[id]');
-              const footerElements = Array.from(allElements).filter(el => 
-                el.id.toLowerCase().includes('footer')
-              );
-              console.log('Available footer elements:', footerElements.map(el => ({ id: el.id, tagName: el.tagName })));
-              
-              // Try different possible footer IDs
-              const possibleIds = ['footer-1', 'footer', 'dynamic-footer'];
-              let footerElement = null;
-              let foundId = null;
-              
-              for (const id of possibleIds) {
-                const element = document.getElementById(id);
-                if (element) {
-                  footerElement = element;
-                  foundId = id;
-                  console.log(`Found footer element with ID: ${id}`);
-                  break;
-                }
+              const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+              if (iframe && iframe.contentWindow) {
+                console.log('Sending SCROLL_TO_SECTION to iframe for footer');
+                iframe.contentWindow.postMessage({
+                  type: 'SCROLL_TO_SECTION',
+                  sectionId: 'footer-1'
+                }, '*');
               }
-              
-              const previewContainer = document.getElementById('preview-container');
-              console.log('Preview container found:', !!previewContainer);
-              
-              if (footerElement && previewContainer) {
-                console.log(`Scrolling to footer (${foundId}) within preview container`);
-                const elementOffsetTop = footerElement.offsetTop;
-                const offset = 100; // Header offset
-                const targetScrollTop = elementOffsetTop - offset;
-                
-                console.log('Scroll details:', {
-                  elementOffsetTop,
-                  targetScrollTop,
-                  containerScrollTop: previewContainer.scrollTop,
-                  containerScrollHeight: previewContainer.scrollHeight,
-                  containerClientHeight: previewContainer.clientHeight
-                });
-                
-                previewContainer.scrollTo({
-                  top: targetScrollTop,
-                  behavior: 'smooth'
-                });
-                
-                // Add visual feedback
-                setTimeout(() => {
-                  footerElement.style.transition = 'background-color 0.3s ease';
-                  footerElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-                  setTimeout(() => {
-                    footerElement.style.backgroundColor = '';
-                  }, 1000);
-                }, 500);
-                
-              } else if (footerElement) {
-                console.log(`Scrolling to footer (${foundId}) using scrollIntoView`);
-                footerElement.scrollIntoView({ behavior: 'smooth' });
-                
-                // Add visual feedback
-                setTimeout(() => {
-                  footerElement.style.transition = 'background-color 0.3s ease';
-                  footerElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-                  setTimeout(() => {
-                    footerElement.style.backgroundColor = '';
-                  }, 1000);
-                }, 500);
-                
-              } else {
-                console.error('Footer element not found! Tried IDs:', possibleIds);
-                console.log('All elements with IDs:', Array.from(allElements).map(el => el.id));
-              }
-            }, isMobile ? 600 : 200); // Increased delay for mobile
+            }, isMobile ? 400 : 100);
           }}
           className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white`}
         >
@@ -404,26 +374,10 @@ const SectionList: React.FC<SectionListProps> = ({
             <div className="font-medium text-gray-900 truncate md:text-sm lg:text-sm">Footer</div>
             <div className="text-sm text-gray-500 capitalize md:text-xs lg:text-xs">Footer Section</div>
           </div>
-          
-          {/* <div className="flex items-center gap-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Footer edit button clicked - opening footer editor');
-                
-                // Open footer editor
-                onSetActiveFooter();
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-gray-700 hover:text-gray-900"
-              title="Edit Footer"
-            >
-              <Edit3 size={18} className="text-gray-700" />
-            </button>
-          </div> */}
         </div>
       </div>
 
-          </div>
+    </div>
   );
 };
 

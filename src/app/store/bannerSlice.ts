@@ -142,7 +142,10 @@ const bannerSlice = createSlice({
     },
     
     deleteBannerSection: (state, action: PayloadAction<string>) => {
+      console.log('deleteBannerSection called with id:', action.payload);
+      console.log('Before delete - sections count:', state.sections.length);
       state.sections = state.sections.filter(s => s.id !== action.payload);
+      console.log('After delete - sections count:', state.sections.length);
       if (state.activeSection === action.payload) {
         state.activeSection = null;
       }
@@ -150,9 +153,13 @@ const bannerSlice = createSlice({
     
     // Visibility and ordering
     toggleBannerSectionVisibility: (state, action: PayloadAction<string>) => {
+      console.log('toggleBannerSectionVisibility called with id:', action.payload);
       const section = state.sections.find(s => s.id === action.payload);
       if (section) {
+        console.log('Found banner section, toggling visibility from', section.visible, 'to', !section.visible);
         section.visible = !section.visible;
+      } else {
+        console.log('Banner section not found for id:', action.payload);
       }
     },
     
@@ -241,6 +248,12 @@ const bannerSlice = createSlice({
         state.history.present = next;
         state.sections = [...next];
       }
+    },
+    syncBannerState: (state, action: PayloadAction<Partial<BannerSliceState>>) => {
+      // Sync state from parent window (for iframe preview)
+      const newState = action.payload;
+      if (newState.sections) state.sections = newState.sections;
+      if (newState.activeSection !== undefined) state.activeSection = newState.activeSection;
     }
   },
   extraReducers: (builder) => {
@@ -380,18 +393,19 @@ export const {
   addBannerSection,
   updateBannerSection,
   deleteBannerSection,
-  toggleBannerSectionVisibility,
-  setBannerSectionOrder,
   setActiveBannerSection,
   updateBannerContent,
-  addBannerFeature,
   updateBannerFeature,
+  addBannerFeature,
   deleteBannerFeature,
   reorderBannerSections,
+  toggleBannerSectionVisibility,
+  undoBanner,
+  redoBanner,
+  setBannerSectionOrder,
   clearBannerSections,
   setAllBannerSections,
-  undoBanner,
-  redoBanner
+  syncBannerState
 } = bannerSlice.actions;
 
 // Selectors

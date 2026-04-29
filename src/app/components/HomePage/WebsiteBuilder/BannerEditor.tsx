@@ -1,52 +1,66 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../../../hooks/reduxHooks";
 import { 
-  updateBannerContent, 
-  addBannerFeature, 
-  updateBannerFeature, 
-  deleteBannerFeature,
-  setActiveBannerSection
-} from "../../../store/bannerSlice";
-import { 
   updateSectionContent,
-  toggleBuilderMode,
-  undo,
-  redo,
   undoSection,
   redoSection,
-  setEditingSection
+  setEditingSection,
+  selectSectionCanUndo,
+  selectSectionCanRedo
 } from "../../../store/builderSlice";
 import { closeEditor } from "../../../store/editorSlice";
-import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
-import { Trash2, Upload, Plus, X, Undo, Redo } from "lucide-react";
+import { Trash2, Upload, Undo, Redo } from "lucide-react";
 import { openImageModal } from "../../../store/modalSlice";
 import ImageModal from "./ImageModal";
-import HeroImage from "../../../../../public/third.svg";
-import Audience from "../../../../../public/audience.svg";
-import Gift from "../../../../../public/gift.svg";
-import Sword from "../../../../../public/sword.svg";
-import list from "../../../../../public/list.svg";
-import live from "../../../../../public/livestream.svg";
 import Image from "next/image";
 
-// Helper function to get the correct icon for Second and Third sections
-const getFeatureIcon = (sectionType: string, featureIndex: number) => {
-  if (sectionType === 'second') {
+// Helper function to get the correct icon for Live Streaming and PK Battle sections
+const getFeatureIcon = (sectionName: string, featureIndex: number) => {
+  const name = sectionName?.toLowerCase() || '';
+  const isLiveStreaming = name.includes('live streaming');
+  const isPKBattle = name.includes('pk battle');
+  
+  if (isLiveStreaming) {
     if (featureIndex === 0) return '/list.svg';
     if (featureIndex === 1) return '/livestream.svg';
-    if (featureIndex === 2) return '/video.svg';
+    return '/list.svg';
   }
   
-  if (sectionType === 'third') {
+  if (isPKBattle) {
     if (featureIndex === 0) return '/sword.svg';
     if (featureIndex === 1) return '/gift.svg';
     if (featureIndex === 2) return '/audience.svg';
-    if (featureIndex === 3) return '/crown.svg';
+    return '/sword.svg';
   }
   
-  return '/default-icon.svg'; // Fallback icon
+  return '/default-icon.svg';
+};
+
+// Helper function to determine banner type from section
+const getBannerType = (section: any): 'live-streaming' | 'pk-battle' | 'banner' => {
+  if (!section) return 'banner';
+  const name = section.name?.toLowerCase() || '';
+  const id = section.id?.toLowerCase() || '';
+  
+  if (name.includes('live streaming') || id.includes('live-streaming') || id.startsWith('second-')) {
+    return 'live-streaming';
+  }
+  if (name.includes('pk battle') || id.includes('pk-battle') || id.startsWith('third-')) {
+    return 'pk-battle';
+  }
+  return 'banner';
+};
+
+// Helper to get default layout based on banner type
+const getDefaultLayoutForType = (section: any): 'left' | 'right' => {
+  const type = getBannerType(section);
+  // Live Streaming: Content Left, Image Right (layout='right' means content on right? No wait - let's be consistent)
+  // Actually looking at the reference code:
+  // Live Streaming: layout='right' (from initialSections in builderSlice) - Image Left, Content Right
+  // PK Battle: layout='left' - Image Right, Content Left
+  return type === 'live-streaming' ? 'right' : 'left';
 };
 
 interface BannerContent {
@@ -75,28 +89,30 @@ interface BannerContent {
 const BannerEditor: React.FC = () => {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<'text' | 'style' | 'image'>('text');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Get editor state and section data directly
+  // Get editor state and section data directly from builderSlice only
   const { editingOverlay } = useAppSelector(state => state.editor);
-  const bannerSections = useAppSelector(state => state.banner?.sections || []);
   const builderSections = useAppSelector(state => state.builder?.sections || []);
   
-  // Get section directly from Redux store using editingOverlay.sectionId
+  // Get section directly from builderSlice using editingOverlay.sectionId
   const section = useMemo(() => {
     if (!editingOverlay.sectionId) return null;
     
-    console.log('BannerEditor - Looking for section:', {
+    console.log('BannerEditor - Looking for section in builderSlice:', {
       editingOverlayId: editingOverlay.sectionId,
-      editingOverlayType: editingOverlay.sectionType,
-      availableBannerSections: bannerSections.map(s => ({ id: s.id, type: s.type })),
-      availableBuilderSections: builderSections.map(s => ({ id: s.id, type: s.type }))
+      availableBuilderSections: builderSections.map(s => ({ id: s.id, type: s.type, name: s.name }))
     });
     
-    // Find section in Redux store
-    const foundSection = bannerSections.find(s => s.id === editingOverlay.sectionId) || 
-                         builderSections.find(s => s.id === editingOverlay.sectionId);
+    // Find section in builderSlice only (bannerSlice is deprecated)
+    const foundSection = builderSections.find(s => s.id === editingOverlay.sectionId);
     
-    console.log('BannerEditor - Found section:', foundSection ? { id: foundSection.id, type: foundSection.type, hasContent: !!foundSection.content } : null);
+    console.log('BannerEditor - Found section:', foundSection ? { 
+      id: foundSection.id, 
+      type: foundSection.type, 
+      name: foundSection.name,
+      hasContent: !!foundSection.content 
+    } : null);
     
     // Create deep copy to prevent data swapping
     if (foundSection) {
@@ -104,123 +120,74 @@ const BannerEditor: React.FC = () => {
     }
     
     return null;
-  }, [editingOverlay.sectionId, editingOverlay.sectionType, bannerSections, builderSections]);
+  }, [editingOverlay.sectionId, builderSections]);
   
-  // Get current activeBannerSection at component level (not in event handlers)
-  const activeBannerSection = useAppSelector(state => state.banner.activeSection);
+  // Get banner type for this section
+  const bannerType = useMemo(() => getBannerType(section), [section]);
   
-  // Get undo/redo state
-  const canUndo = useAppSelector(selectCanUndo);
-  const canRedo = useAppSelector(selectCanRedo);
+  // Get undo/redo state from builderSlice section history
+  const canUndo = useAppSelector(selectSectionCanUndo(section?.id || ''));
+  const canRedo = useAppSelector(selectSectionCanRedo(section?.id || ''));
   
-  // Set editing section ID when component mounts (only for builderSlice sections that support undo/redo)
-  React.useEffect(() => {
-    console.log('BannerEditor setEditingSection useEffect:', {
-      sectionId: section?.id,
-      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
-      shouldSetSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
-    });
-    
-    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+  // Set editing section ID when component mounts
+  useEffect(() => {
+    if (section?.id) {
       console.log('BannerEditor - setting editing section:', section.id);
       dispatch(setEditingSection({ sectionId: section.id, field: null }));
     }
-  }, [section?.id]);
+    
+    return () => {
+      // Clear editing section when unmounting
+      dispatch(setEditingSection({ sectionId: null, field: null }));
+    };
+  }, [section?.id, dispatch]);
   
   const handleUndo = React.useCallback(() => {
-    console.log('BannerEditor handleUndo called:', {
-      sectionId: section?.id,
-      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
-      willDispatch: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
-    });
-    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+    if (section?.id) {
       console.log('BannerEditor - dispatching undoSection for:', section.id);
       dispatch(undoSection(section.id));
-    } else {
-      console.log('BannerEditor - handleUndo: section not eligible for undo');
     }
   }, [section, dispatch]);
   
   const handleRedo = React.useCallback(() => {
-    console.log('BannerEditor handleRedo called:', {
-      sectionId: section?.id,
-      isBuilderSection: section && (section.id.startsWith('second-') || section.id.startsWith('third-')),
-      willDispatch: section && (section.id.startsWith('second-') || section.id.startsWith('third-'))
-    });
-    if (section && (section.id.startsWith('second-') || section.id.startsWith('third-'))) {
+    if (section?.id) {
       console.log('BannerEditor - dispatching redoSection for:', section.id);
       dispatch(redoSection(section.id));
-    } else {
-      console.log('BannerEditor - handleRedo: section not eligible for redo');
     }
   }, [section, dispatch]);
 
   // Keyboard shortcuts for undo/redo
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle keyboard events when BannerEditor is active
-      if (!section || !(section.id.startsWith('second-') || section.id.startsWith('third-'))) {
-        return;
-      }
+      // Only handle keyboard events when BannerEditor is active and has a section
+      if (!section?.id) return;
 
-      console.log('BannerEditor ANY keyboard event detected:', {
-        key: e.key,
-        ctrlKey: e.ctrlKey,
-        metaKey: e.metaKey,
-        shiftKey: e.shiftKey,
-        canUndo,
-        canRedo,
-        sectionId: section?.id,
-        target: (e.target as HTMLElement)?.tagName,
-        targetInput: (e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA'
-      });
-      
       // Check for Ctrl/Cmd + Z (undo)
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('BannerEditor - undo triggered, canUndo:', canUndo);
-        if (canUndo) {
-          console.log('BannerEditor - calling handleUndo');
-          handleUndo();
-        } else {
-          console.log('BannerEditor - undo not available');
-        }
+        if (canUndo) handleUndo();
         return;
       }
       // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('BannerEditor - redo triggered, canRedo:', canRedo);
-        if (canRedo) {
-          console.log('BannerEditor - calling handleRedo');
-          handleRedo();
-        } else {
-          console.log('BannerEditor - redo not available');
-        }
+        if (canRedo) handleRedo();
         return;
       }
     };
     
-    console.log('BannerEditor - Adding keyboard event listener to document');
-    // Use document level event listener with capture to ensure it catches events
     document.addEventListener('keydown', handleKeyDown, true);
     return () => {
-      console.log('BannerEditor - Removing keyboard event listener from document');
       document.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [canUndo, canRedo, handleUndo, handleRedo, section?.id]);
   
-  // Ensure content is properly initialized with default values
- const getDefaultLayout = () => {
-  const sectionType = section?.type;
-  // Second section (live streaming): Image on LEFT, Content on RIGHT
-  if (sectionType === 'second' || sectionType === 'live-streaming') return 'right'; // Image Left, Content Right
-  // Third section (pk battle): Image on RIGHT, Content on LEFT
-  if (sectionType === 'third' || sectionType === 'pk-battle') return 'left'; // Image Right, Content Left
-  return 'left'; // Default for banner
-};
+  // Ensure content is properly initialized with default values based on banner type
+  const getDefaultLayout = () => {
+    return getDefaultLayoutForType(section);
+  };
 
   const defaultContent: BannerContent = {
     dotText: '',
@@ -286,24 +253,34 @@ const BannerEditor: React.FC = () => {
   }, [section?.content]); // Sync when section content changes in Redux
 
   const updateField = (field: keyof BannerContent, value: any) => {
-    console.log('BannerEditor - updateField called:', field, value);
     const updatedContent = { ...content, [field]: value };
-    console.log('BannerEditor - updatedContent:', updatedContent);
     
-    // Use section-specific content from editorSection, not global bannerContent
-    if (section) {
-      console.log('BannerEditor - updating section:', section.id);
-      // Check if this is a builderSlice section (starts with 'second-' or 'third-')
-      if (section.id.startsWith('second-') || section.id.startsWith('third-')) {
-        console.log('BannerEditor - updating builderSlice section');
-        dispatch(updateSectionContent({ id: section.id, content: updatedContent }));
-      } else {
-        console.log('BannerEditor - updating bannerSlice section');
-        dispatch(updateBannerContent({ id: section.id, content: updatedContent }));
-      }
-    }
+    // Update local state immediately for responsive UI
     setContent(updatedContent);
+    
+    // Clear existing debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Debounce Redux dispatch - only send the changed field to builderSlice
+    debounceTimerRef.current = setTimeout(() => {
+      if (section?.id) {
+        // Only dispatch the changed field to builderSlice
+        const updatePayload = { [field]: value };
+        dispatch(updateSectionContent({ id: section.id, content: updatePayload }));
+      }
+    }, 300);
   };
+  
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleImageUpload = (sectionId: string, field: string) => {
     const input = document.createElement('input');
@@ -750,7 +727,7 @@ const BannerEditor: React.FC = () => {
                         </button>
                       </div>
                       {/* Icon Preview */}
-                      {(feature.icon && feature.icon !== '') || getFeatureIcon(section?.type, index) ? (
+                      {(feature.icon && feature.icon !== '') || getFeatureIcon(section?.name, index) ? (
                         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mt-2 min-w-0">
                           {feature.icon && feature.icon !== '' ? (
                             <img 
@@ -759,10 +736,10 @@ const BannerEditor: React.FC = () => {
                               className="w-12 h-12 object-contain rounded bg-white p-1 border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                               onClick={() => dispatch(openImageModal({ imageSrc: feature.icon, alt: 'Feature Icon' }))}
                             />
-                          ) : getFeatureIcon(section?.type, index) ? (
+                          ) : getFeatureIcon(section?.name, index) ? (
                             <div className="w-12 h-12 bg-white rounded border border-gray-200 p-1 flex items-center justify-center shrink-0">
                               <Image 
-                                src={getFeatureIcon(section.type, index)} 
+                                src={getFeatureIcon(section.name, index)} 
                                 alt="Feature icon" 
                                 width={40} 
                                 height={40}
@@ -772,7 +749,7 @@ const BannerEditor: React.FC = () => {
                           ) : null}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-700 font-medium truncate">Icon Preview</p>
-                            <p className="text-xs text-gray-500 mt-0.5 truncate">{feature.icon || getFeatureIcon(section?.type, index)}</p>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{feature.icon || getFeatureIcon(section?.name, index)}</p>
                           </div>
                           <button
                             onClick={() => handleFeatureImageUpload(index)}

@@ -399,7 +399,6 @@ const FeaturesEditor: React.FC = () => {
   };
 
   return (
-    <>
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
@@ -892,10 +891,10 @@ const FeaturesEditor: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
       
+      {/* Image Modal */}
       <ImageModal />
-      </>
+    </div>
   );
 };
 

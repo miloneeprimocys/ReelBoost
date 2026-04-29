@@ -4,6 +4,8 @@ export interface PageSection {
   id: string;
   name: string;
   visible: boolean;
+  sectionId: string;
+  order: number;
 }
 
 export interface PageLink {
@@ -38,11 +40,12 @@ const initialState: PagesState = {
       visible: true,
       hasDropdown: true,
       sections: [
-        { id: 'second-1', name: 'Live Streaming', visible: true },
-        { id: 'third-1', name: 'PK Battle', visible: true },
-        { id: 'features-1', name: 'Features', visible: true },
-        { id: 'admin-panel-1', name: 'Admin Panel', visible: true },
-        { id: 'benefits-1', name: 'Benefits', visible: true },
+        { id: 'hero-1', name: 'Hero Section', visible: true, sectionId: 'hero-1', order: 1 },
+        { id: 'second-1', name: 'Live Streaming', visible: true, sectionId: 'second-1', order: 2 },
+        { id: 'third-1', name: 'PK Battle', visible: true, sectionId: 'third-1', order: 3 },
+        { id: 'features-1', name: 'Features', visible: true, sectionId: 'features-1', order: 4 },
+        { id: 'admin-panel-1', name: 'Admin Panel', visible: true, sectionId: 'admin-panel-1', order: 5 },
+        { id: 'benefits-1', name: 'Benefits', visible: true, sectionId: 'benefits-1', order: 6 },
       ],
       links: [
         { id: 'link-second-1', label: 'Live Streaming', sectionId: 'second-1', visible: true },
@@ -60,7 +63,7 @@ const initialState: PagesState = {
       visible: true,
       hasDropdown: false,
       sections: [
-        { id: 'contact-hero-1', name: 'Contact Hero', visible: true },
+        { id: 'contact-hero-1', name: 'Contact Hero', visible: true, sectionId: 'contact-hero-1', order: 0 },
       ],
       links: [
         { id: 'link-contact-hero', label: 'Contact', sectionId: 'contact-hero-1', visible: true },
@@ -145,6 +148,8 @@ const pagesSlice = createSlice({
           id: sectionId,
           name: sectionName,
           visible: true,
+          sectionId: sectionId,
+          order: page.sections.length,
         });
         // Auto-create a link for this section
         page.links.push({
@@ -250,6 +255,12 @@ const pagesSlice = createSlice({
         }
       }
     },
+    syncPagesState: (state, action: PayloadAction<Partial<PagesState>>) => {
+      // Sync state from parent window (for iframe preview)
+      const newState = action.payload;
+      if (newState.pages) state.pages = newState.pages;
+      if (newState.isAddPageModalOpen !== undefined) state.isAddPageModalOpen = newState.isAddPageModalOpen;
+    },
   },
 });
 
@@ -271,6 +282,7 @@ export const {
   togglePageLinkVisibility,
   reorderPageSections,
   reorderPageLinks,
+  syncPagesState,
 } = pagesSlice.actions;
 
 export default pagesSlice.reducer;

@@ -25,12 +25,15 @@ interface HeroContent {
 
 interface SectionConfig {
   id: string;
-  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'contact-hero';
+  type: 'hero' | 'banner' | 'live-streaming' | 'pk-battle' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'contact-hero' | 'testimonials' | 'faq' | 'subscription-plan';
   name: string;
   visible: boolean;
   content: any;
   order: number;
 }
+
+// Export the type for use in other files
+export type { SectionConfig };
 
 interface PageConfig {
   id: string;
@@ -185,28 +188,28 @@ const initialSections: SectionConfig[] = [
             title: 'Wallet',
             description: 'The wallet allows users to securely manage their balance, add funds, receive gifts, and withdraw payments from coin balance.',
             image: '/wallet.svg',
-            backgroundColor: '#000000'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-2',
             title: 'Live Streaming',
             description: 'Live streaming supports up to four participants at a time, enabling real-time interaction, collaboration, and audience engagement.',
             image: '/hero.png',
-            backgroundColor: '#000000'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-3',
             title: 'Payment History',
             description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
             image: '/third.svg',
-            backgroundColor: '#000000'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-4',
             title: 'Reelboost',
             description: '',
             image: '/laptop.svg',
-            backgroundColor: '#000000'
+            backgroundColor: '#F1F3EE'
           },
           {
             id: 'card-5',
@@ -354,6 +357,181 @@ const initialSections: SectionConfig[] = [
         borderColor: '#D1D5DB',
         backgroundColor: '#FFFFFF'
       }
+    },
+    {
+      id: 'testimonials-1',
+      type: 'testimonials',
+      name: 'Testimonials Section',
+      visible: true,
+      order: 7,
+      content: {
+        title: 'Reviews from real people',
+        subtitle: 'What our customers are saying',
+        backgroundColor: '#f9fafb',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#374151',
+        starColor: '#10b981',
+        quoteIconColor: '#9ca3af',
+        carouselPosition: 'right',
+        dotText: 'Testimonials',
+        dotTextColor: '#111827',
+        showDotText: true,
+        testimonials: [
+          {
+            id: '1',
+            name: 'Sarah Johnson',
+            content: 'This platform has transformed how we manage our digital presence. The results have been outstanding.',
+            avatar: '/avatar1.png',
+            rating: 5
+          },
+          {
+            id: '2',
+            name: 'Michael Chen',
+            content: 'The best investment we\'ve made for our business. User-friendly and incredibly powerful.',
+            avatar: '/avatar2.png',
+            rating: 5
+          },
+          {
+            id: '3',
+            name: 'Emily Rodriguez',
+            content: 'Exceptional service and support. Our team productivity has increased significantly.',
+            avatar: '/avatar3.png',
+            rating: 5
+          }
+        ]
+      }
+    },
+    {
+      id: 'faq-1',
+      type: 'faq',
+      name: 'FAQ Section',
+      visible: true,
+      order: 8,
+      content: {
+        title: 'Frequently asked questions',
+        subtitle: "Can't find what you're looking for? Chat to our friendly team!",
+        backgroundColor: '#ffffff',
+        textColor: '#101828',
+        accentColor: '#667085',
+        borderColor: '#EAECF0',
+        dotText: 'FAQ',
+        dotTextColor: '#101828',
+        showDotText: true,
+        categories: ['General', 'Features', 'Pricing'],
+        activeCategory: 'General',
+        faqs: [
+          {
+            id: '1',
+            question: 'What is included in the basic plan?',
+            answer: 'The basic plan includes all essential features to get you started, including 5 projects, 10GB storage, and email support.',
+            category: 'General'
+          },
+          {
+            id: '2',
+            question: 'Can I upgrade my plan later?',
+            answer: 'Yes, you can upgrade your plan at any time. The new pricing will be prorated based on your billing cycle.',
+            category: 'Pricing'
+          },
+          {
+            id: '3',
+            question: 'How do I cancel my subscription?',
+            answer: 'You can cancel your subscription from your account settings. Your access will continue until the end of your billing period.',
+            category: 'General'
+          }
+        ],
+        accordionBgColor: 'transparent',
+        activeAccordionBgColor: 'transparent',
+        plusIconColor: '#98A2B3',
+        minusIconColor: '#98A2B3'
+      }
+    },
+    {
+      id: 'subscription-plan-1',
+      type: 'subscription-plan',
+      name: 'Subscription Plan Section',
+      visible: true,
+      order: 9,
+      content: {
+        title: 'Choose Your Plan',
+        subtitle: 'Flexible pricing options for every stage of your journey',
+        backgroundColor: '#ffffff',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#374151',
+        cardBorderColor: '#e5e7eb',
+        popularCardBackgroundColor: '#f0f9ff',
+        popularCardBorderColor: '#3b82f6',
+        buttonBackgroundColor: '#111827',
+        buttonTextColor: '#ffffff',
+        popularButtonBackgroundColor: '#3b82f6',
+        popularButtonTextColor: '#ffffff',
+        dotText: 'Pricing',
+        dotTextColor: '#111827',
+        showDotText: true,
+        tickColor: '#10b981',
+        plans: [
+          {
+            id: '1',
+            name: 'Basic',
+            price: '$9',
+            period: '/month',
+            description: 'Perfect for individuals getting started',
+            features: [
+              '5 Projects',
+              '10GB Storage',
+              'Basic Analytics',
+              'Email Support',
+              'API Access'
+            ],
+            buttonText: 'Get Started',
+            isPopular: false,
+            buttonLink: '',
+            buttonTarget: '_blank'
+          },
+          {
+            id: '2',
+            name: 'Pro',
+            price: '$29',
+            period: '/month',
+            description: 'Best for growing businesses',
+            features: [
+              'Unlimited Projects',
+              '100GB Storage',
+              'Advanced Analytics',
+              'Priority Support',
+              'API Access',
+              'Custom Integrations',
+              'Team Collaboration'
+            ],
+            buttonText: 'Start Pro Trial',
+            isPopular: true,
+            badgeText: 'Most Popular',
+            buttonLink: '',
+            buttonTarget: '_blank'
+          },
+          {
+            id: '3',
+            name: 'Enterprise',
+            price: '$99',
+            period: '/month',
+            description: 'For large scale operations',
+            features: [
+              'Unlimited Everything',
+              '1TB Storage',
+              'Custom Analytics',
+              '24/7 Phone Support',
+              'Dedicated Manager',
+              'SLA Guarantee',
+              'White Label Option'
+            ],
+            buttonText: 'Contact Sales',
+            isPopular: false,
+            buttonLink: '',
+            buttonTarget: '_blank'
+          }
+        ]
+      }
     }
   ];
 
@@ -451,6 +629,15 @@ const builderSlice = createSlice({
         future: []
       };
     },
+    syncBuilderState: (state, action: PayloadAction<Partial<BuilderState>>) => {
+      // Sync state from parent window (for iframe preview)
+      const newState = action.payload;
+      if (newState.sections) state.sections = newState.sections;
+      if (newState.bannerSections) state.bannerSections = newState.bannerSections;
+      if (newState.adminSections) state.adminSections = newState.adminSections;
+      if (newState.activeSection) state.activeSection = newState.activeSection;
+      if (newState.currentPage) state.currentPage = newState.currentPage;
+    },
     updateSectionContent: (state, action: PayloadAction<{ id: string; content: any }>) => {
       const { id, content } = action.payload;
       const section = state.sections.find(s => s.id === id);
@@ -541,13 +728,66 @@ const builderSlice = createSlice({
       console.log('Redux addSectionAndSetActive called with:', { type, name, sectionId });
 
       const isNewFifth = type === 'fifth';
+
+      // Determine banner type from name for proper differentiation
+      const isLiveStreaming = name?.toLowerCase().includes('live streaming');
+      const isPKBattle = name?.toLowerCase().includes('pk battle');
+
+      // Generate section name based on type
+      const getSectionName = () => {
+        if (name) return name;
+        switch (type) {
+          case 'hero':
+            return 'Text and Image';
+          case 'banner':
+            return 'Banner Section';
+          case 'live-streaming':
+            return 'Live Streaming Section';
+          case 'pk-battle':
+            return 'PK Battle Section';
+          case 'testimonials':
+            return 'Testimonials';
+          case 'faq':
+            return 'FAQ';
+          case 'subscription-plan':
+            return 'Subscription Plan';
+          case 'benefits':
+            return 'Benefits';
+          case 'features':
+            return 'Features';
+          case 'fifth':
+            return 'Admin Panel';
+          case 'second':
+            return 'Live Streaming Section';
+          case 'third':
+            return 'PK Battle Section';
+          default:
+            return `${type.charAt(0).toUpperCase() + type.slice(1)} Section`;
+        }
+      };
+
+      // Generate appropriate ID based on type
+      const getSectionId = () => {
+        if (sectionId) return sectionId;
+        if (isLiveStreaming || type === 'live-streaming' || type === 'second') {
+          return `second-${Date.now()}`;
+        }
+        if (isPKBattle || type === 'pk-battle' || type === 'third') {
+          return `third-${Date.now()}`;
+        }
+        return `${type}-${Date.now()}`;
+      };
+
+      // Normalize type to 'banner' for live-streaming and pk-battle to match SectionConfig type
+      const normalizedType = (type === 'live-streaming' || type === 'pk-battle') ? 'banner' : type;
+
       const newSection: SectionConfig = {
-        id: sectionId || `${type}-${Date.now()}`,
-        type,
-        name: name || (type === 'hero' ? 'Text and Image' : `${type.charAt(0).toUpperCase() + type.slice(1)} Section`),
+        id: getSectionId(),
+        type: normalizedType,
+        name: getSectionName(),
         visible: true,
         order: state.sections.length + 1,
-        content: getDefaultContent(type, isNewFifth)
+        content: getDefaultContent(type, isNewFifth, isLiveStreaming, isPKBattle)
       };
       
       console.log('Creating new section:', newSection);
@@ -734,7 +974,8 @@ const builderSlice = createSlice({
 
 // Helper function to get default content for different section types
 // isNew parameter determines if this is a new section (2 tabs) vs default (4 tabs)
-const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) => {
+// isLiveStreaming and isPKBattle help differentiate banner types
+const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, isLiveStreaming: boolean = false, isPKBattle: boolean = false) => {
   switch (type) {
     case 'hero':
       return {
@@ -1034,21 +1275,148 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         backgroundColor: '#FFFFFF'
       };
     case 'second':
+    case 'live-streaming':
       return {
         dotText: 'Live Streaming',
-        title: 'Broadcast Your Content',
-        subtitle: 'Connect with Audience',
-        description: 'Engage your audience with real-time streaming features.',
+        title: 'Start video, interact with the user.',
+        description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
         features: [
           {
-            title: 'HD Quality',
-            description: 'Crystal clear video streaming',
-            icon: 'Video'
+            title: 'List of Live Streamers',
+            description: 'You can check the list of live streamers, and can view the likes and audience connected to the stream',
+            icon: '/list.svg'
           },
           {
-            title: 'Real-time Chat',
-            description: 'Interactive audience engagement',
-            icon: 'MessageCircle'
+            title: 'Live Streaming Interaction',
+            description: 'Viewers can comment, send virtual gifts, like the stream, and follow the streamer to stay connected.',
+            icon: '/livestream.svg'
+          }
+        ],
+        backgroundImage: '/second.svg',
+        backgroundColor: '#4A72FF',
+        layout: 'right', // Content on RIGHT, Image on LEFT
+        animation: 'fade',
+        titleColor: '#111827',
+        descriptionColor: '#4B5563',
+        dotTextColor: '#2b49c5',
+        dotColor: '#3b82f6',
+        featureTitleColor: '#111827',
+        featureDescriptionColor: '#4B5563'
+      };
+    case 'third':
+    case 'pk-battle':
+      return {
+        dotText: 'PK Battle',
+        title: 'Live battles to win audience support',
+        description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
+        features: [
+          {
+            title: 'Loss and Win Battle',
+            description: 'In a PK battle, the streamer with the higher score wins the match, while the one with the lower score loses the battle.',
+            icon: '/sword.svg'
+          },
+          {
+            title: 'Send Gifts during the Battle',
+            description: 'The winner and loser are determined based on the number of gifts received during the battle.',
+            icon: '/gift.svg'
+          },
+          {
+            title: 'Audience Engagement',
+            description: 'Audience gets interaction through likes, comments, and virtual gift sending.',
+            icon: '/audience.svg'
+          }
+        ],
+        backgroundImage: '/third.svg',
+        backgroundColor: '#FFB800',
+        layout: 'left', // Content on LEFT, Image on RIGHT
+        animation: 'fade',
+        titleColor: '#111827',
+        descriptionColor: '#4B5563',
+        dotTextColor: '#2b49c5',
+        dotColor: '#3b82f6',
+        featureTitleColor: '#111827',
+        featureDescriptionColor: '#4B5563'
+      };
+    case 'banner':
+      // For generic banner type, check if it's Live Streaming or PK Battle based on flags
+      if (isLiveStreaming) {
+        return {
+          dotText: 'Live Streaming',
+          title: 'Start video, interact with the user.',
+          description: 'Start live streaming to connect with your audience in real time, where viewers can comment, like the stream, and send virtual gifts to show their support.',
+          features: [
+            {
+              title: 'List of Live Streamers',
+              description: 'You can check the list of live streamers, and can view the likes and audience connected to the stream',
+              icon: '/list.svg'
+            },
+            {
+              title: 'Live Streaming Interaction',
+              description: 'Viewers can comment, send virtual gifts, like the stream, and follow the streamer to stay connected.',
+              icon: '/livestream.svg'
+            }
+          ],
+          backgroundImage: '/second.svg',
+          backgroundColor: '#4A72FF',
+          layout: 'right',
+          animation: 'fade',
+          titleColor: '#111827',
+          descriptionColor: '#4B5563',
+          dotTextColor: '#2b49c5',
+          dotColor: '#3b82f6',
+          featureTitleColor: '#111827',
+          featureDescriptionColor: '#4B5563'
+        };
+      }
+      if (isPKBattle) {
+        return {
+          dotText: 'PK Battle',
+          title: 'Live battles to win audience support',
+          description: 'The PK battle lasts 5 minutes, with the highest-scoring participant declared the winner, and the host can invite users to join the live stream.',
+          features: [
+            {
+              title: 'Loss and Win Battle',
+              description: 'In a PK battle, the streamer with the higher score wins the match, while the one with the lower score loses the battle.',
+              icon: '/sword.svg'
+            },
+            {
+              title: 'Send Gifts during the Battle',
+              description: 'The winner and loser are determined based on the number of gifts received during the battle.',
+              icon: '/gift.svg'
+            },
+            {
+              title: 'Audience Engagement',
+              description: 'Audience gets interaction through likes, comments, and virtual gift sending.',
+              icon: '/audience.svg'
+            }
+          ],
+          backgroundImage: '/third.svg',
+          backgroundColor: '#FFB800',
+          layout: 'left',
+          animation: 'fade',
+          titleColor: '#111827',
+          descriptionColor: '#4B5563',
+          dotTextColor: '#2b49c5',
+          dotColor: '#3b82f6',
+          featureTitleColor: '#111827',
+          featureDescriptionColor: '#4B5563'
+        };
+      }
+      // Generic banner fallback
+      return {
+        dotText: 'Banner',
+        title: 'Your Banner Title',
+        description: 'Add your banner description here.',
+        features: [
+          {
+            title: 'Feature One',
+            description: 'Description for feature one',
+            icon: 'Star'
+          },
+          {
+            title: 'Feature Two',
+            description: 'Description for feature two',
+            icon: 'Zap'
           }
         ],
         backgroundImage: '/second.svg',
@@ -1056,35 +1424,167 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false) 
         layout: 'left',
         animation: 'fade',
         titleColor: '#111827',
-                descriptionColor: '#4B5563',
+        descriptionColor: '#4B5563',
+        dotTextColor: '#2b49c5',
+        dotColor: '#3b82f6',
         featureTitleColor: '#111827',
         featureDescriptionColor: '#4B5563'
       };
-    case 'third':
+    case 'testimonials':
       return {
-        dotText: 'PK Battle',
-        title: 'Compete with Creators',
-                description: 'Challenge other creators in real-time battles.',
-        features: [
+        title: 'Demo Title',
+        subtitle: 'Demo SubTitle',
+        backgroundColor: '#f9fafb',
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#374151',
+        starColor: '#10b981',
+        quoteIconColor: '#9ca3af',
+        carouselPosition: 'right',
+        dotText: 'Testimonials',
+        dotTextColor: '#111827',
+        showDotText: true,
+        testimonials: [
           {
-            title: 'Live Competition',
-            description: 'Real-time creator battles',
-            icon: 'Sword'
+            id: '1',
+            name: 'Sarah Johnson',
+            content: 'This platform has transformed how we manage our digital presence. The results have been outstanding.',
+            avatar: '/avatar1.png',
+            rating: 5
           },
           {
-            title: 'Audience Voting',
-            description: 'Let your audience decide the winner',
-            icon: 'Star'
+            id: '2',
+            name: 'Michael Chen',
+            content: 'The best investment we\'ve made for our business. User-friendly and incredibly powerful.',
+            avatar: '/avatar2.png',
+            rating: 5
+          },
+          {
+            id: '3',
+            name: 'Emily Rodriguez',
+            content: 'Exceptional service and support. Our team productivity has increased significantly.',
+            avatar: '/avatar3.png',
+            rating: 5
+          },
+          {
+            id: '4',
+            name: 'David Kim',
+            content: 'A game-changer for our development workflow. Highly recommend to any tech team.',
+            avatar: '/avatar1.png',
+            rating: 5
+          },
+          {
+            id: '5',
+            name: 'Lisa Thompson',
+            content: 'Streamlined our entire operation process. The ROI has been incredible.',
+            avatar: '/avatar2.png',
+            rating: 5
+          },
+          {
+            id: '6',
+            name: 'James Wilson',
+            content: 'Perfect solution for our creative needs. Intuitive and feature-rich platform.',
+            avatar: '/avatar3.png',
+            rating: 5
+          }
+        ]
+      };
+    case 'faq':
+      return {
+        title: 'Demo Title',
+        subtitle: "Demo Subtitle",
+        backgroundColor: '#ffffff',
+        textColor: '#101828',
+        accentColor: '#667085',
+        borderColor: '#EAECF0',
+        dotText: 'FAQ',
+        dotTextColor: '#101828',
+        showDotText: true,
+        categories: ['General', 'Features', 'Pricing'],
+        activeCategory: 'General',
+        faqs: [
+          {
+            id: '1',
+            question: 'What is included in the basic plan?',
+            answer: 'The basic plan includes all essential features to get you started, including 5 projects, 10GB storage, and email support.',
+            category: 'General'
+          },
+          {
+            id: '2',
+            question: 'Can I upgrade my plan later?',
+            answer: 'Yes, you can upgrade your plan at any time. The new pricing will be prorated based on your billing cycle.',
+            category: 'Pricing'
+          },
+          {
+            id: '3',
+            question: 'How do I cancel my subscription?',
+            answer: 'You can cancel your subscription from your account settings. Your access will continue until the end of your billing period.',
+            category: 'General'
           }
         ],
-        backgroundImage: '/third.svg',
+        accordionBgColor: 'transparent',
+        activeAccordionBgColor: 'transparent',
+        plusIconColor: '#98A2B3',
+        minusIconColor: '#98A2B3'
+      };
+    case 'subscription-plan':
+      return {
+        title: 'Demo Title',
+        subtitle: 'Demo SubTitle',
         backgroundColor: '#ffffff',
-        layout: 'right',
-        animation: 'fade',
-        titleColor: '#111827',
-                descriptionColor: '#4B5563',
-        featureTitleColor: '#111827',
-        featureDescriptionColor: '#4B5563'
+        textColor: '#111827',
+        cardBackgroundColor: '#ffffff',
+        cardTextColor: '#374151',
+        cardBorderColor: '#e5e7eb',
+        popularCardBackgroundColor: '#f0f9ff',
+        popularCardBorderColor: '#3b82f6',
+        buttonBackgroundColor: '#111827',
+        buttonTextColor: '#ffffff',
+        popularButtonBackgroundColor: '#3b82f6',
+        popularButtonTextColor: '#ffffff',
+        dotText: 'Pricing',
+        dotTextColor: '#111827',
+        showDotText: true,
+        tickColor: '#10b981',
+        plans: [
+          {
+            id: '1',
+            name: 'Basic',
+            price: '$9',
+            period: '/month',
+            description: 'Perfect for individuals getting started',
+            features: [
+              'Feature 1',
+              'Feature 2',
+              'Feature 3',
+              'Feature 4',
+            ],
+            buttonText: 'Get Started',
+            isPopular: false,
+            buttonLink: '',
+            buttonTarget: '_blank'
+          },
+          {
+            id: '2',
+            name: 'Pro',
+            price: '$29',
+            period: '/month',
+            description: 'Best for growing businesses',
+            features: [
+              'Feature 1',
+              'Feature 2',
+              'Feature 3',
+              'Feature 4',
+              'Feature 5'
+            ],
+            buttonText: 'Start Pro Trial',
+            isPopular: true,
+            badgeText: 'Most Popular',
+            buttonLink: '',
+            buttonTarget: '_blank'
+          },
+         
+        ]
       };
     default:
       return {};
@@ -1114,7 +1614,8 @@ export const {
   markSectionAsReady,
   setInlineEditMode,
   setEditingSection,
-  setSections
+  setSections,
+  syncBuilderState
 } = builderSlice.actions;
 
 // Selectors

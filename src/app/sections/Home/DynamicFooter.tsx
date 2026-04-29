@@ -209,7 +209,8 @@ const DynamicFooter: React.FC<DynamicFooterProps> = ({ sectionId, onEdit }) => {
                             {content.socialLinks.filter((link: any) => link.enabled).map((link: any) => (
                                 <div
                                     key={link.id}
-                                    className="group/icon w-12 h-12 rounded-full flex items-center justify-center cursor-pointer overflow-hidden transition-colors flex-shrink-0"
+                                    className="group/icon w-12 h-12 rounded-full bg-white/5 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:bg-blue-700 flex-shrink-0 relative"
+                                    onClick={() => window.open(link.url, '_blank')}
                                     style={{ 
                                         backgroundColor: content.styles.socialIconBackground,
                                         color: content.styles.socialIconColor 
@@ -220,8 +221,8 @@ const DynamicFooter: React.FC<DynamicFooterProps> = ({ sectionId, onEdit }) => {
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.backgroundColor = content.styles.socialIconBackground;
                                     }}
-                                    onClick={(e) => e.stopPropagation()}
                                 >
+                                    <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/30 to-transparent translate-x-full group-hover/icon:-translate-x-full transition-transform duration-700 ease-in-out"></div>
                                     <div className="relative w-6 h-6 overflow-hidden" style={{ color: content.styles.socialIconColor }}>
                                         {renderSocialIcon(link)}
                                     </div>

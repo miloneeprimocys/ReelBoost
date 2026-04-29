@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '../../../hooks/reduxHooks';
 import { setCurrentPage } from '../../../store/builderSlice';
 import { openAddPageModal } from '../../../store/pagesSlice';
@@ -12,11 +13,17 @@ interface PagesListProps {
 
 const PagesList: React.FC<PagesListProps> = ({ onPageSelect }) => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { currentPage } = useAppSelector(state => state.builder);
   const { pages } = useAppSelector(state => state.pages);
 
   const handlePageClick = (pageId: string) => {
+    const page = pages.find(p => p.id === pageId);
     dispatch(setCurrentPage(pageId));
+    // Navigate to /WebsiteBuilder/[page-slug]
+    if (page?.slug) {
+      router.push(`/WebsiteBuilder/${page.slug}`);
+    }
     // Call onPageSelect callback to switch to sections view
     if (onPageSelect) {
       onPageSelect();

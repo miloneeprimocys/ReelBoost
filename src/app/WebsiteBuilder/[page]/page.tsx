@@ -2,15 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { Provider, useDispatch } from 'react-redux';
-import { store } from '../store';
-import WebsiteBuilder from '../components/HomePage/WebsiteBuilder';
-import BuilderNavbar from '../components/HomePage/WebsiteBuilder/BuilderNavbar';
-import { toggleBuilderMode } from '../store/builderSlice';
+import { store } from '../../store';
+import WebsiteBuilder from '../../components/HomePage/WebsiteBuilder';
+import BuilderNavbar from '../../components/HomePage/WebsiteBuilder/BuilderNavbar';
+import { toggleBuilderMode } from '../../store/builderSlice';
+import { useParams } from 'next/navigation';
 
 function WebsiteBuilderWithMode() {
   const dispatch = useDispatch();
+  const params = useParams();
   const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [previewZoom, setPreviewZoom] = useState(100);
+  
+  // Get the page name from URL params
+  const pageName = params?.page as string || 'Home';
   
   useEffect(() => {
     // Enable builder mode when this page loads

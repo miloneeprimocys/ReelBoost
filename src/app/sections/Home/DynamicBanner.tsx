@@ -10,7 +10,6 @@ import Gift from "../../../../public/gift.svg";
 import Sword from "../../../../public/sword.svg";
 import list from "../../../../public/list.svg";
 import live from "../../../../public/livestream.svg";
-import second from "../../../../public/second.svg";
 
 interface BannerFeature {
   title: string;
@@ -41,78 +40,75 @@ interface DynamicBannerProps {
   onEdit?: (sectionId: string, contentType: 'text' | 'style' | 'image', elementId: string) => void;
 }
 
+// Helper function to determine banner type from section
+const getBannerType = (section: any): 'live-streaming' | 'pk-battle' | 'banner' => {
+  if (!section) return 'banner';
+  const name = section.name?.toLowerCase() || '';
+  const id = section.id?.toLowerCase() || '';
+  
+  if (name.includes('live streaming') || id.includes('live-streaming') || id.startsWith('second-')) {
+    return 'live-streaming';
+  }
+  if (name.includes('pk battle') || id.includes('pk-battle') || id.startsWith('third-')) {
+    return 'pk-battle';
+  }
+  return 'banner';
+};
+
 const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent, onEdit }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const contentRef = useRef(null);
 
-  // Get this specific section's content from both builder and banner slices using sectionId
+  // Get section content directly from builderSlice only (bannerSlice is deprecated)
   const builderSection = useAppSelector(state => 
     state.builder.sections.find(s => s.id === sectionId)
   );
-  const bannerSection = useAppSelector(state => 
-    state.banner.sections.find(s => s.id === sectionId)
-  );
+  
+  // Get banner type
+  const bannerType = getBannerType(builderSection);
   
   console.log('DynamicBanner - Looking for section:', sectionId);
   console.log('DynamicBanner - Builder section:', builderSection);
-  console.log('DynamicBanner - Banner section:', bannerSection);
+  console.log('DynamicBanner - Banner type:', bannerType);
   
-  // Helper function to render correct icon - MOVED INSIDE COMPONENT
+  // Helper function to render correct icon
   const renderIcon = (iconName: string, className: string, sectionType?: string, featureIndex?: number) => {
     const iconProps = { className };
     
-    console.log('renderIcon - sectionId:', sectionId, 'sectionType:', sectionType, 'featureIndex:', featureIndex, 'iconName:', iconName);
-    
     // If iconName is a data URL or starts with '/', use it as an image
     if (iconName && (iconName.startsWith('data:') || iconName.startsWith('/'))) {
-      console.log('renderIcon - Using dynamic icon:', iconName);
       return <img src={iconName} alt="Feature icon" className={className} onError={(e) => {
-        // Fallback to static icons if dynamic icon fails
+        // Fallback to static icons if dynamic icon fails based on banner type
         const target = e.target as HTMLImageElement;
-        const isSecondSection = sectionType === 'second' || sectionType === 'live-streaming' || (sectionId && (sectionId.includes('second') || sectionId.includes('live-streaming')));
-        const isThirdSection = sectionType === 'third' || sectionType === 'pk-battle' || (sectionId && (sectionId.includes('third') || sectionId.includes('pk-battle')));
         
-        if (isSecondSection) {
+        if (bannerType === 'live-streaming') {
           if (featureIndex === 0) target.src = list.src;
           if (featureIndex === 1) target.src = live.src;
-        } else if (isThirdSection) {
-          if (featureIndex === 0) target.src = HeroImage.src;
+        } else if (bannerType === 'pk-battle') {
+          if (featureIndex === 0) target.src = Sword.src;
           if (featureIndex === 1) target.src = Gift.src;
           if (featureIndex === 2) target.src = Audience.src;
-          if (featureIndex === 3) target.src = Sword.src;
         }
       }} />;
     }
     
-    // Check if this is a second or third section based on sectionId or sectionType
-    const isSecondSection = sectionType === 'second' || sectionType === 'live-streaming' || (sectionId && (sectionId.includes('second') || sectionId.includes('live-streaming')));
-    const isThirdSection = sectionType === 'third' || sectionType === 'pk-battle' || (sectionId && (sectionId.includes('third') || sectionId.includes('pk-battle')));
-    
-    console.log('isSecondSection:', isSecondSection, 'isThirdSection:', isThirdSection);
-    
-    // Use SVG icons for second and third sections as fallback
-    if (isSecondSection) {
-      console.log('renderIcon - Using second section icons fallback');
+    // Use SVG icons for Live Streaming and PK Battle sections as fallback
+    if (bannerType === 'live-streaming') {
       if (featureIndex === 0) return <Image src={list} alt="List icon" className={className} />;
       if (featureIndex === 1) return <Image src={live} alt="Live icon" className={className} />;
-      // Fallback
       return <Image src={list} alt="List icon" className={className} />;
     }
     
-    if (isThirdSection) {
-      console.log('renderIcon - Using third section icons fallback');
-      if (featureIndex === 0) return <Image src={HeroImage} alt="Hero icon" className={className} />;
-      if (featureIndex === 1) return <Image src={Gift} alt="Audience icon" className={className} />;
-      if (featureIndex === 2) return <Image src={Audience} alt="Gift icon" className={className} />;
-      if (featureIndex === 3) return <Image src={Sword} alt="Sword icon" className={className} />;
-      // Fallback
-      return <Image src={HeroImage} alt="Hero icon" className={className} />;
+    if (bannerType === 'pk-battle') {
+      if (featureIndex === 0) return <Image src={Sword} alt="Sword icon" className={className} />;
+      if (featureIndex === 1) return <Image src={Gift} alt="Gift icon" className={className} />;
+      if (featureIndex === 2) return <Image src={Audience} alt="Audience icon" className={className} />;
+      return <Image src={Sword} alt="Sword icon" className={className} />;
     }
     
     // Use Lucide icons for other sections
-    console.log('renderIcon - Using Lucide icons fallback for:', iconName);
     switch (iconName) {
       case 'Video':
         return <Video {...iconProps} />;
@@ -136,36 +132,15 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   console.log('DynamicBanner - builderSection:', builderSection);
   console.log('DynamicBanner - builderSection.type:', builderSection?.type);
   
-  // Helper function to determine default layout based on section type
- const getDefaultLayout = () => {
-  const type = builderSection?.type || bannerSection?.type || "";
-  const id = sectionId || "";
+  // Helper function to determine default layout based on banner type
+  const getDefaultLayout = (): 'left' | 'right' => {
+    // Live Streaming: Content Left, Image Right → layout='right'
+    // PK Battle: Content Right, Image Left → layout='left'
+    return bannerType === 'live-streaming' ? 'right' : 'left';
+  };
 
-  // 🔥 Live Streaming → LEFT
-  if (
-    type === "second" ||
-    type === "live-streaming" ||
-    id.includes("second") ||
-    id.includes("live-streaming")
-  ) {
-    return "left";
-  }
-
-  // 🔥 PK Battle → RIGHT
-  if (
-    type === "third" ||
-    type === "pk-battle" ||
-    id.includes("third") ||
-    id.includes("pk-battle")
-  ) {
-    return "right";
-  }
-
-  return "right"; // default fallback
-};
-
-  // Merge content: prioritize builder section content, then banner section, then fallback
-  const baseContent = builderSection?.content || bannerSection?.content || sectionContent || {
+  // Merge content: use builder section content with fallback to props or default
+  const baseContent = builderSection?.content || sectionContent || {
     dotText: 'Demo Live Streaming',
     title: 'Demo Title',
   
@@ -192,10 +167,10 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ sectionId, sectionContent
   };
 
   // Apply default layout if not set
-const bannerContent = {
-  ...baseContent,
-  layout: baseContent.layout || getDefaultLayout()
-};
+  const bannerContent = {
+    ...baseContent,
+    layout: baseContent.layout || getDefaultLayout()
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -421,8 +396,8 @@ const renderImageSection = () => {
   onClick={(e) => { e.stopPropagation(); setIsClicked(!isClicked); }}
   className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[260px] sm:w-[240px] md:w-[300px] lg:w-[280px] xl:w-[350px] group cursor-pointer lg:left-auto lg:right-auto lg:translate-x-0 ${
       isRightLayout 
-      ? 'lg:left-[15%] xl:left-10 2xl:left-24 lg:left-15 lg:-translate-x-1/2' 
-      : 'lg:left-[55%] xl:left-10 2xl:left-32 lg:left-15 lg:-translate-x-1/2'
+      ? 'lg:left-[15%] xl:left-18 2xl:left-24 lg:left-15 lg:-translate-x-1/2' 
+      : 'lg:left-[55%] xl:left-18 2xl:left-32 lg:left-15 lg:-translate-x-1/2'
   }`}
 >
   {/* Secondary Image - tilts opposite direction */}
@@ -480,7 +455,7 @@ const renderImageSection = () => {
         <button
           onClick={() => onEdit(sectionId, 'text', 'banner-title')}
           className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg border border-gray-200 cursor-pointer hover:scale-105 transition-all z-10 hover:bg-gray-50"
-          title="Edit Banner Section"
+          title={`Edit ${bannerType === 'live-streaming' ? 'Live Streaming' : bannerType === 'pk-battle' ? 'PK Battle' : 'Banner'} Section`}
         >
           <Edit size={16} className="text-gray-600" />
         </button>
