@@ -447,15 +447,34 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
   // View mode state: 'pages' or 'sections'
   const [viewMode, setViewMode] = useState<'pages' | 'sections'>('pages');
   
-  // Get pathname to detect nested routes
+  // Get pathname to detect nested routes and sync with URL
   const pathname = usePathname();
   
-  // Auto-switch to sections view when on nested route (/WebsiteBuilder/[page])
+  // Sync current page with URL on mount and pathname changes
   useEffect(() => {
-    if (pathname && pathname.startsWith('/WebsiteBuilder/') && pathname !== '/WebsiteBuilder') {
-      setViewMode('sections');
-    }
-  }, [pathname]);
+    const syncPageWithUrl = () => {
+      if (pathname && pathname.startsWith('/WebsiteBuilder/') && pathname !== '/WebsiteBuilder') {
+        // Extract page slug from URL
+        const slug = pathname.replace('/WebsiteBuilder/', '');
+        const page = pagesFromSlice.find(p => p.slug === slug);
+        
+        if (page && page.id !== currentPage) {
+          console.log('Syncing page with URL:', { slug, pageId: page.id, currentPage });
+          dispatch(setCurrentPage(page.id));
+        }
+        
+        // Auto-switch to sections view when on nested route
+        setViewMode('sections');
+      } else if (pathname === '/WebsiteBuilder' && currentPage !== 'home') {
+        // If on main builder page but state shows non-home, reset to home
+        console.log('Resetting to home page on main builder page');
+        dispatch(setCurrentPage('home'));
+        setViewMode('pages');
+      }
+    };
+    
+    syncPageWithUrl();
+  }, [pathname, currentPage, pagesFromSlice, dispatch]);
   
 
 
@@ -534,8 +553,10 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
             type: 'SYNC_STATE',
             builderState,
             bannerState,
-            pagesState
+            pagesState,
+            currentPage
           }, '*');
+          console.log('SYNC_STATE sent to iframe with currentPage:', currentPage);
         }
       }
     };
@@ -548,15 +569,16 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
   useEffect(() => {
     const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
-      console.log('Auto-syncing state to iframe');
+      console.log('Auto-syncing state to iframe, currentPage:', currentPage);
       iframe.contentWindow.postMessage({
         type: 'SYNC_STATE',
-        builderState: { sections, adminSections },
+        builderState: { sections, adminSections, currentPage },
         bannerState: { sections: bannerSections },
-        pagesState: { pages: pagesFromSlice }
+        pagesState: { pages: pagesFromSlice },
+        currentPage
       }, '*');
     }
-  }, [sections, bannerSections, adminSections, pagesFromSlice]);
+  }, [sections, bannerSections, adminSections, pagesFromSlice, currentPage]);
 useEffect(() => {
   // Only set default hero if we're in builder mode, no sections are active,
   // AND we haven't recently worked with banner sections
@@ -707,10 +729,21 @@ const scrollToSection = (sectionId: string) => {
   const attemptScroll = (delay: number, index: number) => {
     setTimeout(() => {
       if (hasScrolled) return; // Stop if already scrolled successfully
-      
+
       const previewContainer = document.getElementById('preview-container');
-      const element = document.getElementById(sectionId);
-      
+
+      // First try to find element in parent document
+      let element = document.getElementById(sectionId);
+
+      // If not found, try to find in iframe document (preview is rendered in iframe)
+      if (!element) {
+        const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          element = iframe.contentWindow.document.getElementById(sectionId);
+          console.log(`Checked iframe for element ${sectionId}:`, !!element);
+        }
+      }
+
       console.log(`scrollToSection Attempt ${index + 1} (${delay}ms):`, {
         sectionId,
         previewContainer: !!previewContainer,

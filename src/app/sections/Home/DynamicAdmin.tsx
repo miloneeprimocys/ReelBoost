@@ -27,21 +27,27 @@ const DynamicAdmin = () => {
   // Get tabs from ALL fifth sections in builderSlice
   const getAllTabs = (): AdminTabContent[] => {
     const tabs: AdminTabContent[] = [];
-    
+
     // Get tabs from ALL fifth sections in builderSlice (not just the first one)
     const fifthSections = builderSections.filter(s => s.type === 'fifth' || s.id.startsWith('fifth-'));
     console.log('DynamicAdmin - fifthSections found:', fifthSections.length);
-    
+
     fifthSections.forEach(fifthSection => {
       console.log('DynamicAdmin - fifthSection:', fifthSection.id, 'tabs:', fifthSection.content?.tabs);
       if (fifthSection?.content?.tabs && Array.isArray(fifthSection.content.tabs)) {
-        // Only include visible tabs from this section
-        const visibleTabs = fifthSection.content.tabs.filter((t: AdminTabContent) => t.visible !== false);
-        console.log('DynamicAdmin - visibleTabs:', visibleTabs.map((t: AdminTabContent) => ({ id: t.id, label: t.label, points: t.points })));
+        // Only include visible tabs from this section with default subtitle
+        const visibleTabs = fifthSection.content.tabs
+          .filter((t: AdminTabContent) => t.visible !== false)
+          .map((tab: AdminTabContent, index: number) => ({
+            ...tab,
+            // Ensure subtitle has a default value if missing or empty
+            subtitle: tab.subtitle || (index === 0 ? 'Feature Category' : 'Management'),
+          }));
+        console.log('DynamicAdmin - visibleTabs:', visibleTabs.map((t: AdminTabContent) => ({ id: t.id, label: t.label, subtitle: t.subtitle })));
         tabs.push(...visibleTabs);
       }
     });
-    
+
     console.log('DynamicAdmin - total tabs:', tabs.length);
     // If no tabs found, return empty array
     return tabs;

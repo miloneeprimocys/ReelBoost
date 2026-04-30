@@ -136,18 +136,31 @@ const AdminEditor = () => {
       tabsLength: section?.content?.tabs?.length
     });
 
+    let loadedTabs: AdminTabContent[] = [];
+
     if (section?.content?.tabs && Array.isArray(section.content.tabs)) {
       console.log('Loading tabs from section.content.tabs:', section.content.tabs);
-      return section.content.tabs;
-    }
-    // Fallback: try to get from builderSections if it's a fifth section
-    if (section?.id?.startsWith('fifth-')) {
+      loadedTabs = section.content.tabs;
+    } else if (section?.id?.startsWith('fifth-')) {
+      // Fallback: try to get from builderSections if it's a fifth section
       const fifthSection = builderSections.find(s => s.id === section.id);
       if (fifthSection?.content?.tabs && Array.isArray(fifthSection.content.tabs)) {
         console.log('Loading tabs from builderSections:', fifthSection.content.tabs);
-        return fifthSection.content.tabs;
+        loadedTabs = fifthSection.content.tabs;
       }
     }
+
+    // Ensure all tabs have required fields with default values
+    if (loadedTabs.length > 0) {
+      return loadedTabs.map((tab, index) => ({
+        ...tab,
+        subtitle: tab.subtitle || (index === 0 ? 'Feature Category' : 'Management'),
+        title: tab.title || 'New Admin Feature',
+        description: tab.description || 'Description for this admin feature goes here.',
+        points: tab.points?.length > 0 ? tab.points : ['Feature point 1', 'Feature point 2'],
+      }));
+    }
+
     // Default: return 2 demo tabs
     console.log('Falling back to demoTabTemplates');
     return demoTabTemplates.map((t, i) => ({ ...t, id: `tab-${Date.now()}-${i}`, order: i + 1 }));

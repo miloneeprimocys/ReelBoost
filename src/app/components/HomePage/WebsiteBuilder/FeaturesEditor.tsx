@@ -1,30 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "../../../hooks/reduxHooks";
-import { 
-  updateFeaturesContent, 
-  addFeature, 
-  updateFeature,
-  updateFeatureField,
-  deleteFeature,
-  reorderFeatures,
-  updateCard,
-  reorderCards,
-  setActiveFeaturesSection
-} from "../../../store/featuresSlice";
 import { 
   updateSectionContent,
   toggleBuilderMode,
-  undo,
-  redo,
   undoSection,
   redoSection,
-  setEditingSection
+  setEditingSection,
+  selectSectionCanUndo,
+  selectSectionCanRedo
 } from "../../../store/builderSlice";
-import { selectCanUndo, selectCanRedo } from "../../../store/builderSlice";
-import { closeEditor, setEditingOverlay } from "../../../store/editorSlice";
-import { Plus, Trash2, Upload, GripVertical, X, Undo, Redo, ChevronUp, ChevronDown } from "lucide-react";
+import { closeEditor } from "../../../store/editorSlice";
+import { Plus, Trash2, Upload, GripVertical, Undo, Redo, ChevronUp, ChevronDown } from "lucide-react";
 import { openImageModal } from "../../../store/modalSlice";
 import ImageModal from "./ImageModal";
 import Image from "next/image";
@@ -63,27 +51,23 @@ interface Card {
 }
 
 const FeaturesEditor: React.FC = () => {
-  console.log('=== FEATURES EDITOR COMPONENT LOADED ===');
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<'features' | 'style' | 'cards'>('features');
   const [draggedItem, setDraggedItem] = useState<{ type: 'feature' | 'card', index: number } | null>(null);
   const [expandedFeatureId, setExpandedFeatureId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  console.log('FeaturesEditor rendering...');
+  // Get editor state and section data directly from builderSlice only
+  const { editingOverlay } = useAppSelector(state => state.editor);
+  const builderSections = useAppSelector(state => state.builder?.sections || []);
   
-  // Get editor state from editorSlice
-  const { editorSection, editingOverlay } = useAppSelector(state => state.editor);
-  
-  // Get builder state as fallback
-  const { activeSection, sections } = useAppSelector(state => state.builder);
-  
-  // Get section directly from Redux store using editingOverlay.sectionId
+  // Get section directly from builderSlice using editingOverlay.sectionId
   const section = useMemo(() => {
     if (!editingOverlay.sectionId) return null;
     
-    // Find section in Redux store
-    const foundSection = sections.find(s => s.id === editingOverlay.sectionId);
+    // Find section in builderSlice only (featuresSlice is deprecated)
+    const foundSection = builderSections.find(s => s.id === editingOverlay.sectionId);
     
     // Create deep copy to prevent data swapping
     if (foundSection) {
@@ -91,54 +75,55 @@ const FeaturesEditor: React.FC = () => {
     }
     
     return null;
-  }, [editingOverlay.sectionId, sections]);
+  }, [editingOverlay.sectionId, builderSections]);
   
-  // Get undo/redo state
-  const canUndo = useAppSelector(selectCanUndo);
-  const canRedo = useAppSelector(selectCanRedo);
+  // Get undo/redo state from builderSlice section history
+  const canUndo = useAppSelector(selectSectionCanUndo(section?.id || ''));
+  const canRedo = useAppSelector(selectSectionCanRedo(section?.id || ''));
   
   // Set editing section ID when component mounts
-  React.useEffect(() => {
-    if (section) {
+  useEffect(() => {
+    if (section?.id) {
       dispatch(setEditingSection({ sectionId: section.id, field: null }));
     }
-  }, [section?.id]);
+    
+    return () => {
+      // Clear editing section when unmounting
+      dispatch(setEditingSection({ sectionId: null, field: null }));
+    };
+  }, [section?.id, dispatch]);
   
   const handleUndo = React.useCallback(() => {
-    if (section) {
+    if (section?.id) {
       dispatch(undoSection(section.id));
     }
   }, [section, dispatch]);
   
   const handleRedo = React.useCallback(() => {
-    if (section) {
+    if (section?.id) {
       dispatch(redoSection(section.id));
     }
   }, [section, dispatch]);
 
   // Keyboard shortcuts for undo/redo
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle keyboard events when FeaturesEditor is active
-      if (!section) {
-        return;
-      }
-      
+      // Only handle keyboard events when FeaturesEditor is active and has a section
+      if (!section?.id) return;
+
       // Check for Ctrl/Cmd + Z (undo)
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        if (canUndo) {
-          handleUndo();
-        }
+        if (canUndo) handleUndo();
+        return;
       }
       // Check for Ctrl/Cmd + Y (redo) or Ctrl/Cmd + Shift + Z (redo)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         e.stopPropagation();
-        if (canRedo) {
-          handleRedo();
-        }
+        if (canRedo) handleRedo();
+        return;
       }
     };
     
@@ -146,58 +131,46 @@ const FeaturesEditor: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [canUndo, canRedo, handleUndo, handleRedo, section?.id]);
   
-  // Get features content from featuresSlice as fallback
-  const { featuresContent } = useAppSelector(state => state.features);
+  // Default content for Features section
+  const defaultContent = {
+    dotText: 'Main Features',
+    title: 'Achieving More Through Digital Excellence',
+    features: [],
+    cards: [],
+    backgroundColor: '#000000',
+    textColor: '#ffffff',
+    titleColor: '#ffffff',
+    descriptionColor: '#ffffff',
+    dotTextColor: '#ffffff',
+    dotColor: '#a8aff5',
+    cardTitleColor: '#000000',
+    cardDescriptionColor: '#6B7280'
+  };
   
-  // Use section content if available, otherwise use features content
-  const content = section?.content || featuresContent;
+  // Use section content from builderSlice
+  const content = section?.content || defaultContent;
   
-  console.log('FeaturesEditor debug:', { 
-    editorSection, 
-    activeSection, 
-    section, 
-    content,
-    contentFeatures: content?.features?.length,
-    contentKeys: content ? Object.keys(content) : 'no content'
-  });
-  
-  // Get fourth section demo data from featuresSlice (already declared above)
-  
-  // Ensure localContent always has proper default values from fourth section
+  // Local state for editing
   const [localContent, setLocalContent] = useState(() => ({
-    dotText: featuresContent.dotText || 'Main Features',
-    title: featuresContent.title || 'Achieving More Through Digital Excellence',
-    features: featuresContent.features || [],
-    cards: featuresContent.cards || [],
-    backgroundColor: featuresContent.backgroundColor || '#000000',
-    textColor: featuresContent.textColor || '#ffffff',
-    titleColor: featuresContent.titleColor || '#ffffff',
-    descriptionColor: featuresContent.descriptionColor || '#ffffff',
-    dotTextColor: featuresContent.dotTextColor || '#ffffff',
-    dotColor: featuresContent.dotColor || '#a8aff5',
-    cardTitleColor: featuresContent.cardTitleColor || '#000000',
-    cardDescriptionColor: featuresContent.cardDescriptionColor || '#6B7280',
+    ...defaultContent,
     ...content
   }));
   
-  // Use section content if available, otherwise use features content
-  React.useEffect(() => {
-    if (section && section.content) {
-      const newContent = { ...featuresContent, ...section.content };
-      setLocalContent(newContent);
-    } else if (featuresContent && (!localContent.features.length || !localContent.cards.length)) {
-      // Load from featuresContent if localContent is empty
-      setLocalContent(featuresContent);
-    }
-  }, [section?.id]);
-
-  // Listen to section content changes for undo/redo
-  React.useEffect(() => {
-    if (section && section.content) {
-      const newContent = { ...featuresContent, ...section.content };
+  // Update local content when section changes
+  useEffect(() => {
+    if (section) {
+      const newContent = { ...defaultContent, ...section.content };
       setLocalContent(newContent);
     }
-  }, [section?.content, JSON.stringify(section?.content)]);
+  }, [section?.id, section?.content]);
+  
+  // Sync local content with Redux state changes (for undo/redo)
+  useEffect(() => {
+    if (section && section.content) {
+      const newContent = { ...defaultContent, ...section.content };
+      setLocalContent(newContent);
+    }
+  }, [section?.content]);
 
   // Set first feature as expanded when features change or component loads
   React.useEffect(() => {
@@ -215,14 +188,33 @@ const FeaturesEditor: React.FC = () => {
 
   const updateField = (field: string, value: any) => {
     const updatedContent = { ...localContent, [field]: value };
+    
+    // Update local state immediately for responsive UI
     setLocalContent(updatedContent);
     
-    // Update both featuresSlice and section content
-    dispatch(updateFeaturesContent({ [field]: value }));
-    if (section) {
-      dispatch(updateSectionContent({ id: section.id, content: updatedContent }));
+    // Clear existing debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+    
+    // Debounce Redux dispatch - only send the changed field to builderSlice
+    debounceTimerRef.current = setTimeout(() => {
+      if (section?.id) {
+        // Only dispatch the changed field to builderSlice
+        const updatePayload = { [field]: value };
+        dispatch(updateSectionContent({ id: section.id, content: updatePayload }));
+      }
+    }, 300);
   };
+  
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleImageUpload = (field: string, featureId?: string, cardId?: string) => {
     const input = document.createElement('input');
@@ -245,7 +237,6 @@ const FeaturesEditor: React.FC = () => {
                 [field]: result 
               };
               updateField('features', updatedFeatures);
-              dispatch(updateFeature({ id: featureId, updates: { [field]: result } }));
             }
           } else if (cardId) {
             // Update card image
@@ -257,7 +248,6 @@ const FeaturesEditor: React.FC = () => {
                 image: result 
               };
               updateField('cards', updatedCards);
-              dispatch(updateCard({ id: cardId, updates: { image: result } }));
             }
           } else {
             // Update general field
@@ -293,7 +283,6 @@ const FeaturesEditor: React.FC = () => {
       };
       const updatedFeatures = [...localContent.features, newFeature];
       updateField('features', updatedFeatures);
-      dispatch(addFeature(newFeature));
       // Automatically expand the newly added feature
       setExpandedFeatureId(newFeature.id);
     }
@@ -308,14 +297,12 @@ const FeaturesEditor: React.FC = () => {
         [field]: value 
       };
       updateField('features', updatedFeatures);
-      dispatch(updateFeatureField({ id: featureId, updates: { [field]: value } }));
     }
   };
 
   const removeFeature = (featureId: string) => {
     const updatedFeatures = localContent.features.filter((f: Feature) => f.id !== featureId);
     updateField('features', updatedFeatures);
-    dispatch(deleteFeature(featureId));
   };
 
   const updateCardField = (cardId: string, field: string, value: string) => {
@@ -327,7 +314,6 @@ const FeaturesEditor: React.FC = () => {
         [field]: value 
       };
       updateField('cards', updatedCards);
-      dispatch(updateCard({ id: cardId, updates: { [field]: value } }));
     }
   };
 
@@ -365,12 +351,9 @@ const FeaturesEditor: React.FC = () => {
       // Update local state immediately
       setLocalContent((prev: any) => ({ ...prev, features: updatedFeatures }));
       
-      // Update Redux store
-      dispatch(reorderFeatures({ fromIndex: draggedItem.index, toIndex: adjustedDropIndex }));
-      
-      // Update section content if exists
-      if (section) {
-        dispatch(updateSectionContent({ id: section.id, content: { ...localContent, features: updatedFeatures } }));
+      // Update section content in builderSlice
+      if (section?.id) {
+        dispatch(updateSectionContent({ id: section.id, content: { features: updatedFeatures } }));
       }
     }
     
@@ -379,13 +362,12 @@ const FeaturesEditor: React.FC = () => {
   };
 
   const handleDone = () => {
-    if (section) {
-      // Mark section as ready (similar to HeroEditor)
+    if (section?.id) {
+      // Final update to section content
       dispatch(updateSectionContent({ id: section.id, content: localContent }));
     }
     // Close editor and builder via Redux
     dispatch(closeEditor());
-    dispatch(setActiveFeaturesSection(null));
     dispatch(toggleBuilderMode());
     
     // Redirect to show the updated section - scroll directly to section

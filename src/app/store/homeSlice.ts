@@ -22,27 +22,29 @@ export interface HeroContent {
 }
 
 interface HomeState {
+  // Note: Hero content is now managed exclusively by builderSlice
+  // This slice is kept for backwards compatibility but all data comes from builderSlice
   heroContent: HeroContent;
   isHeroEdited: boolean;
 }
 
 const initialState: HomeState = {
   heroContent: {
-    title: 'Reelboost - Tiktok Clone App',
-    description: 'ReelBoost is a modern short-video and live-streaming app inspired by TikTok. It lets users create, edit, and share engaging short videos with a smooth discovery feed. Creators can go live, interact with audiences in real time, and build loyal communities. Designed for performance and scale, ReelBoost supports engagement, growth, and monetization.',
-    primaryButtonText: 'Get Started',
-    secondaryButtonText: 'Learn More',
-    backgroundImage: '/hero.png',
+    title: '',
+    description: '',
+    primaryButtonText: '',
+    secondaryButtonText: '',
+    backgroundImage: '',
     layout: 'left',
     titleColor: '#2D3134',
     descriptionColor: '#6B7280',
     primaryButtonColor: '#4A72FF',
     secondaryButtonColor: '#6B7280',
     animation: 'fade',
-    tags: ["Live Streaming", "PK Battle", "Multiple Payment Gateway", "Video Trimming", "Add Music", "Wallet", "Gits", "Earn Coins"],
-    activeTag: "Live Streaming",
-    appStoreImage: '/Button1.png',
-    googlePlayImage: '/Button2.png',
+    tags: [],
+    activeTag: '',
+    appStoreImage: '',
+    googlePlayImage: '',
     dotText: '',
     topAccentColor: '#2B59FF',
     bottomAccentColor: '#FFB800',

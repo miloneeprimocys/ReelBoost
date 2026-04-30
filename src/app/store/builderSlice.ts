@@ -1169,7 +1169,8 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, 
         {
           id: 'recharge-plan',
           label: 'RECHARGE PLAN',
-                    title: 'Wallet Recharge Plans',
+          subtitle: 'Monetization & Economy',
+          title: 'Wallet Recharge Plans',
           description: 'Admins can view how many users have purchased each recharge plan and on which date and time. They can easily manage all plans in one place.',
           points: [
             'Track user purchases with date & time',
@@ -1182,7 +1183,8 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, 
         {
           id: 'notification',
           label: 'NOTIFICATION',
-                    title: 'Push Notification System',
+          subtitle: 'User Engagement',
+          title: 'Push Notification System',
           description: 'Send targeted push notifications to users. Schedule messages, manage templates, and track delivery status all from one dashboard.',
           points: [
             'Schedule notifications for optimal timing',
@@ -1195,7 +1197,8 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, 
         {
           id: 'language',
           label: 'LANGUAGE',
-                    title: 'Multi-Language Support',
+          subtitle: 'Global Reach',
+          title: 'Multi-Language Support',
           description: 'Manage platform translations and language settings. Add new languages, edit translations, and control regional content.',
           points: [
             'Support for 10+ languages',
@@ -1208,7 +1211,8 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, 
         {
           id: 'admin-settings',
           label: 'ADMIN SETTINGS',
-                    title: 'Platform Configuration',
+          subtitle: 'Platform Control',
+          title: 'Platform Configuration',
           description: 'Control platform-wide settings, user permissions, feature toggles, and system configurations from the admin dashboard.',
           points: [
             'Manage admin roles and permissions',
@@ -1225,7 +1229,8 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, 
         {
           id: `feature-1`,
           label: 'FEATURE 1',
-                    title: 'Feature Management Tool',
+          subtitle: 'Feature Category',
+          title: 'Feature Management Tool',
           description: 'Manage and configure this feature from the admin dashboard. Customize settings and monitor performance.',
           points: [
             'Configure feature settings',
@@ -1238,7 +1243,8 @@ const getDefaultContent = (type: SectionConfig['type'], isNew: boolean = false, 
         {
           id: `feature-2`,
           label: 'FEATURE 2',
-                    title: 'Advanced Management System',
+          subtitle: 'Management',
+          title: 'Advanced Management System',
           description: 'Control and manage advanced settings for this feature. Track usage and optimize performance.',
           points: [
             'Track usage statistics',

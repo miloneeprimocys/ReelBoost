@@ -32,55 +32,12 @@ interface TestimonialsState {
   isLoading: boolean;
 }
 
-const defaultTestimonials: Testimonial[] = [
-  {
-    id: '1',
-    name: 'Sarah Johnson',
-    content: 'This platform has transformed how we manage our digital presence. The results have been outstanding.',
-    avatar: '/avatar1.jpg',
-    rating: 5
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    content: 'The best investment we\'ve made for our business. User-friendly and incredibly powerful.',
-    avatar: '/avatar2.jpg',
-    rating: 5
-  },
-  {
-    id: '3',
-    name: 'Emily Rodriguez',
-    content: 'Exceptional service and support. Our team productivity has increased significantly.',
-    avatar: '/avatar3.jpg',
-    rating: 5
-  },
-  {
-    id: '4',
-    name: 'David Kim',
-    content: 'A game-changer for our development workflow. Highly recommend to any tech team.',
-    avatar: '/avatar4.jpg',
-    rating: 5
-  },
-  {
-    id: '5',
-    name: 'Lisa Thompson',
-    content: 'Streamlined our entire operation process. The ROI has been incredible.',
-    avatar: '/avatar5.jpg',
-    rating: 5
-  },
-  {
-    id: '6',
-    name: 'James Wilson',
-    content: 'Perfect solution for our creative needs. Intuitive and feature-rich platform.',
-    avatar: '/avatar6.jpg',
-    rating: 5
-  }
-];
-
+// Note: Testimonials content is now managed exclusively by builderSlice
+// This slice is kept for backwards compatibility but all data comes from builderSlice
 const initialState: TestimonialsState = {
   testimonialsContent: {
-    title: 'Reviews from real people',
-    subtitle: 'What our customers are saying',
+    title: '',
+    subtitle: '',
     backgroundColor: '#f9fafb',
     textColor: '#111827',
     cardBackgroundColor: '#ffffff',
@@ -88,7 +45,7 @@ const initialState: TestimonialsState = {
     starColor: '#10b981',
     quoteIconColor: '#9ca3af',
     carouselPosition: 'right',
-    testimonials: defaultTestimonials,
+    testimonials: [],
     dotText: 'Testimonials',
     dotTextColor: '#111827',
     showDotText: true

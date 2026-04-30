@@ -201,33 +201,86 @@ const SectionList: React.FC<SectionListProps> = ({
                   source: section.source,
                   isBannerSection
                 });
-                
-                // Set active section
-                if (isBannerSection) {
-                  console.log('SectionList - Calling onSetActiveBanner with:', section.id);
-                  onSetActiveBanner(section.id);
+
+                const isMobile = window.innerWidth < 768;
+
+                // On mobile, delay everything to prevent scroll jump from state changes
+                if (isMobile && onSwitchToPreview) {
+                  console.log('Mobile detected - switching to preview first');
+                  onSwitchToPreview();
+
+                  // Wait longer for iframe to fully render after view switch, then retry until success
+                  const sendScrollWithRetry = (attempt: number = 1) => {
+                    // Try multiple selectors to find the iframe
+                    let iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+                    if (!iframe) {
+                      iframe = document.querySelector('iframe[title="Website Preview"]') as HTMLIFrameElement;
+                    }
+                    if (!iframe) {
+                      iframe = document.querySelector('#preview-container iframe') as HTMLIFrameElement;
+                    }
+                    // Last resort: any iframe
+                    if (!iframe) {
+                      iframe = document.querySelector('iframe') as HTMLIFrameElement;
+                    }
+
+                    console.log(`Mobile scroll attempt ${attempt}:`, { iframeFound: !!iframe, src: iframe?.src, hasContentWindow: !!iframe?.contentWindow });
+
+                    if (iframe && iframe.contentWindow) {
+                      // Set active section first
+                      if (isBannerSection) {
+                        onSetActiveBanner(section.id);
+                      } else {
+                        onSetActive(section.id);
+                      }
+
+                      // Send scroll message multiple times to ensure it arrives
+                      console.log('Sending SCROLL_TO_SECTION to iframe for:', section.id);
+                      const message = {
+                        type: 'SCROLL_TO_SECTION',
+                        sectionId: section.id
+                      };
+                      iframe.contentWindow.postMessage(message, '*');
+
+                      // Send again after short delay to ensure delivery
+                      setTimeout(() => {
+                        if (iframe?.contentWindow) {
+                          iframe.contentWindow.postMessage(message, '*');
+                        }
+                      }, 200);
+                    } else if (attempt < 15) {
+                      // Retry after 400ms if iframe not ready yet (longer delay for mobile)
+                      setTimeout(() => sendScrollWithRetry(attempt + 1), 400);
+                    } else {
+                      console.error('Failed to find iframe after 15 attempts');
+                    }
+                  };
+
+                  // Start retry loop after initial delay for view transition
+                  setTimeout(() => sendScrollWithRetry(1), 800);
                 } else {
-                  console.log('SectionList - Calling onSetActive with:', section.id);
-                  onSetActive(section.id);
+                  // Desktop: proceed normally
+                  if (isBannerSection) {
+                    console.log('SectionList - Calling onSetActiveBanner with:', section.id);
+                    onSetActiveBanner(section.id);
+                  } else {
+                    console.log('SectionList - Calling onSetActive with:', section.id);
+                    onSetActive(section.id);
+                  }
+
+                  // Send scroll message to iframe preview
+                  setTimeout(() => {
+                    const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+                    if (iframe && iframe.contentWindow) {
+                      console.log('Sending SCROLL_TO_SECTION to iframe for:', section.id);
+                      iframe.contentWindow.postMessage({
+                        type: 'SCROLL_TO_SECTION',
+                        sectionId: section.id
+                      }, '*');
+                    }
+                  }, 100);
                 }
-                
-                // Send scroll message to iframe preview
-                const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
-                if (iframe && iframe.contentWindow) {
-                  console.log('Sending SCROLL_TO_SECTION to iframe for:', section.id);
-                  iframe.contentWindow.postMessage({
-                    type: 'SCROLL_TO_SECTION',
-                    sectionId: section.id
-                  }, '*');
-                } else {
-                  console.log('Iframe not found, trying window.parent (for mobile)');
-                  // For mobile view where we might be in a different context
-                  window.parent.postMessage({
-                    type: 'SCROLL_TO_SECTION',
-                    sectionId: section.id
-                  }, '*');
-                }
-                
+
                 console.log('=== SectionList Click END ===');
               }}
               className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all touch-none md:gap-2 md:p-2 lg:gap-2 lg:p-2 ${

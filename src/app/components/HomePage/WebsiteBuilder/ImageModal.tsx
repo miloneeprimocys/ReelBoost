@@ -40,7 +40,7 @@ const ImageModal: React.FC = () => {
   if (!isOpen) return null;
 
   return (
-    // Cover entire editing overlay including Cancel/Save buttons
+  // Cover entire editing overlay including Cancel/Save buttons
     <div 
       className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       onClick={() => dispatch(closeImageModal())}

@@ -41,31 +41,12 @@ interface FAQState {
   isLoading: boolean;
 }
 
-const defaultFAQs: FAQItem[] = [
-  {
-    id: '1',
-    question: 'What is included in the basic plan?',
-    answer: 'The basic plan includes all essential features to get you started, including 5 projects, 10GB storage, and email support.',
-    category: 'General'
-  },
-  {
-    id: '2',
-    question: 'Can I upgrade my plan later?',
-    answer: 'Yes, you can upgrade your plan at any time. The new pricing will be prorated based on your billing cycle.',
-    category: 'Pricing'
-  },
-  {
-    id: '3',
-    question: 'How do I cancel my subscription?',
-    answer: 'You can cancel your subscription from your account settings. Your access will continue until the end of your billing period.',
-    category: 'General'
-  }
-];
-
+// Note: FAQ content is now managed exclusively by builderSlice
+// This slice is kept for backwards compatibility but all data comes from builderSlice
 const initialState: FAQState = {
   faqContent: {
-    title: 'Frequently asked questions',
-    subtitle: "Can't find what you're looking for? Chat to our friendly team!",
+    title: '',
+    subtitle: '',
     backgroundColor: '#ffffff',
     textColor: '#101828',
     accentColor: '#667085',
@@ -73,9 +54,9 @@ const initialState: FAQState = {
     dotText: 'FAQ',
     dotTextColor: '#101828',
     showDotText: true,
-    categories: ['General', 'Features', 'Pricing'],
-    activeCategory: 'General',
-    faqs: defaultFAQs,
+    categories: [],
+    activeCategory: '',
+    faqs: [],
     accordionBgColor: 'transparent',
     activeAccordionBgColor: 'transparent',
     plusIconColor: '#98A2B3',

@@ -53,7 +53,12 @@ const FifthSection = ({ sectionId, onEdit }: FifthSectionProps) => {
         if (section?.content?.tabs && Array.isArray(section.content.tabs)) {
             return section.content.tabs
                 .filter((t: AdminTabContent) => t.visible !== false)
-                .sort((a: AdminTabContent, b: AdminTabContent) => (a.order || 0) - (b.order || 0));
+                .sort((a: AdminTabContent, b: AdminTabContent) => (a.order || 0) - (b.order || 0))
+                .map((tab: AdminTabContent, index: number) => ({
+                    ...tab,
+                    // Ensure subtitle has a default value if missing or empty
+                    subtitle: tab.subtitle || (index === 0 ? 'Feature Category' : 'Management'),
+                }));
         }
         return [];
     };

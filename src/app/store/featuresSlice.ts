@@ -40,78 +40,16 @@ interface FeaturesState {
   activeSection: string | null;
 }
 
+// Note: Features content is now managed exclusively by builderSlice
+// This slice is kept for backwards compatibility but all data comes from builderSlice
 const initialState: FeaturesState = {
   featuresContent: {
-    dotText: 'Main Features',
-    title: 'Achieving More Through Digital Excellence',
+    dotText: '',
+    title: '',
     subtitle: '',
     description: '',
-    features: [
-      { id: 'feature-1', title: 'Short Videos', icon: '/video.svg', backgroundImage: '/laptop.svg' },
-      { id: 'feature-2', title: 'Notification', icon: '/notification.svg', backgroundImage: '/laptop.svg' },
-      { id: 'feature-3', title: 'Real-time chat', icon: '/message.svg', backgroundImage: '/laptop.svg' },
-      { id: 'feature-4', title: 'Explore Users & Hashtags', icon: '/user.svg', backgroundImage: '/laptop.svg' },
-      { id: 'feature-5', title: 'Live Streaming', icon: '/liveB.svg', backgroundImage: '/laptop.svg' },
-      { id: 'feature-6', title: 'PK Battle', icon: '/Battle.svg', backgroundImage: '/laptop.svg' },
-    ],
-    cards: [
-      {
-        id: 'card-1',
-        title: 'Wallet',
-        description: 'The wallet allows users to securely manage their balance, add funds, receive gifts, and withdraw payments from coin balance.',
-        image: '/wallet.svg',
-        backgroundColor: '#F1F3EE',
-        layout: 'default'
-      },
-      {
-        id: 'card-2',
-        title: 'Live Streaming',
-        description: 'Live streaming supports up to four participants at a time, enabling real-time interaction, collaboration, and audience engagement.',
-        image: '/hero.png',
-        backgroundColor: '#F1F3EE',
-        layout: 'centered'
-      },
-      {
-        id: 'card-3',
-        title: 'Payment History',
-        description: 'View your complete payment history, including funds added for sending gifts and withdrawals made from coins received.',
-        image: '/third.svg', // Image shown on right side of payment history card
-        backgroundColor: '#F1F3EE',
-        layout: 'default'
-      },
-      {
-        id: 'card-4',
-        title: 'Reelboost',
-        description: '',
-        image: '/laptop.svg',
-        backgroundColor: '#F1F3EE',
-        layout: 'full-image'
-      },
-      {
-        id: 'card-5',
-        title: 'Video Trimming',
-        description: 'Videos can be trimmed from beginning or end, with a maximum length limit of 30 seconds.',
-        image: '/trim.svg',
-        backgroundColor: '#F1F3EE',
-        layout: 'default'
-      },
-      {
-        id: 'card-6',
-        title: 'Add Music for Reels',
-        description: 'Add Music to Reels allows users to enhance their short videos by selecting background music from an audio library.',
-        image: '/music.svg',
-        backgroundColor: '#F1F3EE',
-        layout: 'default'
-      },
-      {
-        id: 'card-7',
-        title: 'Gift Lists',
-        description: 'The gift list includes multiple categories of gift icons that users can send and receive to earn coins.',
-        image: '/giftlist.svg',
-        backgroundColor: '#F1F3EE',
-        layout: 'default'
-      }
-    ],
+    features: [],
+    cards: [],
     backgroundColor: '#000000',
     textColor: '#ffffff',
     titleColor: '#ffffff',

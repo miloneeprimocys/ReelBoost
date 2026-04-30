@@ -105,9 +105,9 @@ const DynamicSubscriptionPlan = ({ section, onEdit }: DynamicSubscriptionPlanPro
   // Get gap classes based on number of plans
   const getGapClasses = () => {
     if (plans.length === 2) {
-      return 'gap-4 md:gap-6 lg:gap-8';
+      return 'gap-3 md:gap-4 lg:gap-5';
     }
-    return 'gap-8 md:gap-12';
+    return 'gap-4 md:gap-6';
   };
 
   return (
@@ -179,7 +179,7 @@ const DynamicSubscriptionPlan = ({ section, onEdit }: DynamicSubscriptionPlanPro
           {plans.map((plan: SubscriptionPlan, index: number) => (
             <div
               key={plan.id}
-              className={`relative rounded-2xl p-6 md:p-8 transition-all duration-500 hover:shadow-xl w-full max-w-[320px] mx-auto ${
+              className={`relative rounded-2xl p-8 md:p-10 transition-all duration-500 hover:shadow-xl w-full max-w-[380px] mx-auto ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
               style={{

@@ -29,6 +29,7 @@ function PreviewContent() {
   const { sections: bannerSections } = useAppSelector((state) => state.banner);
   const { pages } = useAppSelector((state) => state.pages);
   const [isInIframe, setIsInIframe] = useState(false);
+  const [currentPage, setCurrentPage] = useState('home'); // Track current page from parent
   const dispatch = useDispatch();
 
   // Merge builder sections with banner sections for preview
@@ -68,16 +69,16 @@ function PreviewContent() {
         const element = document.getElementById(sectionId);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          element.style.transition = 'background-color 0.3s ease';
-          element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+          // Use CSS class instead of inline styles to avoid hydration mismatch
+          element.classList.add('scroll-highlight');
           setTimeout(() => {
-            element.style.backgroundColor = '';
+            element.classList.remove('scroll-highlight');
           }, 1000);
         }
       } else if (event.data && event.data.type === 'SYNC_STATE') {
         // Receive state from parent window
         console.log('Received SYNC_STATE from parent', event.data);
-        const { builderState, pagesState, bannerState } = event.data;
+        const { builderState, pagesState, bannerState, currentPage: pageFromParent } = event.data;
         if (builderState) {
           dispatch(syncBuilderState(builderState));
         }
@@ -86,6 +87,9 @@ function PreviewContent() {
         }
         if (bannerState) {
           dispatch(syncBannerState(bannerState));
+        }
+        if (pageFromParent) {
+          setCurrentPage(pageFromParent);
         }
       }
     };
@@ -101,18 +105,19 @@ function PreviewContent() {
     return () => window.removeEventListener('message', handleMessage);
   }, [dispatch]);
 
-  // Get homepage sections from pages (for visibility check)
-  const homePage = pages.find(p => p.id === 'home');
-  const pageSections = homePage?.sections || [];
+  // Get current page sections from pages (for visibility check)
+  const currentPageData = pages.find(p => p.id === currentPage);
+  const pageSections = currentPageData?.sections || [];
 
   // Filter visible sections and sort by builder section order
+  // Only show sections that belong to the current page (exist in pageSections)
   const visibleSections = allSections
     .filter(s => {
       const pageSection = pageSections.find(ps => ps.sectionId === s.id);
-      // Check visibility from both page record and section's own visible property
-      // Hide if: page record says hidden OR section itself is hidden
-      if (pageSection && pageSection.visible === false) return false;
-      if (s.visible === false) return false;
+      // Section must exist in the current page's sections AND be visible
+      if (!pageSection) return false; // Not in this page - hide it
+      if (pageSection.visible === false) return false; // Page says hide it
+      if (s.visible === false) return false; // Section itself is hidden
       return true;
     })
     .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -141,6 +146,13 @@ function PreviewContent() {
 
   return (
     <div className="min-h-screen  ">
+      {/* CSS for scroll highlight effect - avoids hydration mismatch */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .scroll-highlight {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+          transition: background-color 0.3s ease;
+        }
+      `}} />
       {/* Dynamic Navbar */}
       <div id="navbar-1" onClick={() => handleSectionClick('navbar-1', 'navbar', 'navbar')} className="cursor-pointer">
         <DynamicNavbar isPreviewMode={true} />
@@ -148,7 +160,7 @@ function PreviewContent() {
 
       {/* Render Sections - with ID for scrolling */}
       {visibleSections.map((section) => {
-        const wrapperClasses = isInIframe ? "cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-inset transition-all scroll-mt-20" : "scroll-mt-20";
+        const wrapperClasses = isInIframe ? "cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-inset scroll-mt-20" : "scroll-mt-20";
         
         switch (section.type) {
           case 'hero':

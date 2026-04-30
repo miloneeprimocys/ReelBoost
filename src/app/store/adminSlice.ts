@@ -18,56 +18,10 @@ interface AdminState {
   isEditorMode: boolean;
 }
 
-// Demo data templates for new admin sections
-const demoAdminTemplates: AdminTabContent[] = [
-  {
-    id: 'recharge-plan',
-    label: "RECHARGE PLAN",
-    subtitle: "Monetization & Economy",
-    title: "Wallet Recharge Plans",
-    description: "Admins can view how many users have purchased each recharge plan and on which date and time. They can easily manage all plans in one place.",
-    points: [
-      "Track user purchases with date & time",
-      "Update pricing and plans instantly",
-    ],
-    image: "/Admin1.svg",
-    order: 1,
-    visible: true,
-  },
-  {
-    id: 'user-management',
-    label: "USER MANAGEMENT",
-    subtitle: "Platform Control",
-    title: "User Administration",
-    description: "Comprehensive user management tools to monitor, moderate, and manage all platform users effectively.",
-    points: [
-      "View and manage user accounts",
-      "Suspend or ban problematic users",
-      "Track user activity and engagement"
-    ],
-    image: "/Admin2.svg",
-    order: 2,
-    visible: true,
-  },
-  {
-    id: 'content-moderation',
-    label: "CONTENT MODERATION",
-    subtitle: "Quality Assurance",
-    title: "Content Review System",
-    description: "Advanced content moderation tools to ensure platform safety and content quality standards.",
-    points: [
-      "Review flagged content automatically",
-      "Approve or reject user uploads",
-      "Manage community guidelines"
-    ],
-    image: "/Admin3.svg",
-    order: 3,
-    visible: true,
-  }
-];
-
+// Note: Admin content is now managed exclusively by builderSlice
+// This slice is kept for backwards compatibility but all data comes from builderSlice
 const initialState: AdminState = {
-  sections: [], // No default admin sections - they will be created dynamically
+  sections: [],
   activeSection: null,
   isEditorMode: false,
 };
@@ -87,19 +41,22 @@ const adminSlice = createSlice({
       }
     },
     addAdminSection: (state, action: PayloadAction<{ type: string; order?: number; id?: string }>) => {
-      const { type, order, id } = action.payload;
+      const { order, id } = action.payload;
       const maxOrder = order || Math.max(...state.sections.map(s => s.order), 0) + 1;
-      
-      // Rotate through demo templates based on current section count
-      const templateIndex = state.sections.length % demoAdminTemplates.length;
-      const template = demoAdminTemplates[templateIndex];
-      
+
+      // Default admin section template
       const newSection: AdminTabContent = {
-        ...template,
         id: id || `admin-${Date.now()}`,
+        label: "NEW TAB",
+        subtitle: "Feature Category",
+        title: "New Admin Feature",
+        description: "Description for this admin feature goes here.",
+        points: ["Feature point 1", "Feature point 2"],
+        image: "/Admin1.svg",
         order: maxOrder,
+        visible: true,
       };
-      
+
       state.sections.push(newSection);
     },
     deleteAdminSection: (state, action: PayloadAction<string>) => {
