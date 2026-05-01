@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation";
 import { X, Edit3, ChevronLeft, Undo, Redo, Facebook, Twitter, Linkedin, Instagram, Phone, Mail, FileText } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/reduxHooks";
-import { store } from "../../store";
+import { store, RootState } from "../../store";
 import { 
   toggleBuilderMode, 
   setActiveSection, 
@@ -50,6 +50,21 @@ import {
 } from "../../store/adminSlice";
 import { openEditor, setEditingOverlay } from "../../store/editorSlice";
 import { setActiveNavbar } from "../../store/navbarSlice";
+import { 
+  addLayout, 
+  removeLayout, 
+  reorderLayouts,
+  toggleLayoutVisibility,
+  addComponentToLayout,
+  LayoutType,
+  LayoutConfig,
+  LayoutState
+} from "../../store/layoutSlice";
+import {
+  initializeHeadingComponent,
+  openHeadingEditor,
+} from "../../store/headingEditorSlice";
+import LayoutSelector from "./WebsiteBuilder/LayoutSelector";
 import HeroEditor from "./WebsiteBuilder/HeroEditor";
 import BannerEditor from "./WebsiteBuilder/BannerEditor";
 import FeaturesEditor from "./WebsiteBuilder/FeaturesEditor";
@@ -60,6 +75,7 @@ import FooterEditor from "./WebsiteBuilder/FooterEditor";
 import TestimonialsEditor from "./WebsiteBuilder/TestimonialsEditor";
 import FaqEditor from "./WebsiteBuilder/FaqEditor";
 import SubscriptionPlanEditor from "./WebsiteBuilder/SubscriptionPlanEditor";
+import HeadingEditor from "./WebsiteBuilder/HeadingEditor";
 import SectionList from "./WebsiteBuilder/SectionList";
 import PagesList from "./WebsiteBuilder/PagesList";
 import AddPageModal from "./WebsiteBuilder/AddPageModal";
@@ -114,6 +130,8 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
   const { sections: adminSections, activeSection: activeAdminSection } = useAppSelector(state => state.admin);
   const { editorSection } = useAppSelector(state => state.editor);
   const { isActive: isNavbarActive } = useAppSelector(state => state.navbar);
+  const layoutState = useAppSelector(state => state.layout);
+  const { isOpen: isHeadingEditorOpen, activeComponentId, components: headingComponents } = useAppSelector(state => state.headingEditor);
   
   // Create a ref for the preview container
   const previewRef = useRef<HTMLDivElement>(null);
@@ -456,7 +474,8 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
       if (pathname && pathname.startsWith('/WebsiteBuilder/') && pathname !== '/WebsiteBuilder') {
         // Extract page slug from URL
         const slug = pathname.replace('/WebsiteBuilder/', '');
-        const page = pagesFromSlice.find(p => p.slug === slug);
+        // Match page by slug - handle both with and without leading slash
+        const page = pagesFromSlice.find(p => p.slug === slug || p.slug === `/${slug}`);
         
         if (page && page.id !== currentPage) {
           console.log('Syncing page with URL:', { slug, pageId: page.id, currentPage });
@@ -535,6 +554,57 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
         } else {
           handleAddSection(sectionType, sectionName);
         }
+      } else if (event.data && event.data.type === 'ADD_LAYOUT') {
+        const { layoutType, config, name } = event.data;
+        console.log('Add layout requested from iframe:', { layoutType, config, name });
+        
+        dispatch(addLayout({
+          pageId: currentPage,
+          layout: {
+            type: layoutType,
+            name,
+            config,
+            components: [],
+            visible: true,
+          }
+        }));
+      } else if (event.data && event.data.type === 'LAYOUT_CELL_CLICK') {
+        const { layoutId, cellIndex } = event.data;
+        console.log('Layout cell clicked in iframe:', { layoutId, cellIndex });
+        
+        if (isMobile) {
+          setMobileView('preview');
+        }
+        
+        dispatch(setEditingOverlay({
+          isOpen: true,
+          sectionId: `${layoutId}-cell-${cellIndex}`,
+          sectionType: 'layout-cell',
+          contentType: null
+        }));
+      } else if (event.data && event.data.type === 'COMPONENT_DROPPED') {
+        const { layoutId, cellIndex, componentType } = event.data;
+        console.log('Component dropped on layout cell:', { layoutId, cellIndex, componentType });
+        
+        // Add component to layout cell
+        dispatch(addComponentToLayout({
+          pageId: currentPage,
+          layoutId,
+          component: {
+            type: componentType,
+            cellIndex,
+            content: {},
+            styles: {},
+            order: 0,
+          }
+        }));
+      } else if (event.data && event.data.type === 'HEADING_CLICK') {
+        const { componentId } = event.data;
+        console.log('Heading clicked:', componentId);
+        
+        // Initialize component state if needed and open heading editor
+        dispatch(initializeHeadingComponent({ componentId }));
+        dispatch(openHeadingEditor({ componentId }));
       } else if (event.data && event.data.type === 'REQUEST_STATE') {
         // Send current state to iframe
         console.log('Received REQUEST_STATE from iframe, sending SYNC_STATE');
@@ -548,12 +618,15 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
           };
           const bannerState = { sections: bannerSections };
           const pagesState = { pages: pagesFromSlice };
-          
+          const headingEditorState = { components: headingComponents };
+
           iframe.contentWindow.postMessage({
             type: 'SYNC_STATE',
             builderState,
             bannerState,
             pagesState,
+            layoutState,
+            headingEditorState,
             currentPage
           }, '*');
           console.log('SYNC_STATE sent to iframe with currentPage:', currentPage);
@@ -563,22 +636,34 @@ const WebsiteBuilder: React.FC<WebsiteBuilderProps> = ({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [dispatch, isMobile, handleAddSection, handleAddBannerSection, sections, bannerSections, adminSections, activeSection, currentPage, pagesFromSlice]);
+  }, [dispatch, isMobile, handleAddSection, handleAddBannerSection, sections, bannerSections, adminSections, activeSection, currentPage, pagesFromSlice, headingComponents]);
 
   // Auto-sync state to iframe whenever sections/pages change
   useEffect(() => {
     const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
       console.log('Auto-syncing state to iframe, currentPage:', currentPage);
+      const compIds = Object.keys(headingComponents);
+      console.log('HeadingEditor components being synced:', compIds.length, compIds);
+      if (compIds.length > 0) {
+        const firstComp = headingComponents[compIds[0]];
+        console.log('=== COMPONENT DATA BEING SENT ===');
+        console.log('Content:', JSON.stringify(firstComp.content, null, 2));
+        console.log('Styles:', JSON.stringify(firstComp.styles, null, 2));
+        console.log('Advanced:', JSON.stringify(firstComp.advanced, null, 2));
+        console.log('Full component:', JSON.stringify(firstComp, null, 2));
+      }
       iframe.contentWindow.postMessage({
         type: 'SYNC_STATE',
         builderState: { sections, adminSections, currentPage },
         bannerState: { sections: bannerSections },
         pagesState: { pages: pagesFromSlice },
+        layoutState,
+        headingEditorState: { components: headingComponents },
         currentPage
       }, '*');
     }
-  }, [sections, bannerSections, adminSections, pagesFromSlice, currentPage]);
+  }, [sections, bannerSections, adminSections, pagesFromSlice, currentPage, layoutState, headingComponents]);
 useEffect(() => {
   // Only set default hero if we're in builder mode, no sections are active,
   // AND we haven't recently worked with banner sections
@@ -1301,6 +1386,20 @@ useEffect(() => {
                   console.log('Switching to preview view on mobile');
                   setMobileView('preview');
                 }}
+                currentPage={currentPage}
+                layouts={layoutState.pages[currentPage]?.layouts || []}
+                onAddLayout={(type, config, name) => {
+                  dispatch(addLayout({
+                    pageId: currentPage,
+                    layout: {
+                      type,
+                      name,
+                      config,
+                      components: [],
+                      visible: true,
+                    }
+                  }));
+                }}
               />
               )}
             </div>
@@ -1452,6 +1551,20 @@ useEffect(() => {
                 canUndo={sectionsCanUndo}
                 canRedo={sectionsCanRedo}
                 dragOverItem={dragOverItem}
+                currentPage={currentPage}
+                layouts={layoutState.pages[currentPage]?.layouts || []}
+                onAddLayout={(type, config, name) => {
+                  dispatch(addLayout({
+                    pageId: currentPage,
+                    layout: {
+                      type,
+                      name,
+                      config,
+                      components: [],
+                      visible: true,
+                    }
+                  }));
+                }}
               />
             )}
           </div>
@@ -1466,6 +1579,12 @@ useEffect(() => {
     <div className="fixed top-[70px] left-0 right-0 bottom-0 z-50 bg-black/50 flex">
       {renderContent()}
       {renderEditingOverlay()}
+      
+      {/* Heading Editor */}
+      {isHeadingEditorOpen && activeComponentId && (
+        <HeadingEditor componentId={activeComponentId} />
+      )}
+      
       <AddPageModal />
       {/* Backdrop to close overlay */}
       {editingOverlay.isOpen && (

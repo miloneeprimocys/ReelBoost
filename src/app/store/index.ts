@@ -44,6 +44,8 @@ import pagesReducer from './pagesSlice';
 import testimonialsReducer from './testimonialsSlice';
 import faqReducer from './faqSlice';
 import subscriptionPlanReducer from './subscriptionPlanSlice';
+import layoutReducer from './layoutSlice';
+import headingEditorReducer from './headingEditorSlice';
 
 export const store = configureStore({
   reducer: {
@@ -61,6 +63,8 @@ export const store = configureStore({
     testimonials: testimonialsReducer,
     faq: faqReducer,
     subscriptionPlan: subscriptionPlanReducer,
+    layout: layoutReducer,
+    headingEditor: headingEditorReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

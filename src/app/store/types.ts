@@ -28,4 +28,4 @@ export interface Section {
   visible: boolean;
   ready: boolean;
   content: HeroContent | any;
-}
+}                                                         

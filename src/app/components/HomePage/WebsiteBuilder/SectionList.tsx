@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { GripVertical, Edit3, Eye, EyeOff, Trash2, Layout, Plus, Undo, Redo } from "lucide-react";
+import { GripVertical, Edit3, Eye, EyeOff, Trash2, Layout, Plus, Undo, Redo, LayoutGrid, Layers } from "lucide-react";
+import { LayoutType, LayoutConfig } from "@/app/store/layoutSlice";
+import ComponentsSidebar from "./ComponentsSidebar";
 
 type SectionType = 'hero' | 'banner' | 'features' | 'admin-panel' | 'benefits' | 'second' | 'third' | 'fourth' | 'fifth' | 'sixth' | 'testimonials' | 'faq' | 'subscription-plan';
 
@@ -12,6 +14,8 @@ interface SectionListProps {
   activeSection: string | null;
   activeBannerSection: string | null;
   activeAdminSection: string | null;
+  currentPage?: string; // Current page ID (e.g., 'home', 'contact', etc.)
+  layouts?: any[]; // Layouts for non-home pages
   onDragStart: (index: number) => void;
   onDragEnter: (index: number) => void;
   onDragEnd: () => void;
@@ -32,6 +36,7 @@ interface SectionListProps {
   canRedo: boolean;
   dragOverItem: number;
   onSwitchToPreview?: () => void; // For mobile view switching
+  onAddLayout?: (type: LayoutType, config: LayoutConfig, name: string) => void; // For adding layouts to non-home pages
 }
 
 const SectionList: React.FC<SectionListProps> = ({
@@ -41,6 +46,8 @@ const SectionList: React.FC<SectionListProps> = ({
   activeSection,
   activeBannerSection,
   activeAdminSection,
+  currentPage = 'home',
+  layouts = [],
   onDragStart,
   onDragEnter,
   onDragEnd,
@@ -61,7 +68,10 @@ const SectionList: React.FC<SectionListProps> = ({
   canRedo,
   dragOverItem,
   onSwitchToPreview,
+  onAddLayout,
 }) => {
+  const isHomePage = currentPage === 'home';
+  const [activeTab, setActiveTab] = useState<'layouts' | 'components'>('layouts');
   // Touch event handling for mobile drag and drop
   const [touchItem, setTouchItem] = useState<number | null>(null);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
@@ -361,37 +371,155 @@ const SectionList: React.FC<SectionListProps> = ({
         })}
       </div>
 
-      {/* Add Section Button */}
+      {/* Non-Home Pages: Tabs for Layouts and Components */}
+      {!isHomePage && (
+        <>
+          {/* Tab Navigation */}
+          <div className="flex border-b border-gray-200 mb-4">
+            <button
+              onClick={() => setActiveTab('layouts')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'layouts'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Layers size={16} />
+              Layouts ({layouts.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('components')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'components'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <LayoutGrid size={16} />
+              Components
+            </button>
+          </div>
+
+          {/* Layouts Tab */}
+          {activeTab === 'layouts' && (
+            <div className="space-y-2">
+              {layouts.length > 0 ? (
+                layouts.map((layout, index) => (
+                  <div
+                    key={layout.id}
+                    data-layout-index={index}
+                    onClick={() => {
+                      const isMobile = window.innerWidth < 768;
+                      if (isMobile && onSwitchToPreview) {
+                        onSwitchToPreview();
+                      }
+                      // Send scroll message to iframe for this layout
+                      setTimeout(() => {
+                        const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+                        if (iframe && iframe.contentWindow) {
+                          iframe.contentWindow.postMessage({
+                            type: 'SCROLL_TO_SECTION',
+                            sectionId: layout.id
+                          }, '*');
+                        }
+                      }, isMobile ? 400 : 100);
+                    }}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                      layout.visible 
+                        ? 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white' 
+                        : 'border-gray-100 bg-gray-50 opacity-50'
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      <Layout size={18} className="text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{layout.name}</p>
+                      <p className="text-xs text-gray-500">{layout.type === 'flex' ? 'Flexbox' : 'Grid'}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm">No layouts yet</p>
+                  <p className="text-xs mt-1">Click "Add Layout" to create one</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Components Tab */}
+          {activeTab === 'components' && (
+            <ComponentsSidebar />
+          )}
+        </>
+      )}
+
+      {/* Add Section/Layout Button */}
       <div className="mt-4">
-        <button
-          onClick={() => {
-            console.log('Add New Section button clicked - scrolling to add section in preview');
-            
-            // Check if mobile
-            const isMobile = window.innerWidth < 768;
-            
-            if (isMobile && onSwitchToPreview) {
-              console.log('Mobile detected - calling onSwitchToPreview');
-              onSwitchToPreview();
-            }
-            
-            // Send scroll message to iframe for add new section
-            setTimeout(() => {
-              const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
-              if (iframe && iframe.contentWindow) {
-                console.log('Sending SCROLL_TO_SECTION to iframe for add-new-section');
-                iframe.contentWindow.postMessage({
-                  type: 'SCROLL_TO_SECTION',
-                  sectionId: 'add-new-section'
-                }, '*');
+        {isHomePage ? (
+          // Home Page: Show Add Section button
+          <button
+            onClick={() => {
+              console.log('Add New Section button clicked - scrolling to add section in preview');
+              
+              // Check if mobile
+              const isMobile = window.innerWidth < 768;
+              
+              if (isMobile && onSwitchToPreview) {
+                console.log('Mobile detected - calling onSwitchToPreview');
+                onSwitchToPreview();
               }
-            }, isMobile ? 400 : 100);
-          }}
-          className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 flex items-center justify-center gap-2 cursor-pointer md:p-3 lg:p-3"
-        >
-          <Plus size={20} />
-          <span className="font-medium md:text-sm lg:text-sm">Add New Section</span>
-        </button>
+              
+              // Send scroll message to iframe for add new section
+              setTimeout(() => {
+                const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+                if (iframe && iframe.contentWindow) {
+                  console.log('Sending SCROLL_TO_SECTION to iframe for add-new-section');
+                  iframe.contentWindow.postMessage({
+                    type: 'SCROLL_TO_SECTION',
+                    sectionId: 'add-new-section'
+                  }, '*');
+                }
+              }, isMobile ? 400 : 100);
+            }}
+            className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 flex items-center justify-center gap-2 cursor-pointer md:p-3 lg:p-3"
+          >
+            <Plus size={20} />
+            <span className="font-medium md:text-sm lg:text-sm">Add New Section</span>
+          </button>
+        ) : (
+          // Non-Home Pages: Show Add Layout button that scrolls to preview's AddLayoutInline
+          <button
+            onClick={() => {
+              console.log('Add Layout button clicked - scrolling to add layout in preview');
+              
+              // Check if mobile
+              const isMobile = window.innerWidth < 768;
+              
+              if (isMobile && onSwitchToPreview) {
+                console.log('Mobile detected - calling onSwitchToPreview');
+                onSwitchToPreview();
+              }
+              
+              // Send scroll message to iframe for add new layout
+              setTimeout(() => {
+                const iframe = document.querySelector('iframe[src="/preview"]') as HTMLIFrameElement;
+                if (iframe && iframe.contentWindow) {
+                  console.log('Sending SCROLL_TO_SECTION to iframe for add-new-layout');
+                  iframe.contentWindow.postMessage({
+                    type: 'SCROLL_TO_SECTION',
+                    sectionId: 'add-new-layout'
+                  }, '*');
+                }
+              }, isMobile ? 400 : 100);
+            }}
+            className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 flex items-center justify-center gap-2 cursor-pointer md:p-3 lg:p-3"
+          >
+            <Plus size={20} />
+            <span className="font-medium md:text-sm lg:text-sm">Add Layout</span>
+          </button>
+        )}
       </div>
 
       {/* Footer Section */}

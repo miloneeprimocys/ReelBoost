@@ -22,7 +22,9 @@ const PagesList: React.FC<PagesListProps> = ({ onPageSelect }) => {
     dispatch(setCurrentPage(pageId));
     // Navigate to /WebsiteBuilder/[page-slug]
     if (page?.slug) {
-      router.push(`/WebsiteBuilder/${page.slug}`);
+      // Remove leading slash from slug to avoid double slash in URL
+      const slugWithoutLeadingSlash = page.slug.replace(/^\//, '');
+      router.push(`/WebsiteBuilder/${slugWithoutLeadingSlash}`);
     }
     // Call onPageSelect callback to switch to sections view
     if (onPageSelect) {

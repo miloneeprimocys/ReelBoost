@@ -89,6 +89,8 @@ export default function AddPageModal() {
   };
 
   const isFormValid = pageName.trim() && slug.trim();
+  
+  console.log('Form validation:', { pageName, slug, isFormValid, isSubmitting });
 
   return (
     <>
@@ -97,7 +99,7 @@ export default function AddPageModal() {
         onClick={handleClose}
       >
         <div 
-          className="bg-white rounded-2xl shadow-2xl shadow-slate-900/20 w-full max-w-md mx-auto overflow-hidden transition-all duration-300 scale-100 flex flex-col border border-gray-100"
+          className="bg-white rounded-2xl shadow-2xl shadow-slate-900/20 w-full max-w-md mx-auto transition-all duration-300 scale-100 flex flex-col border border-gray-100"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -195,9 +197,9 @@ export default function AddPageModal() {
               <button
                 type="submit"
                 disabled={!isFormValid || isSubmitting}
-                className={`px-5 py-2.5 text-sm font-semibold cursor-pointer text-white rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                className={`px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 ${
                   isFormValid && !isSubmitting
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white cursor-pointer hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               >

@@ -7,6 +7,9 @@ import { useAppSelector } from '@/app/store/hooks';
 import { syncBuilderState } from '@/app/store/builderSlice';
 import { syncPagesState } from '@/app/store/pagesSlice';
 import { syncBannerState } from '@/app/store/bannerSlice';
+import { syncLayoutState, LayoutItem } from '@/app/store/layoutSlice';
+import { syncHeadingEditorState } from '@/app/store/headingEditorSlice';
+import Layout from '@/app/sections/component/Layout';
 import DynamicNavbar from '@/app/sections/Home/DynamicNavbar';
 import DynamicFooter from '@/app/sections/Home/DynamicFooter';
 import Hero from '@/app/Pages/Home/Hero';
@@ -23,14 +26,23 @@ import DynamicTestimonials from '@/app/sections/Home/DynamicTestimonials';
 import DynamicFaq from '@/app/sections/Home/DynamicFaq';
 import DynamicSubscriptionPlan from '@/app/sections/Home/DynamicSubscriptionPlan';
 import { Plus } from 'lucide-react';
+import AddLayoutInline from '@/app/sections/component/AddLayoutInline';
+import { LayoutType, LayoutConfig } from '@/app/store/layoutSlice';
 
 function PreviewContent() {
   const { sections } = useAppSelector((state) => state.builder);
   const { sections: bannerSections } = useAppSelector((state) => state.banner);
   const { pages } = useAppSelector((state) => state.pages);
+  const { pages: layoutPages } = useAppSelector((state) => state.layout);
   const [isInIframe, setIsInIframe] = useState(false);
   const [currentPage, setCurrentPage] = useState('home'); // Track current page from parent
   const dispatch = useDispatch();
+
+  // Get layouts for current page
+  const pageLayouts = useMemo(() => {
+    if (currentPage === 'home') return [];
+    return layoutPages[currentPage]?.layouts || [];
+  }, [layoutPages, currentPage]);
 
   // Merge builder sections with banner sections for preview
   const allSections = useMemo(() => {
@@ -78,7 +90,7 @@ function PreviewContent() {
       } else if (event.data && event.data.type === 'SYNC_STATE') {
         // Receive state from parent window
         console.log('Received SYNC_STATE from parent', event.data);
-        const { builderState, pagesState, bannerState, currentPage: pageFromParent } = event.data;
+        const { builderState, pagesState, bannerState, layoutState, headingEditorState, currentPage: pageFromParent } = event.data;
         if (builderState) {
           dispatch(syncBuilderState(builderState));
         }
@@ -87,6 +99,13 @@ function PreviewContent() {
         }
         if (bannerState) {
           dispatch(syncBannerState(bannerState));
+        }
+        if (layoutState) {
+          dispatch(syncLayoutState(layoutState));
+        }
+        if (headingEditorState) {
+          console.log('Preview received headingEditorState:', Object.keys(headingEditorState.components || {}).length, Object.keys(headingEditorState.components || {}));
+          dispatch(syncHeadingEditorState(headingEditorState));
         }
         if (pageFromParent) {
           setCurrentPage(pageFromParent);
@@ -246,8 +265,25 @@ function PreviewContent() {
         }
       })}
 
-      {/* Add New Section - Only show in iframe - ABOVE footer */}
-      {isInIframe && (
+      {/* Render Layouts for non-home pages */}
+      {currentPage !== 'home' && pageLayouts.length > 0 && (
+        <div className="layouts-container">
+          {pageLayouts
+            .filter((layout: LayoutItem) => layout.visible)
+            .sort((a: LayoutItem, b: LayoutItem) => a.order - b.order)
+            .map((layout: LayoutItem) => (
+              <Layout
+                key={layout.id}
+                layout={layout}
+                isInIframe={isInIframe}
+                onClick={() => handleSectionClick(layout.id, 'layout', layout.type)}
+              />
+            ))}
+        </div>
+      )}
+
+      {/* Add New Section - Only show for home page in iframe */}
+      {isInIframe && currentPage === 'home' && (
         <div id="add-new-section" className="border-2 border-dashed border-gray-300 p-8 bg-gray-50 rounded-xl mx-4 mb-8 mt-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Add New Section</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
@@ -324,6 +360,23 @@ function PreviewContent() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Add Layout - Show for non-home pages in iframe */}
+      {isInIframe && currentPage !== 'home' && (
+        <AddLayoutInline 
+          currentPage={currentPage}
+          onAddLayout={(type, config, name) => {
+            if (window.parent) {
+              window.parent.postMessage({
+                type: 'ADD_LAYOUT',
+                layoutType: type,
+                config,
+                name
+              }, '*');
+            }
+          }}
+        />
       )}
 
       {/* Dynamic Footer */}
